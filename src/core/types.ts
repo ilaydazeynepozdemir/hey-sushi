@@ -9,33 +9,33 @@ import type { Localized } from "./i18n";
 export type PlayerId = 0 | 1 | 2 | 3;
 
 export type IngredientId =
-  | "pirinc"
+  | "rice"
   | "nori"
-  | "cay"
-  | "dilim_somon"
-  | "dilim_ton"
-  | "dilim_avokado"
-  | "dilim_tamago"
+  | "tea"
+  | "salmon_slice"
+  | "tuna_slice"
+  | "avocado"
+  | "tamago"
   | "ikura"
   | "tofu"
   | "miso"
   | "mochi"
-  | "dilim_karides"
-  | "dilim_yilanbaligi"
-  | "dilim_salatalik"
-  | "dilim_mango"
-  | "krem_peynir"
+  | "shrimp"
+  | "unagi"
+  | "cucumber"
+  | "mango"
+  | "cream_cheese"
   | "tempura"
-  | "ikram"
-  | "maki_somon"
-  | "maki_avokado"
-  | "maki_ton"
-  | "maki_tamago"
-  | "maki_salatalik"
-  | "maki_mango"
-  | "maki_karides"
-  | "maki_krem"
-  | "maki_tempura";
+  | "treat"
+  | "salmon_maki"
+  | "avocado_maki"
+  | "tuna_maki"
+  | "tamago_maki"
+  | "kappa_maki"
+  | "mango_maki"
+  | "shrimp_maki"
+  | "cream_maki"
+  | "tempura_maki";
 
 /**
  * Yemek kimliği serbest string: oyuncunun atölyede tasarladığı tarifler de
@@ -44,29 +44,29 @@ export type IngredientId =
 export type DishId = string;
 
 export type StationId =
-  | "pirinc"
+  | "rice"
   | "nori"
-  | "cay"
-  | "kesim_somon"
-  | "kesim_ton"
-  | "kesim_avokado"
-  | "kesim_tamago"
+  | "tea"
+  | "cut_salmon"
+  | "cut_tuna"
+  | "cut_avocado"
+  | "cut_tamago"
   | "ikura"
   | "tofu"
   | "miso"
   | "mochi"
-  | "kesim_karides"
-  | "kesim_yilanbaligi"
-  | "kesim_salatalik"
-  | "kesim_mango"
-  | "krem_peynir"
+  | "cut_shrimp"
+  | "cut_unagi"
+  | "cut_cucumber"
+  | "cut_mango"
+  | "cream_cheese"
   | "tempura"
-  | "ikram"
+  | "treat"
   | "mat"
-  | "atik";
+  | "compost";
 
-/** Etkileşim hedefi: bir istasyon ya da bir misafirin tepsisi. */
-export type TargetId = StationId | `misafir:${string}`;
+/** Etkileşim hedefi: bir station ya da bir misafirin tepsisi. */
+export type TargetId = StationId | `guest:${string}`;
 
 export interface Player {
   id: PlayerId;
@@ -100,7 +100,7 @@ export interface Guest {
   lineTimer: number;
 }
 
-export type GamePhase = "menu" | "gun" | "gun_sonu";
+export type GamePhase = "menu" | "day" | "day_end";
 
 export interface GameState {
   phase: GamePhase;
@@ -137,24 +137,24 @@ export interface GameState {
 
 export type GameEvent =
   | { kind: "tick"; target: TargetId }
-  | { kind: "uretildi"; ingredient: IngredientId; oyuncu: PlayerId }
-  | { kind: "birakildi"; oyuncu: PlayerId }
-  | { kind: "tepsiye_kondu"; guestId: string; ingredient: IngredientId; oyuncu: PlayerId }
-  | { kind: "tepsiden_alindi"; guestId: string; ingredient: IngredientId; oyuncu: PlayerId }
-  | { kind: "mata_kondu"; ingredient: IngredientId; oyuncu: PlayerId }
-  | { kind: "ikram"; guestId: string; oyuncu: PlayerId; bot: boolean }
-  | { kind: "servis"; guzel: boolean; hearts: number; together: boolean; guestId: string }
-  | { kind: "eksik"; guestId: string }
-  | { kind: "misafir_geldi"; guestId: string }
-  | { kind: "misafir_gitti"; guestId: string }
-  | { kind: "gun_bitti" }
-  | { kind: "dekor_alindi"; id: string }
-  | { kind: "hata"; onMessage: Localized; oyuncu: PlayerId };
+  | { kind: "produced"; ingredient: IngredientId; player: PlayerId }
+  | { kind: "dropped"; player: PlayerId }
+  | { kind: "placed_on_tray"; guestId: string; ingredient: IngredientId; player: PlayerId }
+  | { kind: "taken_from_tray"; guestId: string; ingredient: IngredientId; player: PlayerId }
+  | { kind: "placed_on_mat"; ingredient: IngredientId; player: PlayerId }
+  | { kind: "treat"; guestId: string; player: PlayerId; bot: boolean }
+  | { kind: "serve"; guzel: boolean; hearts: number; together: boolean; guestId: string }
+  | { kind: "incomplete"; guestId: string }
+  | { kind: "guest_arrived"; guestId: string }
+  | { kind: "guest_left"; guestId: string }
+  | { kind: "day_over" }
+  | { kind: "decor_bought"; id: string }
+  | { kind: "error"; onMessage: Localized; player: PlayerId };
 
 export type Action =
-  | { kind: "etkilesim"; oyuncu: PlayerId; target: TargetId }
-  | { kind: "servis"; oyuncu: PlayerId; guestId: string }
+  | { kind: "interact"; player: PlayerId; target: TargetId }
+  | { kind: "serve"; player: PlayerId; guestId: string }
   | { kind: "tick"; dt: number }
-  | { kind: "gun_basla" }
-  | { kind: "sonraki_gun" }
-  | { kind: "dekor_al"; id: string };
+  | { kind: "start_day" }
+  | { kind: "next_day" }
+  | { kind: "buy_decor"; id: string };

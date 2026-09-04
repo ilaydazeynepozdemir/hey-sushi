@@ -14,7 +14,7 @@
  */
 import { audioContext } from "./audio";
 
-type SeasonId = "ilkbahar" | "yaz" | "sonbahar" | "kis";
+type SeasonId = "spring" | "summer" | "autumn" | "winter";
 
 /** D Yo dizisi, Hz. Kök D3. */
 const SCALE = [146.83, 164.81, 196.0, 220.0, 246.94];
@@ -37,17 +37,17 @@ interface SeasonMood {
 }
 
 const SEASON_MOOD: Record<SeasonId, SeasonMood> = {
-  ilkbahar: { tempo: 52, yogunluk: 0.24, parlaklik: 1150 },
-  yaz: { tempo: 56, yogunluk: 0.27, parlaklik: 1350 },
-  sonbahar: { tempo: 48, yogunluk: 0.21, parlaklik: 980 },
-  kis: { tempo: 44, yogunluk: 0.17, parlaklik: 820 },
+  spring: { tempo: 52, yogunluk: 0.24, parlaklik: 1150 },
+  summer: { tempo: 56, yogunluk: 0.27, parlaklik: 1350 },
+  autumn: { tempo: 48, yogunluk: 0.21, parlaklik: 980 },
+  winter: { tempo: 44, yogunluk: 0.17, parlaklik: 820 },
 };
 
 let ana: GainNode | null = null;
 let zamanlayici: number | null = null;
 let siradakiVurus = 0;
 let vurusNo = 0;
-let color: SeasonMood = SEASON_MOOD.ilkbahar;
+let color: SeasonMood = SEASON_MOOD.spring;
 let acik = true;
 let calisiyor = false;
 let odaKaynagi: AudioBufferSourceNode | null = null;
@@ -59,7 +59,7 @@ export function musicEnabled() {
 }
 
 export function setMusicSeason(id: string) {
-  color = SEASON_MOOD[id as SeasonId] ?? SEASON_MOOD.ilkbahar;
+  color = SEASON_MOOD[id as SeasonId] ?? SEASON_MOOD.spring;
 }
 
 /** Koto benzeri tıngırtı: sert atak, uzun sönüm, hafif detune. */
@@ -88,7 +88,7 @@ function pluck(c: AudioContext, f: number, t: number, guc: number) {
 }
 
 /** Uzun, yumuşak akor yastığı. */
-function pad(c: AudioContext, sesler: number[], t: number, elapsed: number) {
+function pad(c: AudioContext, notes: number[], t: number, elapsed: number) {
   if (!ana) return;
   const filtre = c.createBiquadFilter();
   filtre.type = "lowpass";
@@ -100,7 +100,7 @@ function pad(c: AudioContext, sesler: number[], t: number, elapsed: number) {
   zarf.gain.setValueAtTime(0.035, t + elapsed * 0.7);
   zarf.gain.exponentialRampToValueAtTime(0.0001, t + elapsed);
 
-  for (const f of sesler) {
+  for (const f of notes) {
     for (const kayma of [0.997, 1.003]) {
       const o = c.createOscillator();
       o.type = "sine";

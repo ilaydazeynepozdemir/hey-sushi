@@ -7,7 +7,7 @@
 import { storageGet, storageSet } from "./storage";
 import { m, type Localized } from "./i18n";
 
-export type AvatarKind = "kadin" | "erkek";
+export type AvatarKind = "woman" | "man";
 
 export interface Avatar {
   /** Garsonun üstünde görünen ad. */
@@ -26,15 +26,15 @@ export interface Avatar {
 }
 
 export type HairAccessoryId =
-  | "yok"
+  | "none"
   | "chopstick"
-  | "cift_chopstick"
+  | "double_chopstick"
   | "bandana"
-  | "cicek"
-  | "kedi_toka"
-  | "kurdele";
+  | "flower"
+  | "cat_clip"
+  | "ribbon";
 
-export type FaceAccessoryId = "yok" | "gozluk" | "yuvarlak_gozluk" | "cil";
+export type FaceAccessoryId = "none" | "glasses" | "round_glasses" | "freckles";
 
 export const SKIN_TONES = ["#FBE3D0", "#F6D3BC", "#E8B99B", "#D2996F", "#AC7A53"];
 
@@ -61,29 +61,29 @@ export interface HairStyle {
 }
 
 export const HAIR_STYLES: HairStyle[] = [
-  { id: "topuz", name: m("Bun", "Topuz"), onerilen: "kadin" },
-  { id: "ikiz_topuz", name: m("Twin buns", "İkiz topuz"), onerilen: "kadin" },
-  { id: "uzun", name: m("Long", "Uzun"), onerilen: "kadin" },
-  { id: "at_kuyrugu", name: m("Ponytail", "At kuyruğu") },
-  { id: "kisa", name: m("Short", "Kısa"), onerilen: "erkek" },
-  { id: "dagitik", name: m("Messy", "Dağınık"), onerilen: "erkek" },
+  { id: "bun", name: m("Bun", "Topuz"), onerilen: "woman" },
+  { id: "twin_buns", name: m("Twin buns", "İkiz topuz"), onerilen: "woman" },
+  { id: "long", name: m("Long", "Uzun"), onerilen: "woman" },
+  { id: "ponytail", name: m("Ponytail", "At kuyruğu") },
+  { id: "short", name: m("Short", "Kısa"), onerilen: "man" },
+  { id: "messy", name: m("Messy", "Dağınık"), onerilen: "man" },
 ];
 
 export const HAIR_ACCESSORIES: { id: HairAccessoryId; name: Localized }[] = [
-  { id: "yok", name: m("None", "Yok") },
+  { id: "none", name: m("None", "Yok") },
   { id: "chopstick", name: m("Hair stick", "Saç çubuğu") },
-  { id: "cift_chopstick", name: m("Double stick", "Çift çubuk") },
+  { id: "double_chopstick", name: m("Double stick", "Çift çubuk") },
   { id: "bandana", name: m("Bandana", "Bandana") },
-  { id: "cicek", name: m("Flower", "Çiçek") },
-  { id: "kedi_toka", name: m("Cat clip", "Kedi tokası") },
-  { id: "kurdele", name: m("Ribbon", "Kurdele") },
+  { id: "flower", name: m("Flower", "Çiçek") },
+  { id: "cat_clip", name: m("Cat clip", "Kedi tokası") },
+  { id: "ribbon", name: m("Ribbon", "Kurdele") },
 ];
 
 export const FACE_ACCESSORIES: { id: FaceAccessoryId; name: Localized }[] = [
-  { id: "yok", name: m("None", "Yok") },
-  { id: "gozluk", name: m("Glasses", "Gözlük") },
-  { id: "yuvarlak_gozluk", name: m("Round", "Yuvarlak") },
-  { id: "cil", name: m("Freckles", "Çil") },
+  { id: "none", name: m("None", "Yok") },
+  { id: "glasses", name: m("Glasses", "Gözlük") },
+  { id: "round_glasses", name: m("Round", "Yuvarlak") },
+  { id: "freckles", name: m("Freckles", "Çil") },
 ];
 
 const DEPO = "tsuki.avatar";
@@ -91,32 +91,32 @@ const DEPO = "tsuki.avatar";
 export function defaultAvatar(sira = 0): Avatar {
   return {
     name: sira === 0 ? "Chef" : `Server ${sira + 1}`,
-    kind: "kadin",
+    kind: "woman",
     skin: 1,
     hair: 0,
     hairColor: 0,
     outfit: sira % OUTFIT_COLORS.length,
     apron: 0,
     hairAccessory: "chopstick",
-    faceAccessory: "yok",
+    faceAccessory: "none",
   };
 }
 
 function normalize(a: Partial<Avatar> & { aksesuar?: string }, sira = 0): Avatar {
   const v = defaultAvatar(sira);
   // Eski kayıtlarda tek bir "aksesuar" alanı vardı; doğru slota taşı.
-  const eski = a.aksesuar;
-  const eskiSac = eski && eski !== "gozluk" ? (eski as HairAccessoryId) : undefined;
-  const eskiYuz = eski === "gozluk" ? ("gozluk" as FaceAccessoryId) : undefined;
+  const prev = a.aksesuar;
+  const prevHair = prev && prev !== "glasses" ? (prev as HairAccessoryId) : undefined;
+  const prevFace = prev === "glasses" ? ("glasses" as FaceAccessoryId) : undefined;
 
-  // Eski kayıt taşınıyorsa boş kalan slot "yok" olmalı; varsayılan takı eklenmemeli.
-  const eskiVar = typeof eski === "string";
-  const sacAks = a.hairAccessory ?? eskiSac ?? (eskiVar ? "yok" : undefined);
-  const yuzAks = a.faceAccessory ?? eskiYuz ?? (eskiVar ? "yok" : undefined);
+  // Eski kayıt taşınıyorsa boş kalan slot "none" olmalı; varsayılan takı eklenmemeli.
+  const hadLegacy = typeof prev === "string";
+  const sacAks = a.hairAccessory ?? prevHair ?? (hadLegacy ? "none" : undefined);
+  const yuzAks = a.faceAccessory ?? prevFace ?? (hadLegacy ? "none" : undefined);
 
   return {
     name: (typeof a.name === "string" && a.name.trim().slice(0, 14)) || v.name,
-    kind: a.kind === "erkek" ? "erkek" : "kadin",
+    kind: a.kind === "man" ? "man" : "woman",
     skin: clampIndex(a.skin, SKIN_TONES.length, v.skin),
     hair: clampIndex(a.hair, HAIR_STYLES.length, v.hair),
     hairColor: clampIndex(a.hairColor, HAIR_COLORS.length, v.hairColor),

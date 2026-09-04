@@ -19,13 +19,13 @@ import type { StationId, IngredientId } from "./types";
 
 export type BaseId = "nigiri" | "maki" | "gunkan";
 export type GarnishId =
-  | "susam"
-  | "siyah_susam"
-  | "yesil_sogan"
+  | "sesame"
+  | "black_sesame"
+  | "spring_onion"
   | "wasabi"
   | "ikura"
-  | "limon"
-  | "nori_serit";
+  | "lemon"
+  | "nori_strip";
 
 export interface Base {
   id: BaseId;
@@ -44,8 +44,8 @@ export const BASES: Base[] = [
     name: m("Nigiri", "Nigiri"),
     description: m("A rice pillow with a topping.", "Pirinç yastığı, üstünde iç malzeme."),
     hearts: 3,
-    basics: ["pirinc"],
-    allowed: ["dilim_somon", "dilim_ton", "dilim_avokado", "dilim_tamago", "dilim_karides", "dilim_yilanbaligi", "dilim_mango", "dilim_salatalik", "krem_peynir", "tempura", "ikura", "tofu"],
+    basics: ["rice"],
+    allowed: ["salmon_slice", "tuna_slice", "avocado", "tamago", "shrimp", "unagi", "mango", "cucumber", "cream_cheese", "tempura", "ikura", "tofu"],
   },
   {
     id: "maki",
@@ -53,15 +53,15 @@ export const BASES: Base[] = [
     description: m("Rolled on the mat. Needs maki rolled beforehand.", "Sarma matında rulo. Matta sarılmış maki ister."),
     hearts: 6,
     basics: [],
-    allowed: ["maki_somon", "maki_ton", "maki_avokado", "maki_tamago", "maki_salatalik", "maki_mango", "maki_karides", "maki_krem", "maki_tempura"],
+    allowed: ["salmon_maki", "tuna_maki", "avocado_maki", "tamago_maki", "kappa_maki", "mango_maki", "shrimp_maki", "cream_maki", "tempura_maki"],
   },
   {
     id: "gunkan",
     name: m("Gunkan", "Gunkan"),
     description: m("A nori boat, filled up.", "Nori kayığı, içi dolu."),
     hearts: 6,
-    basics: ["pirinc", "nori"],
-    allowed: ["ikura", "dilim_somon", "dilim_ton", "dilim_avokado", "dilim_karides", "dilim_mango", "krem_peynir", "tempura", "tofu"],
+    basics: ["rice", "nori"],
+    allowed: ["ikura", "salmon_slice", "tuna_slice", "avocado", "shrimp", "mango", "cream_cheese", "tempura", "tofu"],
   },
 ];
 
@@ -70,12 +70,12 @@ export const BASE_MAP: Record<BaseId, Base> = Object.fromEntries(
 ) as Record<BaseId, Base>;
 
 export const GARNISHES: { id: GarnishId; name: Localized; hearts: number }[] = [
-  { id: "susam", name: m("Sesame", "Susam"), hearts: 1 },
-  { id: "siyah_susam", name: m("Black sesame", "Siyah susam"), hearts: 1 },
-  { id: "yesil_sogan", name: m("Spring onion", "Yeşil soğan"), hearts: 1 },
+  { id: "sesame", name: m("Sesame", "Susam"), hearts: 1 },
+  { id: "black_sesame", name: m("Black sesame", "Siyah susam"), hearts: 1 },
+  { id: "spring_onion", name: m("Spring onion", "Yeşil soğan"), hearts: 1 },
   { id: "wasabi", name: m("Wasabi", "Wasabi"), hearts: 1 },
-  { id: "limon", name: m("Lemon", "Limon"), hearts: 1 },
-  { id: "nori_serit", name: m("Nori strip", "Nori şeridi"), hearts: 2 },
+  { id: "lemon", name: m("Lemon", "Limon"), hearts: 1 },
+  { id: "nori_strip", name: m("Nori strip", "Nori şeridi"), hearts: 2 },
   { id: "ikura", name: m("Ikura beads", "İkura taneleri"), hearts: 2 },
 ];
 
@@ -100,7 +100,7 @@ const DEPO = "tsuki.tarifler";
 export function recipeHearts(t: Pick<CustomRecipe, "base" | "filling" | "garnish">): number {
   const base = BASE_MAP[t.base];
   const garnish = t.garnish.reduce(
-    (toplam, id) => toplam + (GARNISHES.find((g) => g.id === id)?.hearts ?? 0),
+    (total, id) => total + (GARNISHES.find((g) => g.id === id)?.hearts ?? 0),
     0,
   );
   return base.hearts + Math.max(0, t.filling.length - 1) * 2 + garnish;
@@ -132,7 +132,7 @@ export function applyRecipe(t: CustomRecipe) {
 
 export function removeRecipe(id: string) {
   unregisterDish(id);
-  kaydet(allRecipes().filter((t) => t.id !== id));
+  saveLabel(allRecipes().filter((t) => t.id !== id));
 }
 
 export function allRecipes(): CustomRecipe[] {
@@ -146,7 +146,7 @@ export function allRecipes(): CustomRecipe[] {
       ...t,
       garnish: Array.isArray(t.garnish)
         ? t.garnish
-        : t.garnish && t.garnish !== ("yok" as unknown as GarnishId)
+        : t.garnish && t.garnish !== ("none" as unknown as GarnishId)
           ? [t.garnish as GarnishId]
           : [],
     }));
@@ -155,7 +155,7 @@ export function allRecipes(): CustomRecipe[] {
   }
 }
 
-function kaydet(liste: CustomRecipe[]) {
+function saveLabel(liste: CustomRecipe[]) {
   try {
     storageSet(DEPO, JSON.stringify(liste));
   } catch {
@@ -165,7 +165,7 @@ function kaydet(liste: CustomRecipe[]) {
 
 export function addRecipe(t: Omit<CustomRecipe, "id">): CustomRecipe {
   const tam: CustomRecipe = { ...t, id: `ozel_${Date.now().toString(36)}` };
-  kaydet([...allRecipes(), tam]);
+  saveLabel([...allRecipes(), tam]);
   applyRecipe(tam);
   return tam;
 }

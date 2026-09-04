@@ -98,36 +98,36 @@ const oda = new Oda({
   onAction(uyeId, veri) {
     // Sadece ev sahibi burayı görür: gelen aksiyonu kendi durumuna uygular.
     const v = veri as { t?: string; aksiyon?: Action; avatar?: Avatar };
-    const oyuncu = memberToPlayer.get(uyeId);
-    if (oyuncu === undefined) return;
+    const player = memberToPlayer.get(uyeId);
+    if (player === undefined) return;
     if (v.t === "avatar" && v.avatar) {
-      setAvatar(state, oyuncu, v.avatar);
+      setAvatar(state, player, v.avatar);
       broadcast(true);
       render();
       return;
     }
     if (v.t !== "aksiyon" || !v.aksiyon) return;
     const a = v.aksiyon;
-    if (a.kind !== "etkilesim" && a.kind !== "servis") return;
-    lastActor = oyuncu;
-    handleEvents(apply(state, { ...a, oyuncu }));
+    if (a.kind !== "interact" && a.kind !== "serve") return;
+    lastActor = player;
+    handleEvents(apply(state, { ...a, player }));
     broadcast(true);
     render();
   },
   onMemberJoined(id, name) {
-    const oyuncu = addPlayer(state, name);
-    if (oyuncu === null) return;
-    memberToPlayer.set(id, oyuncu);
-    oda.send({ t: "kimlik", myPlayerId: oyuncu, tarifler: tumTarifler() }, id);
+    const player = addPlayer(state, name);
+    if (player === null) return;
+    memberToPlayer.set(id, player);
+    oda.send({ t: "kimlik", myPlayerId: player, tarifler: tumTarifler() }, id);
     broadcast(true);
-    arayuz.toast(`${state.players[oyuncu]?.name ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
+    arayuz.toast(`${state.players[player]?.name ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
     arayuz.invalidateOverlay();
     render();
   },
   onMemberLeft(id) {
-    const oyuncu = memberToPlayer.get(id);
-    if (oyuncu !== undefined) {
-      removePlayer(state, oyuncu);
+    const player = memberToPlayer.get(id);
+    if (player !== undefined) {
+      removePlayer(state, player);
       memberToPlayer.delete(id);
     }
     broadcast(true);
@@ -156,13 +156,13 @@ const oda = new Oda({
 });
 
 /** Oda dağılınca tek kişilik oyuna düş. */
-function continueSolo(eski: GameState): GameState {
-  const yeni = newGame(1, undefined, myAvatar);
-  yeni.day = eski.day;
-  yeni.hearts = eski.hearts;
-  yeni.coins = eski.coins;
-  yeni.decor = eski.decor;
-  return yeni;
+function continueSolo(prev: GameState): GameState {
+  const next = newGame(1, undefined, myAvatar);
+  next.day = prev.day;
+  next.hearts = prev.hearts;
+  next.coins = prev.coins;
+  next.decor = prev.decor;
+  return next;
 }
 
 function broadcast(zorla = false) {
@@ -176,19 +176,19 @@ function broadcast(zorla = false) {
 // ---------------------------------------------------------------- arayüz
 const arayuz = new View(kok, {
   onTarget(target) {
-    dispatch({ kind: "etkilesim", oyuncu: myId(), target });
+    dispatch({ kind: "interact", player: myId(), target });
   },
   onServe(guestId) {
-    dispatch({ kind: "servis", oyuncu: myId(), guestId });
+    dispatch({ kind: "serve", player: myId(), guestId });
   },
   onStartDay() {
-    dispatch({ kind: "gun_basla" });
+    dispatch({ kind: "start_day" });
   },
   onNextDay() {
-    dispatch({ kind: "sonraki_gun" });
+    dispatch({ kind: "next_day" });
   },
   onBuyDecor(id) {
-    dispatch({ kind: "dekor_al", id });
+    dispatch({ kind: "buy_decor", id });
   },
   onToggleSfx() {
     sfxOn = toggleSfx();
@@ -233,13 +233,13 @@ const arayuz = new View(kok, {
     myAvatar = a;
     avatarDepola(a);
     avatarOpen = false;
-    if (oda.role === "misafir") {
+    if (oda.role === "guest") {
       oda.send({ t: "avatar", avatar: a });
     } else {
       setAvatar(state, myId(), a);
       broadcast(true);
     }
-    arayuz.toast(format(S.merhaba, { name: a.name }));
+    arayuz.toast(format(S.greeting, { name: a.name }));
     arayuz.invalidateOverlay();
     render();
   },
@@ -260,7 +260,7 @@ const arayuz = new View(kok, {
     const tam = addRecipe(t);
     workshopOpen = false;
     if (oda.role === "host") oda.send({ t: "kimlik", myPlayerId: -1, tarifler: [tam] });
-    arayuz.toast(format(S.menuyeEklendi, { name: t.name }));
+    arayuz.toast(format(S.addedToMenu, { name: t.name }));
     arayuz.invalidateOverlay();
     render();
   },
@@ -315,11 +315,11 @@ function keyboardPlayer(): PlayerId {
 }
 
 function dispatch(a: Action) {
-  if (a.kind === "etkilesim" || a.kind === "servis") lastActor = a.oyuncu;
-  if (oda.role === "misafir") {
-    if (a.kind === "etkilesim" || a.kind === "servis") {
-      oda.send({ t: "aksiyon", aksiyon: { ...a, oyuncu: myPlayerId } });
-      if (a.kind === "etkilesim") arayuz.bump(a.target);
+  if (a.kind === "interact" || a.kind === "serve") lastActor = a.player;
+  if (oda.role === "guest") {
+    if (a.kind === "interact" || a.kind === "serve") {
+      oda.send({ t: "aksiyon", aksiyon: { ...a, player: myPlayerId } });
+      if (a.kind === "interact") arayuz.bump(a.target);
     } else {
       arayuz.toast({ en: "Only the host can do that", tr: "Bunu ev sahibi yapabilir" });
     }
@@ -337,64 +337,64 @@ function handleEvents(events: GameEvent[]) {
         arayuz.bump(o.target);
         lastTapTarget = o.target;
         sfxTap(tapCount++ % 3);
-        if (!o.target.startsWith("misafir:")) arayuz.serverToStation(lastActor, o.target);
+        if (!o.target.startsWith("guest:")) arayuz.serverToStation(lastActor, o.target);
         break;
-      case "uretildi":
+      case "produced":
         sfxProduce();
-        if (o.oyuncu === myId()) hapticLight();
+        if (o.player === myId()) hapticLight();
         tapCount = 0;
         if (lastTapTarget) arayuz.burstAt(lastTapTarget);
         // Parmak hâlâ basılıysa üretilen malzeme doğrudan sürüklenmeye başlar.
-        if (o.oyuncu === myId()) arayuz.dragProduced(o.ingredient);
+        if (o.player === myId()) arayuz.dragProduced(o.ingredient);
         break;
-      case "ikram":
+      case "treat":
         sfxProduce();
         arayuz.floatText(o.guestId, "", "ui_kalp");
-        if (!o.bot && o.oyuncu === myId()) hapticLight();
+        if (!o.bot && o.player === myId()) hapticLight();
         break;
-      case "tepsiye_kondu": {
+      case "placed_on_tray": {
         // Işınlanma yok: garson malzemeyi masaya yürüyerek götürür.
-        const misafir = state.guests.find((m) => m.id === o.guestId);
-        const index = misafir ? misafir.tray.length - 1 : 0;
-        arayuz.serverDeliver(o.oyuncu, o.guestId, index, o.ingredient);
+        const guest = state.guests.find((m) => m.id === o.guestId);
+        const index = guest ? guest.tray.length - 1 : 0;
+        arayuz.serverDeliver(o.player, o.guestId, index, o.ingredient);
         break;
       }
-      case "mata_kondu":
+      case "placed_on_mat":
         sfxDrop();
-        arayuz.serverToStation(o.oyuncu, "mat");
-        if (o.oyuncu === myId()) arayuz.flyIngredient(o.ingredient, "mat");
+        arayuz.serverToStation(o.player, "mat");
+        if (o.player === myId()) arayuz.flyIngredient(o.ingredient, "mat");
         break;
-      case "tepsiden_alindi":
+      case "taken_from_tray":
         sfxTap(0);
         break;
-      case "birakildi":
+      case "dropped":
         sfxDrop();
         break;
-      case "servis":
+      case "serve":
         sfxServe(o.guzel);
         hapticSuccess();
         if (o.together) setTimeout(sfxTogether, 180);
         arayuz.floatText(o.guestId, `+${o.hearts}`);
-        if (o.together) setTimeout(() => arayuz.floatText(o.guestId, y(S.birlikte), "ui_parilti"), 260);
+        if (o.together) setTimeout(() => arayuz.floatText(o.guestId, y(S.togetherLabel), "ui_parilti"), 260);
         break;
-      case "eksik":
-        arayuz.toast(S.siparisEksik);
+      case "incomplete":
+        arayuz.toast(S.orderIncomplete);
         break;
-      case "misafir_geldi":
+      case "guest_arrived":
         sfxGuest();
         break;
-      case "gun_bitti":
+      case "day_over":
         sfxDayEnd();
         writeSave(state); // gün bitti: ilerleme otomatik kaydedilir
         break;
-      case "hata":
-        if (o.oyuncu === myId()) {
+      case "error":
+        if (o.player === myId()) {
           sfxError();
           arayuz.toast(o.onMessage);
         }
         break;
-      case "dekor_alindi":
-      case "misafir_gitti":
+      case "decor_bought":
+      case "guest_left":
         break;
     }
   }
@@ -402,10 +402,10 @@ function handleEvents(events: GameEvent[]) {
 
 function render() {
   // Mevsim değişince müziğin rengi de değişsin (tempo, yoğunluk, parlaklık).
-  const mevsim = seasonForDay(state.day).id;
-  if (mevsim !== musicSeason) {
-    musicSeason = mevsim;
-    setMusicSeason(mevsim);
+  const season = seasonForDay(state.day).id;
+  if (season !== musicSeason) {
+    musicSeason = season;
+    setMusicSeason(season);
   }
   const liste = targetList(state);
   if (secim >= liste.length) secim = Math.max(0, liste.length - 1);
@@ -434,18 +434,18 @@ function render() {
 
 // ---------------------------------------------------------------- klavye
 window.addEventListener("keydown", (e) => {
-  const yaziyor = document.activeElement instanceof HTMLInputElement;
-  if (yaziyor) return;
+  const typing = document.activeElement instanceof HTMLInputElement;
+  if (typing) return;
 
-  if (state.phase !== "gun") {
-    if ((e.code === "Space" || e.code === "Enter") && !workshopOpen && oda.role !== "misafir") {
+  if (state.phase !== "day") {
+    if ((e.code === "Space" || e.code === "Enter") && !workshopOpen && oda.role !== "guest") {
       e.preventDefault();
-      dispatch(state.phase === "menu" ? { kind: "gun_basla" } : { kind: "sonraki_gun" });
+      dispatch(state.phase === "menu" ? { kind: "start_day" } : { kind: "next_day" });
     }
     return;
   }
   const liste = targetList(state);
-  const oyuncu = keyboardPlayer();
+  const player = keyboardPlayer();
 
   switch (e.code) {
     case "ArrowLeft":
@@ -467,7 +467,7 @@ window.addEventListener("keydown", (e) => {
       e.preventDefault();
       keyboardActive = true;
       const target = liste[secim];
-      if (target) dispatch({ kind: "etkilesim", oyuncu, target });
+      if (target) dispatch({ kind: "interact", player, target });
       break;
     }
     case "ShiftLeft":
@@ -475,20 +475,20 @@ window.addEventListener("keydown", (e) => {
       e.preventDefault();
       keyboardActive = true;
       const target = liste[secim];
-      if (target?.startsWith("misafir:")) {
-        dispatch({ kind: "servis", oyuncu, guestId: target.slice(8) });
+      if (target?.startsWith("guest:")) {
+        dispatch({ kind: "serve", player, guestId: target.slice("guest:".length) });
       }
       break;
     }
     case "KeyM":
       sfxOn = toggleSfx();
-      arayuz.toast(sfxOn ? S.sfxOn : S.sesKapali);
+      arayuz.toast(sfxOn ? S.sfxOn : S.sfxOffLabel);
       render();
       break;
     case "KeyR":
       guideOn = !guideOn;
       storageSet("tsuki.rehber", guideOn ? "1" : "0");
-      arayuz.toast(guideOn ? S.guideOn : S.rehberKapali);
+      arayuz.toast(guideOn ? S.guideOn : S.guideOffLabel);
       render();
       break;
   }
@@ -502,12 +502,12 @@ function loop(t: number) {
   const dt = Math.min(0.1, (t - lastTime) / 1000);
   lastTime = t;
   // Misafir istemciler simülasyonu çalıştırmaz; durumu ev sahibinden alır.
-  if (state.phase === "gun" && oda.role !== "misafir") {
+  if (state.phase === "day" && oda.role !== "guest") {
     const events = apply(state, { kind: "tick", dt });
     if (events.length) handleEvents(events);
     broadcast();
     render();
-  } else if (oda.role === "misafir") {
+  } else if (oda.role === "guest") {
     render();
   }
   requestAnimationFrame(loop);
@@ -523,7 +523,7 @@ requestAnimationFrame(loop);
  * zamanlayıcıyı ~1 sn'ye kısar; dt sınırlı olduğu için oyun donmak yerine yavaşlar.
  */
 setInterval(() => {
-  if (!document.hidden || oda.role !== "host" || state.phase !== "gun") return;
+  if (!document.hidden || oda.role !== "host" || state.phase !== "day") return;
   const simdi = performance.now();
   const dt = Math.min(0.25, (simdi - lastTime) / 1000);
   lastTime = simdi;

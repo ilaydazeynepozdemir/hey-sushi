@@ -7,33 +7,33 @@ export interface Ingredient {
 }
 
 export const INGREDIENTS: Record<IngredientId, Ingredient> = {
-  pirinc: { name: m("Rice ball", "Pirinç topu"), icon: "pirinc" },
+  rice: { name: m("Rice ball", "Pirinç topu"), icon: "rice" },
   nori: { name: m("Nori", "Nori"), icon: "nori" },
-  cay: { name: m("Green tea", "Yeşil çay"), icon: "cay" },
-  dilim_somon: { name: m("Salmon slice", "Somon dilimi"), icon: "dilim_somon" },
-  dilim_ton: { name: m("Tuna slice", "Ton dilimi"), icon: "dilim_ton" },
-  dilim_avokado: { name: m("Avocado", "Avokado"), icon: "dilim_avokado" },
-  dilim_tamago: { name: m("Tamago", "Tamago"), icon: "dilim_tamago" },
+  tea: { name: m("Green tea", "Yeşil çay"), icon: "tea" },
+  salmon_slice: { name: m("Salmon slice", "Somon dilimi"), icon: "salmon_slice" },
+  tuna_slice: { name: m("Tuna slice", "Ton dilimi"), icon: "tuna_slice" },
+  avocado: { name: m("Avocado", "Avokado"), icon: "avocado" },
+  tamago: { name: m("Tamago", "Tamago"), icon: "tamago" },
   ikura: { name: m("Ikura", "İkura"), icon: "ikura" },
   tofu: { name: m("Tofu pouch", "Tofu kesesi"), icon: "tofu" },
   miso: { name: m("Miso soup", "Miso çorbası"), icon: "miso" },
   mochi: { name: m("Mochi", "Mochi"), icon: "mochi" },
-  maki_somon: { name: m("Salmon maki", "Somon maki"), icon: "maki_somon" },
-  maki_avokado: { name: m("Avocado maki", "Avokado maki"), icon: "maki_avokado" },
-  maki_ton: { name: m("Tuna maki", "Ton maki"), icon: "maki_ton" },
-  maki_tamago: { name: m("Tamago maki", "Tamago maki"), icon: "maki_tamago" },
-  dilim_karides: { name: m("Shrimp", "Karides"), icon: "dilim_karides" },
-  dilim_yilanbaligi: { name: m("Unagi", "Unagi"), icon: "dilim_yilanbaligi" },
-  dilim_salatalik: { name: m("Cucumber", "Salatalık"), icon: "dilim_salatalik" },
-  dilim_mango: { name: m("Mango", "Mango"), icon: "dilim_mango" },
-  krem_peynir: { name: m("Cream cheese", "Krem peynir"), icon: "krem_peynir" },
+  salmon_maki: { name: m("Salmon maki", "Somon maki"), icon: "salmon_maki" },
+  avocado_maki: { name: m("Avocado maki", "Avokado maki"), icon: "avocado_maki" },
+  tuna_maki: { name: m("Tuna maki", "Ton maki"), icon: "tuna_maki" },
+  tamago_maki: { name: m("Tamago maki", "Tamago maki"), icon: "tamago_maki" },
+  shrimp: { name: m("Shrimp", "Karides"), icon: "shrimp" },
+  unagi: { name: m("Unagi", "Unagi"), icon: "unagi" },
+  cucumber: { name: m("Cucumber", "Salatalık"), icon: "cucumber" },
+  mango: { name: m("Mango", "Mango"), icon: "mango" },
+  cream_cheese: { name: m("Cream cheese", "Krem peynir"), icon: "cream_cheese" },
   tempura: { name: m("Tempura", "Tempura"), icon: "tempura" },
-  maki_salatalik: { name: m("Kappa maki", "Kappa maki"), icon: "maki_salatalik" },
-  maki_mango: { name: m("Mango maki", "Mango maki"), icon: "maki_mango" },
-  maki_karides: { name: m("Shrimp maki", "Karides maki"), icon: "maki_karides" },
-  maki_krem: { name: m("Cream cheese maki", "Krem peynirli maki"), icon: "maki_krem" },
-  maki_tempura: { name: m("Tempura maki", "Tempura maki"), icon: "maki_tempura" },
-  ikram: { name: m("Welcome drink", "İkram içeceği"), icon: "ikram" },
+  kappa_maki: { name: m("Kappa maki", "Kappa maki"), icon: "kappa_maki" },
+  mango_maki: { name: m("Mango maki", "Mango maki"), icon: "mango_maki" },
+  shrimp_maki: { name: m("Shrimp maki", "Karides maki"), icon: "shrimp_maki" },
+  cream_maki: { name: m("Cream cheese maki", "Krem peynirli maki"), icon: "cream_maki" },
+  tempura_maki: { name: m("Tempura maki", "Tempura maki"), icon: "tempura_maki" },
+  treat: { name: m("Welcome drink", "İkram içeceği"), icon: "treat" },
 };
 
 export interface Dish {
@@ -53,29 +53,40 @@ export interface Dish {
 }
 
 export const DISHES: Record<string, Dish> = {
-  nigiri_somon: { name: m("Salmon Nigiri", "Somon Nigiri"), icon: "yemek_nigiri_somon", needs: ["pirinc", "dilim_somon"], hearts: 3, day: 1 },
-  cay: { name: m("Green Tea", "Yeşil Çay"), icon: "cay", needs: ["cay"], hearts: 1, day: 1 },
-  nigiri_ton: { name: m("Tuna Nigiri", "Ton Nigiri"), icon: "yemek_nigiri_ton", needs: ["pirinc", "dilim_ton"], hearts: 3, day: 2 },
-  maki_avokado: { name: m("Avocado Maki", "Avokado Maki"), icon: "yemek_maki_avokado", needs: ["maki_avokado"], hearts: 5, day: 2 },
-  nigiri_tamago: { name: m("Tamago Nigiri", "Tamago Nigiri"), icon: "yemek_nigiri_tamago", needs: ["pirinc", "dilim_tamago"], hearts: 4, day: 3 },
-  maki_somon: { name: m("Salmon Maki", "Somon Maki"), icon: "yemek_maki_somon", needs: ["maki_somon"], hearts: 6, day: 3 },
-  miso_corba: { name: m("Miso Soup", "Miso Çorbası"), icon: "miso", needs: ["miso"], hearts: 2, day: 2 },
-  sashimi_somon: { name: m("Salmon Sashimi", "Somon Sashimi"), icon: "yemek_sashimi", needs: ["dilim_somon", "dilim_somon"], hearts: 4, day: 3 },
-  inari: { name: m("Inari", "İnari"), icon: "yemek_inari", needs: ["tofu", "pirinc"], hearts: 4, day: 3 },
-  gunkan_ikura: { name: m("Ikura Gunkan", "İkura Gunkan"), icon: "yemek_gunkan", needs: ["pirinc", "nori", "ikura"], hearts: 7, day: 4 },
-  maki_ton: { name: m("Tuna Maki", "Ton Maki"), icon: "yemek_maki_ton", needs: ["maki_ton"], hearts: 6, day: 5 },
-  mochi_tatli: { name: m("Mochi", "Mochi"), icon: "mochi", needs: ["mochi"], hearts: 3, day: 5 },
-  maki_tamago: { name: m("Tamago Maki", "Tamago Maki"), icon: "yemek_maki_tamago", needs: ["maki_tamago"], hearts: 5, day: 6 },
-  nigiri_karides: { name: m("Shrimp Nigiri", "Karides Nigiri"), icon: "yemek_nigiri_karides", needs: ["pirinc", "dilim_karides"], hearts: 4, day: 6 },
-  kappa_maki: { name: m("Kappa Maki", "Kappa Maki"), icon: "yemek_maki_salatalik", needs: ["maki_salatalik"], hearts: 5, day: 6 },
-  unagi_nigiri: { name: m("Unagi Nigiri", "Unagi Nigiri"), icon: "yemek_nigiri_unagi", needs: ["pirinc", "dilim_yilanbaligi"], hearts: 6, day: 7 },
-  philadelphia: { name: m("Philadelphia", "Philadelphia"), icon: "yemek_maki_krem", needs: ["maki_krem", "dilim_somon"], hearts: 8, day: 7 },
-  mango_maki: { name: m("Mango Maki", "Mango Maki"), icon: "yemek_maki_mango", needs: ["maki_mango"], hearts: 6, day: 8 },
-  tempura_roll: { name: m("Tempura Roll", "Tempura Roll"), icon: "yemek_maki_tempura", needs: ["maki_tempura", "dilim_avokado"], hearts: 9, day: 9 },
-  karides_gunkan: { name: m("Shrimp Gunkan", "Karides Gunkan"), icon: "yemek_gunkan", needs: ["pirinc", "nori", "dilim_karides"], hearts: 7, day: 8 },
+  nigiri_salmon: { name: m("Salmon Nigiri", "Somon Nigiri"), icon: "dish_nigiri_salmon", needs: ["rice", "salmon_slice"], hearts: 3, day: 1 },
+  tea: { name: m("Green Tea", "Yeşil Çay"), icon: "tea", needs: ["tea"], hearts: 1, day: 1 },
+  nigiri_tuna: { name: m("Tuna Nigiri", "Ton Nigiri"), icon: "dish_nigiri_tuna", needs: ["rice", "tuna_slice"], hearts: 3, day: 2 },
+  avocado_maki: { name: m("Avocado Maki", "Avokado Maki"), icon: "dish_maki_avocado", needs: ["avocado_maki"], hearts: 5, day: 2 },
+  nigiri_tamago: { name: m("Tamago Nigiri", "Tamago Nigiri"), icon: "dish_nigiri_tamago", needs: ["rice", "tamago"], hearts: 4, day: 3 },
+  salmon_maki: { name: m("Salmon Maki", "Somon Maki"), icon: "dish_maki_salmon", needs: ["salmon_maki"], hearts: 6, day: 3 },
+  miso_soup: { name: m("Miso Soup", "Miso Çorbası"), icon: "miso", needs: ["miso"], hearts: 2, day: 2 },
+  sashimi_salmon: { name: m("Salmon Sashimi", "Somon Sashimi"), icon: "dish_sashimi", needs: ["salmon_slice", "salmon_slice"], hearts: 4, day: 3 },
+  inari: { name: m("Inari", "İnari"), icon: "dish_inari", needs: ["tofu", "rice"], hearts: 4, day: 3 },
+  gunkan_ikura: { name: m("Ikura Gunkan", "İkura Gunkan"), icon: "dish_gunkan", needs: ["rice", "nori", "ikura"], hearts: 7, day: 4 },
+  tuna_maki: { name: m("Tuna Maki", "Ton Maki"), icon: "dish_maki_tuna", needs: ["tuna_maki"], hearts: 6, day: 5 },
+  mochi_dessert: { name: m("Mochi", "Mochi"), icon: "mochi", needs: ["mochi"], hearts: 3, day: 5 },
+  tamago_maki: { name: m("Tamago Maki", "Tamago Maki"), icon: "dish_maki_tamago", needs: ["tamago_maki"], hearts: 5, day: 6 },
+  nigiri_shrimp: { name: m("Shrimp Nigiri", "Karides Nigiri"), icon: "dish_nigiri_shrimp", needs: ["rice", "shrimp"], hearts: 4, day: 6 },
+  kappa_maki: { name: m("Kappa Maki", "Kappa Maki"), icon: "dish_maki_cucumber", needs: ["kappa_maki"], hearts: 5, day: 6 },
+  nigiri_unagi: { name: m("Unagi Nigiri", "Unagi Nigiri"), icon: "dish_nigiri_unagi", needs: ["rice", "unagi"], hearts: 6, day: 7 },
+  philadelphia: { name: m("Philadelphia", "Philadelphia"), icon: "dish_maki_cream", needs: ["cream_maki", "salmon_slice"], hearts: 8, day: 7 },
+  mango_maki: { name: m("Mango Maki", "Mango Maki"), icon: "dish_maki_mango", needs: ["mango_maki"], hearts: 6, day: 8 },
+  tempura_roll: { name: m("Tempura Roll", "Tempura Roll"), icon: "dish_maki_tempura", needs: ["tempura_maki", "avocado"], hearts: 9, day: 9 },
+  gunkan_shrimp: { name: m("Shrimp Gunkan", "Karides Gunkan"), icon: "dish_gunkan", needs: ["rice", "nori", "shrimp"], hearts: 7, day: 8 },
 };
 
 const UNKNOWN_DISH: Dish = { name: m("?", "?"), icon: "empty", needs: [], hearts: 1, day: 1 };
+
+const UNKNOWN_INGREDIENT: Ingredient = { name: m("?", "?"), icon: "blank" };
+
+/**
+ * Güvenli malzeme erişimi. Eski bir kayıt artık var olmayan bir kimliğe
+ * işaret edebilir (kimlikler sürüm 0.2'de İngilizceye çevrildi); bu durumda
+ * oyun çökmek yerine boş bir simge gösterir.
+ */
+export function ingredient(id: string): Ingredient {
+  return INGREDIENTS[id as IngredientId] ?? UNKNOWN_INGREDIENT;
+}
 
 /** Güvenli erişim: menü çalışma anında genişleyebildiği için indeksleme yerine bunu kullan. */
 export function dish(id: string): Dish {
@@ -104,26 +115,26 @@ export interface Station {
 }
 
 export const STATIONS: Station[] = [
-  { id: "pirinc", name: m("Rice", "Pirinç"), icon: "ist_pirinc", day: 1, taps: 3, produces: "pirinc", description: m("Press and roll", "Bastır, yuvarla") },
-  { id: "nori", name: m("Nori", "Nori"), icon: "ist_nori", day: 1, taps: 1, produces: "nori", description: m("Take a sheet", "Raftan al") },
-  { id: "kesim_somon", name: m("Salmon", "Somon"), icon: "dilim_somon", day: 1, taps: 3, produces: "dilim_somon", description: m("Slice it", "Dilimle") },
-  { id: "cay", name: m("Tea", "Çay"), icon: "ist_cay", day: 1, taps: 2, produces: "cay", description: m("Steep it", "Demle") },
-  { id: "kesim_ton", name: m("Tuna", "Ton"), icon: "dilim_ton", day: 2, taps: 3, produces: "dilim_ton", description: m("Slice it", "Dilimle") },
-  { id: "kesim_avokado", name: m("Avocado", "Avokado"), icon: "dilim_avokado", day: 2, taps: 2, produces: "dilim_avokado", description: m("Slice it", "Dilimle") },
-  { id: "mat", name: m("Rolling Mat", "Sarma Matı"), icon: "ist_mat", day: 2, taps: 3, description: m("Nori + rice + filling → roll", "Nori + pirinç + iç → sar") },
-  { id: "miso", name: m("Miso", "Miso"), icon: "ist_miso", day: 2, taps: 2, produces: "miso", description: m("Ladle it out", "Kâseye koy") },
-  { id: "kesim_tamago", name: m("Tamago", "Tamago"), icon: "dilim_tamago", day: 3, taps: 3, produces: "dilim_tamago", description: m("Cook and cut", "Pişir, kes") },
-  { id: "tofu", name: m("Tofu", "Tofu"), icon: "ist_tofu", day: 3, taps: 2, produces: "tofu", description: m("Open the pouch", "Keseyi aç") },
+  { id: "rice", name: m("Rice", "Pirinç"), icon: "st_rice", day: 1, taps: 3, produces: "rice", description: m("Press and roll", "Bastır, yuvarla") },
+  { id: "nori", name: m("Nori", "Nori"), icon: "st_nori", day: 1, taps: 1, produces: "nori", description: m("Take a sheet", "Raftan al") },
+  { id: "cut_salmon", name: m("Salmon", "Somon"), icon: "salmon_slice", day: 1, taps: 3, produces: "salmon_slice", description: m("Slice it", "Dilimle") },
+  { id: "tea", name: m("Tea", "Çay"), icon: "st_tea", day: 1, taps: 2, produces: "tea", description: m("Steep it", "Demle") },
+  { id: "cut_tuna", name: m("Tuna", "Ton"), icon: "tuna_slice", day: 2, taps: 3, produces: "tuna_slice", description: m("Slice it", "Dilimle") },
+  { id: "cut_avocado", name: m("Avocado", "Avokado"), icon: "avocado", day: 2, taps: 2, produces: "avocado", description: m("Slice it", "Dilimle") },
+  { id: "mat", name: m("Rolling Mat", "Sarma Matı"), icon: "st_mat", day: 2, taps: 3, description: m("Nori + rice + filling → roll", "Nori + pirinç + iç → sar") },
+  { id: "miso", name: m("Miso", "Miso"), icon: "st_miso", day: 2, taps: 2, produces: "miso", description: m("Ladle it out", "Kâseye koy") },
+  { id: "cut_tamago", name: m("Tamago", "Tamago"), icon: "tamago", day: 3, taps: 3, produces: "tamago", description: m("Cook and cut", "Pişir, kes") },
+  { id: "tofu", name: m("Tofu", "Tofu"), icon: "st_tofu", day: 3, taps: 2, produces: "tofu", description: m("Open the pouch", "Keseyi aç") },
   { id: "ikura", name: m("Ikura", "İkura"), icon: "ikura", day: 4, taps: 2, produces: "ikura", description: m("Spoon it", "Kaşıkla") },
-  { id: "mochi", name: m("Mochi", "Mochi"), icon: "ist_mochi", day: 5, taps: 3, produces: "mochi", description: m("Knead and shape", "Yoğur, şekillendir") },
-  { id: "kesim_karides", name: m("Shrimp", "Karides"), icon: "dilim_karides", day: 6, taps: 3, produces: "dilim_karides", description: m("Peel and butterfly", "Ayıkla, aç") },
-  { id: "kesim_salatalik", name: m("Cucumber", "Salatalık"), icon: "dilim_salatalik", day: 6, taps: 2, produces: "dilim_salatalik", description: m("Slice thin", "İnce dilimle") },
-  { id: "kesim_yilanbaligi", name: m("Unagi", "Unagi"), icon: "dilim_yilanbaligi", day: 7, taps: 3, produces: "dilim_yilanbaligi", description: m("Glaze and grill", "Sosla, ızgara") },
-  { id: "krem_peynir", name: m("Cream Cheese", "Krem Peynir"), icon: "krem_peynir", day: 7, taps: 2, produces: "krem_peynir", description: m("Spoon it", "Kaşıkla") },
-  { id: "kesim_mango", name: m("Mango", "Mango"), icon: "dilim_mango", day: 8, taps: 2, produces: "dilim_mango", description: m("Peel and slice", "Soy, dilimle") },
+  { id: "mochi", name: m("Mochi", "Mochi"), icon: "st_mochi", day: 5, taps: 3, produces: "mochi", description: m("Knead and shape", "Yoğur, şekillendir") },
+  { id: "cut_shrimp", name: m("Shrimp", "Karides"), icon: "shrimp", day: 6, taps: 3, produces: "shrimp", description: m("Peel and butterfly", "Ayıkla, aç") },
+  { id: "cut_cucumber", name: m("Cucumber", "Salatalık"), icon: "cucumber", day: 6, taps: 2, produces: "cucumber", description: m("Slice thin", "İnce dilimle") },
+  { id: "cut_unagi", name: m("Unagi", "Unagi"), icon: "unagi", day: 7, taps: 3, produces: "unagi", description: m("Glaze and grill", "Sosla, ızgara") },
+  { id: "cream_cheese", name: m("Cream Cheese", "Krem Peynir"), icon: "cream_cheese", day: 7, taps: 2, produces: "cream_cheese", description: m("Spoon it", "Kaşıkla") },
+  { id: "cut_mango", name: m("Mango", "Mango"), icon: "mango", day: 8, taps: 2, produces: "mango", description: m("Peel and slice", "Soy, dilimle") },
   { id: "tempura", name: m("Tempura", "Tempura"), icon: "tempura", day: 9, taps: 3, produces: "tempura", description: m("Batter and fry", "Bandır, kızart") },
-  { id: "ikram", name: m("Treat", "İkram"), icon: "ist_ikram", day: 2, taps: 2, produces: "ikram", description: m("A drink on the house", "İkram içecek") },
-  { id: "atik", name: m("Compost", "Kompost"), icon: "ist_atik", day: 1, taps: 1, description: m("Drop what you hold", "Elindekini bırak") },
+  { id: "treat", name: m("Treat", "İkram"), icon: "st_treat", day: 2, taps: 2, produces: "treat", description: m("A drink on the house", "İkram içecek") },
+  { id: "compost", name: m("Compost", "Kompost"), icon: "st_compost", day: 1, taps: 1, description: m("Drop what you hold", "Elindekini bırak") },
 ];
 
 /**
@@ -136,7 +147,7 @@ export function stationsForDay(day: number, ekstra: StationId[] = []): Station[]
   return STATIONS.filter((i) => i.day <= day || acik.has(i.id));
 }
 
-/** Bir malzemeyi üreten istasyon (maki için sarma matı + iç malzemenin istasyonu). */
+/** Bir malzemeyi üreten station (maki için sarma matı + iç malzemenin istasyonu). */
 export function stationsForIngredient(ingredient: IngredientId): StationId[] {
   const dogrudan = STATIONS.find((i) => i.produces === ingredient);
   if (dogrudan) return [dogrudan.id];
@@ -154,15 +165,15 @@ export const STATION_MAP: Record<StationId, Station> = Object.fromEntries(
 
 /** Sarma matındaki üçlü → sonuç. */
 export const MAKI_RECIPES: { filling: IngredientId; sonuc: IngredientId }[] = [
-  { filling: "dilim_somon", sonuc: "maki_somon" },
-  { filling: "dilim_avokado", sonuc: "maki_avokado" },
-  { filling: "dilim_ton", sonuc: "maki_ton" },
-  { filling: "dilim_tamago", sonuc: "maki_tamago" },
-  { filling: "dilim_salatalik", sonuc: "maki_salatalik" },
-  { filling: "dilim_mango", sonuc: "maki_mango" },
-  { filling: "dilim_karides", sonuc: "maki_karides" },
-  { filling: "krem_peynir", sonuc: "maki_krem" },
-  { filling: "tempura", sonuc: "maki_tempura" },
+  { filling: "salmon_slice", sonuc: "salmon_maki" },
+  { filling: "avocado", sonuc: "avocado_maki" },
+  { filling: "tuna_slice", sonuc: "tuna_maki" },
+  { filling: "tamago", sonuc: "tamago_maki" },
+  { filling: "cucumber", sonuc: "kappa_maki" },
+  { filling: "mango", sonuc: "mango_maki" },
+  { filling: "shrimp", sonuc: "shrimp_maki" },
+  { filling: "cream_cheese", sonuc: "cream_maki" },
+  { filling: "tempura", sonuc: "tempura_maki" },
 ];
 
 /** Sarma matına "iç" olarak konabilecek malzemeler. */
@@ -190,8 +201,8 @@ export const CHARACTERS: Character[] = [
   {
     id: "deniz",
     name: m("Uncle Deniz", "Deniz Amca"),
-    face: "kar_deniz",
-    favorite: "nigiri_somon",
+    face: "ch_deniz",
+    favorite: "nigiri_salmon",
     patience: 46,
     greeting: [m("The nets came back empty this morning. I'm starving.", "Sabah ağları boş döndü, karnım aç."), m("The sea is calm today.", "Bugün deniz sakin.")],
     happy: [m("Bless your hands.", "Ellerine sağlık."), m("Now that's it.", "İşte bu.")],
@@ -200,10 +211,10 @@ export const CHARACTERS: Character[] = [
     story: [m("I fished this shore for forty years.", "40 yıl bu kıyıda balık tuttum."), m("Sold the boat last year. Still not sure that was right.", "Tekneyi geçen sene sattım. İyi mi ettim bilmiyorum."), m("Now I come here in the mornings. Not bad at all.", "Artık sabahları buraya geliyorum. Fena değil.")],
   },
   {
-    id: "yaz",
+    id: "summer",
     name: m("Yaz", "Yaz"),
-    face: "kar_yaz",
-    favorite: "maki_avokado",
+    face: "ch_yaz",
+    favorite: "avocado_maki",
     patience: 38,
     greeting: [m("Exam week... I should eat something.", "Sınav haftası... bir şeyler yesem iyi olacak."), m("My brain has stopped.", "Beynim durdu.")],
     happy: [m("That helped.", "Bu iyi geldi."), m("Thank you!", "Teşekkürler!")],
@@ -214,7 +225,7 @@ export const CHARACTERS: Character[] = [
   {
     id: "mira",
     name: m("Mira", "Mira"),
-    face: "kar_mira",
+    face: "ch_mira",
     favorite: "nigiri_tamago",
     patience: 42,
     greeting: [m("I couldn't draw a thing today.", "Bugün hiçbir şey çizemedim."), m("The light in here is lovely.", "Buranın ışığı güzel.")],
@@ -226,8 +237,8 @@ export const CHARACTERS: Character[] = [
   {
     id: "kaptan",
     name: m("Captain Ho", "Kaptan Ho"),
-    face: "kar_kaptan",
-    favorite: "maki_somon",
+    face: "ch_kaptan",
+    favorite: "salmon_maki",
     patience: 34,
     greeting: [m("The ferry leaves in twenty minutes.", "Feribot 20 dakikaya kalkıyor."), m("Make it quick, but make it good.", "Hızlı olsun, ama güzel olsun.")],
     happy: [m("Right on time.", "Tam vaktinde."), m("I earned this.", "Bunu hak etmiştim.")],
@@ -238,8 +249,8 @@ export const CHARACTERS: Character[] = [
   {
     id: "nen",
     name: m("Nen", "Nen"),
-    face: "kar_nen",
-    favorite: "nigiri_ton",
+    face: "ch_nen",
+    favorite: "nigiri_tuna",
     patience: 60,
     greeting: [m("...", "..."), m("*settles onto the counter*", "*tezgâha kurulur*")],
     happy: [m("*purrs*", "*mırlar*"), m("*tail flick*", "*kuyruk sallar*")],
@@ -250,8 +261,8 @@ export const CHARACTERS: Character[] = [
   {
     id: "efe",
     name: m("Efe", "Efe"),
-    face: "kar_efe",
-    favorite: "cay",
+    face: "ch_efe",
+    favorite: "tea",
     patience: 50,
     greeting: [m("One tea and a bit of quiet.", "Bir çay ve biraz sessizlik."), m("Deployed, then ran.", "Deploy ettim, kaçtım.")],
     happy: [m("Ah.", "Oh."), m("That hit the spot.", "İyi geldi bu.")],
@@ -262,7 +273,7 @@ export const CHARACTERS: Character[] = [
   {
     id: "poyraz",
     name: m("Poyraz", "Poyraz"),
-    face: "kar_poyraz",
+    face: "ch_poyraz",
     favorite: "gunkan_ikura",
     patience: 44,
     greeting: [m("Playing tonight — food first.", "Akşam çalacağım, önce bir şeyler yiyeyim."), m("Left my guitar outside, keep an eye on it.", "Gitarı dışarıda bıraktım, göz kulak ol.")],
@@ -274,8 +285,8 @@ export const CHARACTERS: Character[] = [
   {
     id: "ada",
     name: m("Ada", "Ada"),
-    face: "kar_ada",
-    favorite: "mochi_tatli",
+    face: "ch_ada",
+    favorite: "mochi_dessert",
     patience: 30,
     greeting: [m("Mum's coming in a minute!", "Annem birazdan gelecek!"), m("Can I see behind the counter?", "Tezgâhın arkasını görebilir miyim?")],
     happy: [m("Yayy!", "Yaşasın!"), m("One more?", "Bir tane daha?")],
@@ -294,7 +305,7 @@ export const PLAYER_NAMES = ["Mavi", "Sarı", "Yeşil", "Mor"];
 
 
 // ---------------------------------------------------------------- mevsimler
-export type SeasonId = "ilkbahar" | "yaz" | "sonbahar" | "kis";
+export type SeasonId = "spring" | "summer" | "autumn" | "winter";
 
 export interface Season {
   id: SeasonId;
@@ -305,26 +316,26 @@ export interface Season {
   hills: string;
   farHills: string;
   sea: string;
-  /** Havada süzülen parçacık ("cicek" | "yaprak" | "kar" | "atesbocegi"). */
-  particle: "cicek" | "yaprak" | "kar" | "atesbocegi";
+  /** Havada süzülen parçacık ("flower" | "yaprak" | "kar" | "atesbocegi"). */
+  particle: "flower" | "yaprak" | "kar" | "atesbocegi";
   particleColors: string[];
   greeting: Localized;
 }
 
 export const SEASONS: Season[] = [
   {
-    id: "ilkbahar",
+    id: "spring",
     name: m("Spring", "İlkbahar"),
     sky: ["#FFF3F0", "#FFE6E4", "#FCE4D8"],
     hills: "#CDE3C4",
     farHills: "#DCEAD8",
     sea: "#CFE3EC",
-    particle: "cicek",
+    particle: "flower",
     particleColors: ["#FFC9D4", "#FFDCE3", "#FFB9C6"],
     greeting: m("Cherry blossoms have fallen; the town is pink.", "Kiraz çiçekleri döküldü, kasaba pembe."),
   },
   {
-    id: "yaz",
+    id: "summer",
     name: m("Summer", "Yaz"),
     sky: ["#FFF8EC", "#FFEFD6", "#FFE3C8"],
     hills: "#BEDCA8",
@@ -335,7 +346,7 @@ export const SEASONS: Season[] = [
     greeting: m("Long evenings, warm sea.", "Akşamlar uzun, deniz ılık."),
   },
   {
-    id: "sonbahar",
+    id: "autumn",
     name: m("Autumn", "Sonbahar"),
     sky: ["#FFF1E4", "#FFE2CE", "#F7D6C4"],
     hills: "#E8C79B",
@@ -346,7 +357,7 @@ export const SEASONS: Season[] = [
     greeting: m("The wind carries leaves all the way to the counter.", "Rüzgâr yaprakları tezgâha kadar getiriyor."),
   },
   {
-    id: "kis",
+    id: "winter",
     name: m("Winter", "Kış"),
     sky: ["#F4F6FB", "#EAEFF8", "#E4EAF4"],
     hills: "#E8EEF4",
@@ -379,21 +390,21 @@ export interface Decor {
 }
 
 export const DECOR_ITEMS: Decor[] = [
-  { id: "cicek_vazo", name: m("Flower Vase", "Çiçek Vazosu"), description: m("A little vase at the end of the counter.", "Tezgâhın ucunda küçük bir vazo."), price: 40, warmth: 0.05, icon: "dek_vazo", spot: "counter" },
-  { id: "noren", name: m("Noren Curtain", "Noren Perdesi"), description: m("Indigo cloth hung at the door.", "Kapıya asılan indigo bez."), price: 55, warmth: 0.05, icon: "dek_noren", spot: "tavan" },
-  { id: "bonsai", name: m("Bonsai", "Bonsai"), description: m("A tiny tree, patiently pruned.", "Sabırla budanmış minik bir ağaç."), price: 70, warmth: 0.06, icon: "dek_bonsai", spot: "sol" },
-  { id: "kedi_yatagi", name: m("Cat Bed", "Kedi Yatağı"), description: m("For Nen. Nen earned this.", "Nen için. Nen bunu hak etti."), price: 85, warmth: 0.07, icon: "dek_kedi_yatagi", spot: "sag" },
-  { id: "fener_dizisi", name: m("String of Lanterns", "Fener Dizisi"), description: m("Paper lanterns strung from the ceiling.", "Tavandan sarkan kâğıt fenerler."), price: 100, warmth: 0.08, icon: "dek_fener_dizisi", spot: "tavan" },
-  { id: "maneki", name: m("Maneki Neko", "Maneki Neko"), description: m("The waving lucky cat.", "El sallayan uğur kedisi."), price: 120, warmth: 0.08, icon: "dek_maneki", spot: "counter" },
-  { id: "pencere", name: m("Sea Window", "Deniz Penceresi"), description: m("You cut the wall open to the sea.", "Duvarı kesip denize açtın."), price: 160, warmth: 0.10, icon: "dek_pencere", spot: "sol" },
-  { id: "kagit_lamba", name: m("Paper Lamp", "Kâğıt Lamba"), description: m("A soft, yellow light.", "Yumuşak, sarı bir ışık."), price: 140, warmth: 0.09, icon: "dek_lamba", spot: "sag" },
+  { id: "flower_vase", name: m("Flower Vase", "Çiçek Vazosu"), description: m("A little vase at the end of the counter.", "Tezgâhın ucunda küçük bir vazo."), price: 40, warmth: 0.05, icon: "dec_vase", spot: "counter" },
+  { id: "noren", name: m("Noren Curtain", "Noren Perdesi"), description: m("Indigo cloth hung at the door.", "Kapıya asılan indigo bez."), price: 55, warmth: 0.05, icon: "dec_noren", spot: "tavan" },
+  { id: "bonsai", name: m("Bonsai", "Bonsai"), description: m("A tiny tree, patiently pruned.", "Sabırla budanmış minik bir ağaç."), price: 70, warmth: 0.06, icon: "dec_bonsai", spot: "sol" },
+  { id: "cat_bed", name: m("Cat Bed", "Kedi Yatağı"), description: m("For Nen. Nen earned this.", "Nen için. Nen bunu hak etti."), price: 85, warmth: 0.07, icon: "dec_cat_bed", spot: "sag" },
+  { id: "lantern_string", name: m("String of Lanterns", "Fener Dizisi"), description: m("Paper lanterns strung from the ceiling.", "Tavandan sarkan kâğıt fenerler."), price: 100, warmth: 0.08, icon: "dec_lanterns", spot: "tavan" },
+  { id: "maneki", name: m("Maneki Neko", "Maneki Neko"), description: m("The waving lucky cat.", "El sallayan uğur kedisi."), price: 120, warmth: 0.08, icon: "dec_maneki", spot: "counter" },
+  { id: "sea_window", name: m("Sea Window", "Deniz Penceresi"), description: m("You cut the wall open to the sea.", "Duvarı kesip denize açtın."), price: 160, warmth: 0.10, icon: "dec_window", spot: "sol" },
+  { id: "paper_lamp", name: m("Paper Lamp", "Kâğıt Lamba"), description: m("A soft, yellow light.", "Yumuşak, sarı bir ışık."), price: 140, warmth: 0.09, icon: "dec_lamp", spot: "sag" },
   {
-    id: "servis_botu",
+    id: "service_bot",
     name: m("Service Bot", "Servis Botu"),
     description: m("Keeps handing out drinks so guests stay cheerful.", "Sürekli içecek dağıtır, misafirlerin keyfi yerinde kalır."),
     price: 260,
     warmth: 0.04,
-    icon: "dek_bot",
+    icon: "dec_bot",
     spot: "sag",
     effect: "bot",
   },

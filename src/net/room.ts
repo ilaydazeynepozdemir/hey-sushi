@@ -3,7 +3,7 @@
  * yürütür (host-authoritative). Bu yüzden burada oyun mantığı yok — sadece
  * bağlantı, kimlik ve mesaj taşıma.
  */
-export type NetRole = "off" | "host" | "misafir";
+export type NetRole = "off" | "host" | "guest";
 
 export interface RoomCallbacks {
   onState(veri: unknown): void;
@@ -88,7 +88,7 @@ export class Oda {
         this.events.onChanged();
         break;
       case "katildi":
-        this.role = "misafir";
+        this.role = "guest";
         this.code = String(m.code);
         this.events.onChanged();
         break;
@@ -116,7 +116,7 @@ export class Oda {
         this.events.onClosed(String(m.sebep ?? "oda kapandı"));
         this.events.onChanged();
         break;
-      case "hata":
+      case "error":
         this.events.onError(String(m.onMessage));
         break;
     }

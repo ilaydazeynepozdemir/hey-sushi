@@ -18,7 +18,9 @@
     "dev:ag": "vite --host",
     "build:web": "PAGES=1 vite build",
     "screenshots": "node scripts/screenshots.mjs",
-    "version": "node scripts/version.mjs"
+    "version": "node scripts/version.mjs",
+    "ekran": "node scripts/screenshots.mjs",
+    "surum": "node scripts/version.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

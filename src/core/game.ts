@@ -95,12 +95,12 @@ function seatCount(day: number) {
 // ---------------------------------------------------------------- yardımcılar
 
 function multisetDiff(a: IngredientId[], b: IngredientId[]): IngredientId[] {
-  const kalan = [...b];
+  const remaining = [...b];
   const eksik: IngredientId[] = [];
   for (const x of a) {
-    const i = kalan.indexOf(x);
+    const i = remaining.indexOf(x);
     if (i === -1) eksik.push(x);
-    else kalan.splice(i, 1);
+    else remaining.splice(i, 1);
   }
   return eksik;
 }
@@ -133,14 +133,14 @@ function spawnGuest(s: GameState, seat: number): Guest {
   const seatedCharacters = new Set(s.guests.map((m) => m.characterId));
   const havuz = CHARACTERS.filter((k) => !seatedCharacters.has(k.id));
   const liste = havuz.length ? havuz : CHARACTERS;
-  const karakter = liste[Math.floor(rnd() * liste.length)] ?? CHARACTERS[0]!;
+  const characterLabel = liste[Math.floor(rnd() * liste.length)] ?? CHARACTERS[0]!;
 
   const menu = menuForDay(s.day);
   const order: DishId[] = [];
 
   // Karakterin favorisi menüdeyse sık sık onu ister — hikâye bağı için.
   const favoriSansi = menu.length <= 2 ? 0.2 : 0.45;
-  if (menu.includes(karakter.favorite) && rnd() < favoriSansi) order.push(karakter.favorite);
+  if (menu.includes(characterLabel.favorite) && rnd() < favoriSansi) order.push(characterLabel.favorite);
 
   // Aynı anda oturan misafirler mümkün olduğunca farklı şey istesin.
   const masadaOlanlar = new Set(s.guests.flatMap((x) => x.order));
@@ -154,20 +154,20 @@ function spawnGuest(s: GameState, seat: number): Guest {
     if (y) order.push(y);
   }
   // İkinci gün ve sonrası: ara sıra yanına çay.
-  if (s.day >= 2 && order.length < 3 && rnd() < 0.25 && !order.includes("cay")) {
-    order.push("cay");
+  if (s.day >= 2 && order.length < 3 && rnd() < 0.25 && !order.includes("tea")) {
+    order.push("tea");
   }
 
-  const greeting = karakter.greeting[Math.floor(rnd() * karakter.greeting.length)] ?? null;
+  const greeting = characterLabel.greeting[Math.floor(rnd() * characterLabel.greeting.length)] ?? null;
 
   return {
     id: nextId(),
-    characterId: karakter.id,
+    characterId: characterLabel.id,
     seat,
     order,
     tray: [],
     waited: 0,
-    patience: karakter.patience * warmthMultiplier(s.decor),
+    patience: characterLabel.patience * warmthMultiplier(s.decor),
     state: "pending",
     line: greeting,
     lineTimer: 3,
@@ -178,8 +178,8 @@ function spawnGuest(s: GameState, seat: number): Guest {
 
 export function apply(s: GameState, a: Action): GameEvent[] {
   switch (a.kind) {
-    case "gun_basla":
-      s.phase = "gun";
+    case "start_day":
+      s.phase = "day";
       s.elapsed = 0;
       s.dayHearts = 0;
       s.guests = [];
@@ -198,15 +198,15 @@ export function apply(s: GameState, a: Action): GameEvent[] {
       }
       return [];
 
-    case "dekor_al": {
+    case "buy_decor": {
       const d = DECOR_MAP[a.id];
       if (!d || s.decor.includes(a.id) || s.coins < d.price) return [];
       s.coins -= d.price;
       s.decor.push(a.id);
-      return [{ kind: "dekor_alindi", id: a.id }];
+      return [{ kind: "decor_bought", id: a.id }];
     }
 
-    case "sonraki_gun":
+    case "next_day":
       s.day += 1;
       s.phase = "menu";
       return [];
@@ -214,16 +214,16 @@ export function apply(s: GameState, a: Action): GameEvent[] {
     case "tick":
       return tick(s, a.dt);
 
-    case "etkilesim":
-      return interact(s, a.oyuncu, a.target);
+    case "interact":
+      return interact(s, a.player, a.target);
 
-    case "servis":
-      return served(s, a.oyuncu, a.guestId);
+    case "serve":
+      return served(s, a.player, a.guestId);
   }
 }
 
 function tick(s: GameState, dt: number): GameEvent[] {
-  if (s.phase !== "gun") return [];
+  if (s.phase !== "day") return [];
   const events: GameEvent[] = [];
   s.elapsed += dt;
 
@@ -241,7 +241,7 @@ function tick(s: GameState, dt: number): GameEvent[] {
         m.line = k?.farewell ?? m2("Some other time.", "Başka zaman.");
         m.lineTimer = 2.5;
         s.stats.leftEarly += 1;
-        events.push({ kind: "misafir_gitti", guestId: m.id });
+        events.push({ kind: "guest_left", guestId: m.id });
       }
     } else {
       m.lineTimer -= 0;
@@ -264,7 +264,7 @@ function tick(s: GameState, dt: number): GameEvent[] {
         .sort((a, b) => b.waited / b.patience - a.waited / a.patience)[0];
       if (target) {
         target.waited = Math.max(0, target.waited - target.patience * BOT_EFFECT);
-        events.push({ kind: "ikram", guestId: target.id, oyuncu: 0, bot: true });
+        events.push({ kind: "treat", guestId: target.id, player: 0, bot: true });
       }
     }
   }
@@ -273,108 +273,108 @@ function tick(s: GameState, dt: number): GameEvent[] {
   s.spawnTimer -= dt;
   const takenSeats = new Set(s.guests.map((m) => m.seat));
   if (s.spawnTimer <= 0 && s.guestsArrived < s.guestTarget) {
-    let bos = -1;
+    let blank = -1;
     for (let i = 0; i < s.seatCount; i++) {
       if (!takenSeats.has(i)) {
-        bos = i;
+        blank = i;
         break;
       }
     }
-    if (bos >= 0) {
-      const m = spawnGuest(s, bos);
+    if (blank >= 0) {
+      const m = spawnGuest(s, blank);
       s.guests.push(m);
       s.guestsArrived += 1;
       const rnd = mulberry32(s.seed + s.guestsArrived * 31);
       s.spawnTimer = 4 + rnd() * 5 - Math.min(2, s.day * 0.3);
-      events.push({ kind: "misafir_geldi", guestId: m.id });
+      events.push({ kind: "guest_arrived", guestId: m.id });
     }
   }
 
   if (s.guestsArrived >= s.guestTarget && s.guests.length === 0) {
-    s.phase = "gun_sonu";
+    s.phase = "day_end";
     s.coins += s.dayHearts;
-    events.push({ kind: "gun_bitti" });
+    events.push({ kind: "day_over" });
   }
 
   return events;
 }
 
 function interact(s: GameState, playerId: PlayerId, target: string): GameEvent[] {
-  if (s.phase !== "gun") return [];
-  const oyuncu = s.players.find((o) => o.id === playerId);
-  if (!oyuncu) return [];
+  if (s.phase !== "day") return [];
+  const player = s.players.find((o) => o.id === playerId);
+  if (!player) return [];
 
-  if (target.startsWith("misafir:")) {
-    return trayInteract(s, oyuncu, target.slice("misafir:".length));
+  if (target.startsWith("guest:")) {
+    return trayInteract(s, player, target.slice("guest:".length));
   }
 
   const ist = STATION_MAP[target as keyof typeof STATION_MAP];
   if (!ist) return [];
 
-  if (ist.id === "atik") {
-    if (!oyuncu.hand) return [{ kind: "hata", onMessage: S.hataElBos, oyuncu: playerId }];
-    oyuncu.hand = null;
-    return [{ kind: "birakildi", oyuncu: playerId }];
+  if (ist.id === "compost") {
+    if (!player.hand) return [{ kind: "error", onMessage: S.errHandsEmpty, player: playerId }];
+    player.hand = null;
+    return [{ kind: "dropped", player: playerId }];
   }
 
-  if (ist.id === "mat") return matInteract(s, oyuncu);
+  if (ist.id === "mat") return matInteract(s, player);
 
   // Üretim istasyonları
-  if (oyuncu.hand) {
-    return [{ kind: "hata", onMessage: S.hataElDolu, oyuncu: playerId }];
+  if (player.hand) {
+    return [{ kind: "error", onMessage: S.errHandsFull, player: playerId }];
   }
   const su = (s.progress[ist.id] ?? 0) + 1;
-  oyuncu.contributions += 1;
+  player.contributions += 1;
   if (su >= ist.taps && ist.produces) {
     s.progress[ist.id] = 0;
-    oyuncu.hand = ist.produces;
+    player.hand = ist.produces;
     return [
       { kind: "tick", target: ist.id },
-      { kind: "uretildi", ingredient: ist.produces, oyuncu: playerId },
+      { kind: "produced", ingredient: ist.produces, player: playerId },
     ];
   }
   s.progress[ist.id] = su;
   return [{ kind: "tick", target: ist.id }];
 }
 
-function matInteract(s: GameState, oyuncu: Player): GameEvent[] {
+function matInteract(s: GameState, player: Player): GameEvent[] {
   const ist = STATION_MAP.mat;
 
-  if (oyuncu.hand) {
-    if (s.matResult) return [{ kind: "hata", onMessage: S.hataMatDolu, oyuncu: oyuncu.id }];
-    const m = oyuncu.hand;
-    const gecerli = m === "nori" || m === "pirinc" || isMakiFilling(m);
-    if (!gecerli) return [{ kind: "hata", onMessage: S.hataMataGitmez, oyuncu: oyuncu.id }];
+  if (player.hand) {
+    if (s.matResult) return [{ kind: "error", onMessage: S.errMatFull, player: player.id }];
+    const m = player.hand;
+    const gecerli = m === "nori" || m === "rice" || isMakiFilling(m);
+    if (!gecerli) return [{ kind: "error", onMessage: S.errNotForMat, player: player.id }];
     const ayniTip = s.matSlots.some((x) => (isMakiFilling(m) ? isMakiFilling(x) : x === m));
-    if (ayniTip) return [{ kind: "hata", onMessage: S.hataMattaVar, oyuncu: oyuncu.id }];
+    if (ayniTip) return [{ kind: "error", onMessage: S.errAlreadyOnMat, player: player.id }];
     s.matSlots.push(m);
-    oyuncu.hand = null;
-    oyuncu.contributions += 1;
-    return [{ kind: "mata_kondu", ingredient: m, oyuncu: oyuncu.id }];
+    player.hand = null;
+    player.contributions += 1;
+    return [{ kind: "placed_on_mat", ingredient: m, player: player.id }];
   }
 
   if (s.matResult) {
-    oyuncu.hand = s.matResult;
+    player.hand = s.matResult;
     s.matResult = null;
-    return [{ kind: "uretildi", ingredient: oyuncu.hand, oyuncu: oyuncu.id }];
+    return [{ kind: "produced", ingredient: player.hand, player: player.id }];
   }
 
   const filling = s.matSlots.find((x) => isMakiFilling(x));
-  const tam = s.matSlots.includes("nori") && s.matSlots.includes("pirinc") && filling;
+  const tam = s.matSlots.includes("nori") && s.matSlots.includes("rice") && filling;
   if (tam) {
     const su = (s.progress.mat ?? 0) + 1;
-    oyuncu.contributions += 1;
+    player.contributions += 1;
     if (su >= ist.taps) {
       const tarif = MAKI_RECIPES.find((t) => t.filling === filling);
       s.progress.mat = 0;
       s.matSlots = [];
       if (!tarif) {
-        return [{ kind: "hata", onMessage: S.hataMakiOlmuyor, oyuncu: oyuncu.id }];
+        return [{ kind: "error", onMessage: S.errNoMaki, player: player.id }];
       }
-      oyuncu.hand = tarif.sonuc;
+      player.hand = tarif.sonuc;
       return [
         { kind: "tick", target: "mat" },
-        { kind: "uretildi", ingredient: tarif.sonuc, oyuncu: oyuncu.id },
+        { kind: "produced", ingredient: tarif.sonuc, player: player.id },
       ];
     }
     s.progress.mat = su;
@@ -383,40 +383,40 @@ function matInteract(s: GameState, oyuncu: Player): GameEvent[] {
 
   const son = s.matSlots.pop();
   if (son) {
-    oyuncu.hand = son;
+    player.hand = son;
     return [{ kind: "tick", target: "mat" }];
   }
-  return [{ kind: "hata", onMessage: S.hataMatBos, oyuncu: oyuncu.id }];
+  return [{ kind: "error", onMessage: S.errMatEmpty, player: player.id }];
 }
 
-function trayInteract(s: GameState, oyuncu: Player, guestId: string): GameEvent[] {
+function trayInteract(s: GameState, player: Player, guestId: string): GameEvent[] {
   const m = s.guests.find((x) => x.id === guestId);
   if (!m || m.state !== "pending") return [];
 
-  if (oyuncu.hand) {
+  if (player.hand) {
     // İkram siparişin parçası değil: tepsiye girmez, misafirin keyfini tazeler.
-    if (oyuncu.hand === "ikram") {
-      oyuncu.hand = null;
-      oyuncu.contributions += 1;
+    if (player.hand === "treat") {
+      player.hand = null;
+      player.contributions += 1;
       m.waited = Math.max(0, m.waited - m.patience * TREAT_EFFECT);
-      return [{ kind: "ikram", guestId, oyuncu: oyuncu.id, bot: false }];
+      return [{ kind: "treat", guestId, player: player.id, bot: false }];
     }
     if (m.tray.length >= TRAY_LIMIT) {
-      return [{ kind: "hata", onMessage: S.hataTepsiDolu, oyuncu: oyuncu.id }];
+      return [{ kind: "error", onMessage: S.errTrayFull, player: player.id }];
     }
-    const ingredient = oyuncu.hand;
-    m.tray.push({ ingredient, placedBy: oyuncu.id });
-    oyuncu.hand = null;
-    oyuncu.contributions += 1;
-    return [{ kind: "tepsiye_kondu", guestId, ingredient, oyuncu: oyuncu.id }];
+    const ingredient = player.hand;
+    m.tray.push({ ingredient, placedBy: player.id });
+    player.hand = null;
+    player.contributions += 1;
+    return [{ kind: "placed_on_tray", guestId, ingredient, player: player.id }];
   }
 
   const son = m.tray.pop();
   if (son) {
-    oyuncu.hand = son.ingredient;
-    return [{ kind: "tepsiden_alindi", guestId, ingredient: son.ingredient, oyuncu: oyuncu.id }];
+    player.hand = son.ingredient;
+    return [{ kind: "taken_from_tray", guestId, ingredient: son.ingredient, player: player.id }];
   }
-  return [{ kind: "hata", onMessage: S.hataTepsiBos, oyuncu: oyuncu.id }];
+  return [{ kind: "error", onMessage: S.errTrayEmpty, player: player.id }];
 }
 
 function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] {
@@ -429,13 +429,13 @@ function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] 
 
   if (eksik.length > 0) {
     // Ceza yok: misafir bekler, tepsi durur.
-    m.line = S.misafirBekler;
+    m.line = S.guestWillWait;
     m.lineTimer = 2;
-    return [{ kind: "eksik", guestId }];
+    return [{ kind: "incomplete", guestId }];
   }
 
   const fazla = multisetDiff(tray, needs);
-  const karakter = CHARACTER_MAP[m.characterId];
+  const characterLabel = CHARACTER_MAP[m.characterId];
   const ruh = moodMultiplier(m);
   const koyanlar = new Set(m.tray.map((t) => t.placedBy));
   const together = koyanlar.size >= 2;
@@ -445,12 +445,12 @@ function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] 
   if (together) hearts *= 1.5;
   if (fazla.length) hearts *= 0.8;
 
-  const favoriVar = karakter ? m.order.includes(karakter.favorite) : false;
+  const favoriVar = characterLabel ? m.order.includes(characterLabel.favorite) : false;
   if (favoriVar) hearts += 2;
 
-  const toplam = Math.max(1, Math.round(hearts));
-  s.hearts += toplam;
-  s.dayHearts += toplam;
+  const total = Math.max(1, Math.round(hearts));
+  s.hearts += total;
+  s.dayHearts += total;
   s.stats.served += 1;
   if (together) s.stats.together += 1;
   const perfect = fazla.length === 0 && ruh >= 1.2;
@@ -458,21 +458,21 @@ function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] 
 
   m.state = "happy";
   m.tray = [];
-  if (karakter) {
-    const hikayeSatiri = karakter.story[Math.min(karakter.story.length - 1, s.day - 1)];
+  if (characterLabel) {
+    const hikayeSatiri = characterLabel.story[Math.min(characterLabel.story.length - 1, s.day - 1)];
     m.line = favoriVar
-      ? karakter.favoriteLine
-      : (karakter.happy[toplam % karakter.happy.length] ?? m2("Thank you.", "Teşekkürler."));
+      ? characterLabel.favoriteLine
+      : (characterLabel.happy[total % characterLabel.happy.length] ?? m2("Thank you.", "Teşekkürler."));
     if (s.day >= 2 && hikayeSatiri && (s.stats.served + s.day) % 2 === 0) {
       m.line = hikayeSatiri;
     }
   }
   m.lineTimer = 3;
 
-  const oyuncu = s.players.find((o) => o.id === playerId);
-  if (oyuncu) oyuncu.contributions += 1;
+  const player = s.players.find((o) => o.id === playerId);
+  if (player) player.contributions += 1;
 
-  return [{ kind: "servis", guzel: perfect, hearts: toplam, together, guestId }];
+  return [{ kind: "serve", guzel: perfect, hearts: total, together, guestId }];
 }
 
 /** Tepsideki malzemelerle siparişteki hangi yemekler tamamlanmış? (sırayla, açgözlü eşleme) */
@@ -498,8 +498,8 @@ export function readyToServe(order: DishId[], tray: IngredientId[]): boolean {
 
 
 /** Bir tarifin gerektirdiği istasyonları (kapalıysa) açar. */
-export function unlockStations(s: GameState, istasyonlar: StationId[]) {
-  for (const id of istasyonlar) {
+export function unlockStations(s: GameState, stations: StationId[]) {
+  for (const id of stations) {
     if (!s.extraStations.includes(id)) s.extraStations.push(id);
   }
 }

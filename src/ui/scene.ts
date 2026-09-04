@@ -29,12 +29,12 @@ export class Sahne {
     ana.appendChild(this.kok);
   }
 
-  guncelle(mevsim: Season, decor: string[]) {
-    if (this.lastSeason !== mevsim.id) {
-      this.lastSeason = mevsim.id;
-      this.sky.style.background = `linear-gradient(180deg, ${mevsim.sky[0]} 0%, ${mevsim.sky[1]} 46%, ${mevsim.sky[2]} 100%)`;
-      this.manzara.innerHTML = sceneryScg(mevsim);
-      this.buildParticles(mevsim);
+  update(season: Season, decor: string[]) {
+    if (this.lastSeason !== season.id) {
+      this.lastSeason = season.id;
+      this.sky.style.background = `linear-gradient(180deg, ${season.sky[0]} 0%, ${season.sky[1]} 46%, ${season.sky[2]} 100%)`;
+      this.manzara.innerHTML = sceneryScg(season);
+      this.buildParticles(season);
     }
     const imza = decor.join(",");
     if (this.lastDecor !== imza) {
@@ -43,16 +43,16 @@ export class Sahne {
     }
   }
 
-  private buildParticles(mevsim: Season) {
+  private buildParticles(season: Season) {
     this.parcaciklar.innerHTML = "";
-    this.parcaciklar.dataset.kind = mevsim.particle;
+    this.parcaciklar.dataset.kind = season.particle;
     for (let i = 0; i < PARTICLE_COUNT; i++) {
-      const p = div(`particle ${mevsim.particle}`);
-      const boyut = mevsim.particle === "kar" ? 4 + Math.random() * 5 : 6 + Math.random() * 7;
+      const p = div(`particle ${season.particle}`);
+      const boyut = season.particle === "kar" ? 4 + Math.random() * 5 : 6 + Math.random() * 7;
       p.style.width = `${boyut}px`;
-      p.style.height = `${mevsim.particle === "yaprak" ? boyut * 0.7 : boyut}px`;
+      p.style.height = `${season.particle === "yaprak" ? boyut * 0.7 : boyut}px`;
       p.style.left = `${Math.random() * 100}%`;
-      p.style.background = mevsim.particleColors[i % mevsim.particleColors.length]!;
+      p.style.background = season.particleColors[i % season.particleColors.length]!;
       p.style.animationDuration = `${9 + Math.random() * 12}s`;
       p.style.animationDelay = `${-Math.random() * 20}s`;
       p.style.setProperty("--sapma", `${(Math.random() * 2 - 1) * 70}px`);
@@ -62,7 +62,7 @@ export class Sahne {
 
   private buildDecor(decor: string[]) {
     this.decorLayer.innerHTML = "";
-    const sayac: Record<string, number> = { sol: 0, sag: 0, tavan: 0, tezgah: 0 };
+    const sayac: Record<string, number> = { sol: 0, sag: 0, tavan: 0, counterRow: 0 };
     for (const id of decor) {
       const d = DECOR_MAP[id];
       if (!d) continue;

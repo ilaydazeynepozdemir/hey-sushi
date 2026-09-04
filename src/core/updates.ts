@@ -38,10 +38,10 @@ export interface UpdateHooks {
   hazir(manifest: Manifest): void;
 }
 
-let bekleyen: { manifest: Manifest; id: string } | null = null;
+let waiting: { manifest: Manifest; id: string } | null = null;
 
-function isNewerVersion(yeni: string, mevcut: string): boolean {
-  const a = yeni.split(".").map((n) => parseInt(n, 10) || 0);
+function isNewerVersion(next: string, mevcut: string): boolean {
+  const a = next.split(".").map((n) => parseInt(n, 10) || 0);
   const b = mevcut.split(".").map((n) => parseInt(n, 10) || 0);
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
     const x = a[i] ?? 0;
@@ -81,7 +81,7 @@ export async function startUpdates(kanca: UpdateHooks) {
     if (!isNewerVersion(manifest.version, currentVersion())) return;
 
     const paket = await CapacitorUpdater.download({ url: manifest.url, version: manifest.version });
-    bekleyen = { manifest, id: paket.id };
+    waiting = { manifest, id: paket.id };
 
     if (manifest.silent) {
       // Sessiz mod: kullanıcı uygulamayı bir dahaki açışında yeni paket devrede.
@@ -96,9 +96,9 @@ export async function startUpdates(kanca: UpdateHooks) {
 
 /** Kullanıcı "şimdi güncelle" dedi. */
 export async function applyUpdate() {
-  if (!bekleyen) return;
+  if (!waiting) return;
   try {
-    await CapacitorUpdater.set({ id: bekleyen.id });
+    await CapacitorUpdater.set({ id: waiting.id });
   } catch {
     /* uygulanamazsa mevcut paket kalır */
   }
@@ -106,11 +106,11 @@ export async function applyUpdate() {
 
 /** Kullanıcı "sonra" dedi: bir sonraki açılışta devreye girsin. */
 export async function deferUpdate() {
-  if (!bekleyen) return;
+  if (!waiting) return;
   try {
-    await CapacitorUpdater.next({ id: bekleyen.id });
+    await CapacitorUpdater.next({ id: waiting.id });
   } catch {
     /* yok say */
   }
-  bekleyen = null;
+  waiting = null;
 }

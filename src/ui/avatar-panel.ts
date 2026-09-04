@@ -13,29 +13,29 @@ import { serverHeadSvg, serverSvg } from "./art";
 import { S, y } from "../core/i18n";
 
 export interface AvatarCallbacks {
-  kaydet(a: Avatar): void;
-  kapat(): void;
+  saveLabel(a: Avatar): void;
+  closeLabel(): void;
 }
 
 export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement {
   const a: Avatar = { ...baslangic };
 
-  const perde = hand("div", "overlay");
-  const pano = hand("div", "panel workshop-panel");
+  const overlay = hand("div", "overlay");
+  const panel = hand("div", "panel workshop-panel");
 
   const baslik = hand("h2");
-  baslik.innerHTML = `<span>${y(S.avatarBaslik)}</span>`;
+  baslik.innerHTML = `<span>${y(S.avatarTitle)}</span>`;
   const alt = hand("p", "sub");
-  alt.textContent = y(S.avatarAlt);
-  pano.append(baslik, alt);
+  alt.textContent = y(S.avatarSub);
+  panel.append(baslik, alt);
 
   const onizleme = hand("div", "avatar-preview");
-  pano.appendChild(onizleme);
+  panel.appendChild(onizleme);
 
   // --- ad
-  pano.appendChild(bolum(y(S.kullaniciAdi)));
+  panel.appendChild(bolum(y(S.yourName)));
   const nameInput = hand("input", "workshop-input") as HTMLInputElement;
-  nameInput.placeholder = y(S.adIpucu);
+  nameInput.placeholder = y(S.namePlaceholder);
   nameInput.maxLength = 14;
   nameInput.autocomplete = "off";
   nameInput.value = a.name;
@@ -43,14 +43,14 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     a.name = nameInput.value;
     render();
   };
-  pano.appendChild(nameInput);
+  panel.appendChild(nameInput);
 
   // --- tip
-  pano.appendChild(bolum(y(S.karakter)));
+  panel.appendChild(bolum(y(S.characterLabel)));
   const kindBox = hand("div", "segment");
   const tipler: [Avatar["kind"], string][] = [
-    ["kadin", y(S.kadin)],
-    ["erkek", y(S.erkek)],
+    ["woman", y(S.woman)],
+    ["man", y(S.man)],
   ];
   for (const [id, name] of tipler) {
     const b = hand("button", "segment-btn") as HTMLButtonElement;
@@ -62,18 +62,18 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     };
     kindBox.appendChild(b);
   }
-  pano.appendChild(kindBox);
+  panel.appendChild(kindBox);
 
   // --- ten
-  pano.appendChild(bolum(y(S.skin)));
+  panel.appendChild(bolum(y(S.skin)));
   const skinRow = colorRow(SKIN_TONES, () => a.skin, (i) => {
     a.skin = i;
     render();
   });
-  pano.appendChild(skinRow);
+  panel.appendChild(skinRow);
 
   // --- saç stili (her biri kendi çizimiyle)
-  pano.appendChild(bolum(y(S.sacBolum)));
+  panel.appendChild(bolum(y(S.hairLabel)));
   const hairRow = hand("div", "avatar-grid");
   HAIR_STYLES.forEach((stil, i) => {
     const b = hand("button", "avatar-option") as HTMLButtonElement;
@@ -89,11 +89,11 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     };
     hairRow.appendChild(b);
   });
-  pano.appendChild(hairRow);
+  panel.appendChild(hairRow);
 
   // --- saç rengi
-  pano.appendChild(bolum(y(S.sacRengi)));
-  pano.appendChild(
+  panel.appendChild(bolum(y(S.hairColorLabel)));
+  panel.appendChild(
     colorRow(HAIR_COLORS, () => a.hairColor, (i) => {
       a.hairColor = i;
       render();
@@ -101,8 +101,8 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
   );
 
   // --- kıyafet rengi
-  pano.appendChild(bolum(y(S.kiyafetRengi)));
-  pano.appendChild(
+  panel.appendChild(bolum(y(S.outfitColorLabel)));
+  panel.appendChild(
     colorRow(OUTFIT_COLORS, () => a.outfit, (i) => {
       a.outfit = i;
       render();
@@ -110,8 +110,8 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
   );
 
   // --- önlük rengi
-  pano.appendChild(bolum(y(S.onlukRengi)));
-  pano.appendChild(
+  panel.appendChild(bolum(y(S.apronColorLabel)));
+  panel.appendChild(
     colorRow(APRON_COLORS, () => a.apron, (i) => {
       a.apron = i;
       render();
@@ -119,7 +119,7 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
   );
 
   // --- saç aksesuarı (hepsi çizim önizlemeli)
-  pano.appendChild(bolum(y(S.sacAksesuari)));
+  panel.appendChild(bolum(y(S.hairAccessoryLabel)));
   const hairAccRow = hand("div", "avatar-grid");
   for (const aks of HAIR_ACCESSORIES) {
     const b = hand("button", "avatar-option") as HTMLButtonElement;
@@ -135,10 +135,10 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     };
     hairAccRow.appendChild(b);
   }
-  pano.appendChild(hairAccRow);
+  panel.appendChild(hairAccRow);
 
   // --- yüz aksesuarı
-  pano.appendChild(bolum(y(S.yuzAksesuari)));
+  panel.appendChild(bolum(y(S.faceAccessoryLabel)));
   const faceAccRow = hand("div", "avatar-grid");
   for (const aks of FACE_ACCESSORIES) {
     const b = hand("button", "avatar-option") as HTMLButtonElement;
@@ -154,20 +154,20 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     };
     faceAccRow.appendChild(b);
   }
-  pano.appendChild(faceAccRow);
+  panel.appendChild(faceAccRow);
 
   // --- eylemler
   const sira = hand("div", "btn-row");
-  const kapat = hand("button", "btn ikincil") as HTMLButtonElement;
-  kapat.textContent = y(S.vazgec);
-  kapat.onclick = () => cb.kapat();
-  const kaydet = hand("button", "btn") as HTMLButtonElement;
-  kaydet.textContent = y(S.kaydet);
-  kaydet.onclick = () => cb.kaydet({ ...a, name: a.name.trim() || "Chef" });
-  sira.append(kapat, kaydet);
-  pano.appendChild(sira);
+  const closeLabel = hand("button", "btn ikincil") as HTMLButtonElement;
+  closeLabel.textContent = y(S.cancelLabel);
+  closeLabel.onclick = () => cb.closeLabel();
+  const saveLabel = hand("button", "btn") as HTMLButtonElement;
+  saveLabel.textContent = y(S.saveLabel);
+  saveLabel.onclick = () => cb.saveLabel({ ...a, name: a.name.trim() || "Chef" });
+  sira.append(closeLabel, saveLabel);
+  panel.appendChild(sira);
 
-  perde.appendChild(pano);
+  overlay.appendChild(panel);
 
   function render() {
     onizleme.innerHTML =
@@ -198,14 +198,14 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
       b.classList.toggle("active", id === a.faceAccessory);
     });
 
-    const colorRows = pano.querySelectorAll<HTMLElement>(".color-row");
+    const colorRows = panel.querySelectorAll<HTMLElement>(".color-row");
     markActive(colorRows[1], a.hairColor);
     markActive(colorRows[2], a.outfit);
     markActive(colorRows[3], a.apron);
   }
 
   render();
-  return perde;
+  return overlay;
 }
 
 function colorRow(renkler: string[], secili: () => number, sec: (i: number) => void): HTMLElement {

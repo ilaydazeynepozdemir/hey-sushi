@@ -38,21 +38,21 @@ const SAHNELER = [
     async kur(sayfa) {
       await sayfa.evaluate(async () => {
         const T = window.__tsuki;
-        T.durum.gun = 4;
-        T.durum.jeton = 320;
-        T.durum.kalp = 128;
-        T.durum.dekor = ["fener_dizisi", "bonsai", "maneki", "kedi_yatagi"];
+        T.state.day = 4;
+        T.state.coins = 320;
+        T.state.hearts = 128;
+        T.state.decor = ["lantern_string", "bonsai", "maneki", "cat_bed"];
         // Butonu metninden bul: konum tabanlı seçici yanlış düğmeye basıyordu.
         [...document.querySelectorAll("button")]
           .find((x) => /Open the Counter|Tezgâhı Aç|Start the Day|Güne Başla/.test(x.textContent))
           ?.click();
         await new Promise((r) => setTimeout(r, 300));
         // üç masayı da doldur
-        for (let i = 0; i < 900 && T.durum.misafirler.length < 3; i++) T.tik(0.05);
+        for (let i = 0; i < 900 && T.state.guests.length < 3; i++) T.tick(0.05);
         // tepsilere biraz malzeme koy ki dolu görünsün
-        const m = T.durum.misafirler[0];
-        if (m) m.tepsi.push({ malzeme: "pirinc", koyan: 0 });
-        T.tik(0.05);
+        const m = T.state.guests[0];
+        if (m) m.tray.push({ ingredient: "rice", placedBy: 0 });
+        T.tick(0.05);
       });
       await sayfa.waitForTimeout(900);
     },
@@ -61,23 +61,23 @@ const SAHNELER = [
     ad: "03-atolye",
     async kur(sayfa) {
       await sayfa.evaluate(async () => {
-        window.__tsuki.durum.gun = 8;
+        window.__tsuki.state.day = 8;
         const b = [...document.querySelectorAll("button")].find((x) =>
           /Atölye|Workshop/.test(x.textContent),
         );
         b?.click();
         await new Promise((r) => setTimeout(r, 400));
-        const icler = document.querySelectorAll(".secim-sira")[1]?.querySelectorAll("button") ?? [];
+        const icler = document.querySelectorAll(".option-row")[1]?.querySelectorAll("button") ?? [];
         [...icler].slice(0, 3).forEach((x) => x.click());
         await new Promise((r) => setTimeout(r, 200));
-        const gar = document.querySelectorAll(".secim-sira")[2]?.querySelectorAll("button") ?? [];
+        const gar = document.querySelectorAll(".option-row")[2]?.querySelectorAll("button") ?? [];
         [...gar].slice(0, 2).forEach((x) => x.click());
-        const ad = document.querySelector(".atolye-giris");
+        const ad = document.querySelector(".workshop-input");
         if (ad) {
           ad.value = document.documentElement.lang === "tr" ? "Ay Işığı" : "Moonlight";
           ad.dispatchEvent(new Event("input", { bubbles: true }));
         }
-        document.querySelector(".atolye-pano").scrollTop = 0;
+        document.querySelector(".workshop-panel").scrollTop = 0;
       });
       await sayfa.waitForTimeout(700);
     },
@@ -91,7 +91,7 @@ const SAHNELER = [
         );
         b?.click();
         await new Promise((r) => setTimeout(r, 500));
-        document.querySelector(".atolye-pano").scrollTop = 0;
+        document.querySelector(".workshop-panel").scrollTop = 0;
       });
       await sayfa.waitForTimeout(600);
     },
@@ -101,16 +101,16 @@ const SAHNELER = [
     async kur(sayfa) {
       await sayfa.evaluate(async () => {
         const T = window.__tsuki;
-        T.durum.gun = 5;
-        T.durum.jeton = 480;
-        T.durum.kalp = 214;
-        T.durum.gunKalp = 46;
-        T.durum.dekor = ["bonsai", "noren"];
-        T.durum.istatistik = { servis: 9, mukemmel: 6, beraber: 0, kacan: 0 };
-        T.durum.faz = "gun_sonu";
-        T.tik(0.016);
+        T.state.day = 5;
+        T.state.coins = 480;
+        T.state.hearts = 214;
+        T.state.dayHearts = 46;
+        T.state.decor = ["bonsai", "noren"];
+        T.state.stats = { served: 9, perfect: 6, together: 0, leftEarly: 0 };
+        T.state.phase = "day_end";
+        T.tick(0.016);
         await new Promise((r) => setTimeout(r, 300));
-        const p = document.querySelector(".pano");
+        const p = document.querySelector(".panel");
         if (p) p.scrollTop = p.scrollHeight * 0.45;
       });
       await sayfa.waitForTimeout(700);

@@ -9,5 +9,5 @@ export const FEATURES = {
   /** Oda koduyla online co-op — yayın için TLS'li röle gerekir. */
   coopOnline: false,
   /** Dil seçimi arayüzde görünsün mü? */
-  dilSecimi: true,
+  languageToggle: true,
 } as const;

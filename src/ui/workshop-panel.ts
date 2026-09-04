@@ -1,5 +1,5 @@
 /** Tarif Atölyesi paneli — oyuncunun kendi suşisini tasarladığı ekran. */
-import { INGREDIENTS } from "../core/content";
+import { ingredient } from "../core/content";
 import {
   GARNISHES,
   GARNISH_LIMIT,
@@ -22,9 +22,9 @@ import { art } from "./art";
 import { S, format, y } from "../core/i18n";
 
 export interface WorkshopCallbacks {
-  kaydet(t: Omit<CustomRecipe, "id">): void;
-  sil(id: string): void;
-  kapat(): void;
+  saveLabel(t: Omit<CustomRecipe, "id">): void;
+  removeBtn(id: string): void;
+  closeLabel(): void;
 }
 
 interface Draft {
@@ -40,136 +40,136 @@ export function workshopPanel(
   extraStations: StationId[],
   cb: WorkshopCallbacks,
 ): HTMLElement {
-  const taslak: Draft = { base: "nigiri", filling: [], garnish: [], name: "", story: "" };
+  const draft: Draft = { base: "nigiri", filling: [], garnish: [], name: "", story: "" };
 
-  const perde = hand("div", "overlay");
-  const pano = hand("div", "panel workshop-panel");
+  const overlay = hand("div", "overlay");
+  const panel = hand("div", "panel workshop-panel");
 
   const baslik = hand("h2");
-  baslik.innerHTML = `${art("ui_parilti", 24)}<span>${y(S.atolyeBaslik)}</span>`;
+  baslik.innerHTML = `${art("ui_parilti", 24)}<span>${y(S.workshopTitle)}</span>`;
   const alt = hand("p", "sub");
-  alt.textContent = y(S.atolyeAlt);
-  pano.append(baslik, alt);
+  alt.textContent = y(S.workshopSub);
+  panel.append(baslik, alt);
 
   // --- önizleme
   const onizleme = hand("div", "workshop-preview");
   const gorsel = hand("div", "workshop-art");
   const bilgi = hand("div", "workshop-info");
   onizleme.append(gorsel, bilgi);
-  pano.appendChild(onizleme);
+  panel.appendChild(onizleme);
 
   // --- taban
-  pano.appendChild(sectionTitle(y(S.base)));
+  panel.appendChild(sectionTitle(y(S.base)));
   const baseRow = hand("div", "option-row");
   for (const t of BASES) {
     const b = hand("button", "option") as HTMLButtonElement;
     b.dataset.id = t.id;
     b.innerHTML = `<b>${y(t.name)}</b><small>${y(t.description)}</small>`;
     b.onclick = () => {
-      taslak.base = t.id;
-      taslak.filling = [];
+      draft.base = t.id;
+      draft.filling = [];
       render();
     };
     baseRow.appendChild(b);
   }
-  pano.appendChild(baseRow);
+  panel.appendChild(baseRow);
 
   // --- iç malzeme
-  const fillingTitle = sectionTitle(format(S.icMalzeme, { n: FILLING_LIMIT }));
-  pano.appendChild(fillingTitle);
+  const fillingTitle = sectionTitle(format(S.fillingLabel, { n: FILLING_LIMIT }));
+  panel.appendChild(fillingTitle);
   const fillingRow = hand("div", "option-row wrap");
-  pano.appendChild(fillingRow);
+  panel.appendChild(fillingRow);
 
   // --- garnitür
-  pano.appendChild(sectionTitle(format(S.garnish, { n: GARNISH_LIMIT })));
+  panel.appendChild(sectionTitle(format(S.garnish, { n: GARNISH_LIMIT })));
   const garnishRow = hand("div", "option-row wrap");
   for (const g of GARNISHES) {
     const b = hand("button", "option small") as HTMLButtonElement;
     b.dataset.id = g.id;
     b.innerHTML = `<b>${y(g.name)}</b>${g.hearts ? `<small>+${g.hearts}</small>` : ""}`;
     b.onclick = () => {
-      const secili = taslak.garnish.includes(g.id);
-      if (secili) taslak.garnish = taslak.garnish.filter((x) => x !== g.id);
-      else if (taslak.garnish.length < GARNISH_LIMIT) taslak.garnish.push(g.id);
+      const secili = draft.garnish.includes(g.id);
+      if (secili) draft.garnish = draft.garnish.filter((x) => x !== g.id);
+      else if (draft.garnish.length < GARNISH_LIMIT) draft.garnish.push(g.id);
       render();
     };
     garnishRow.appendChild(b);
   }
-  pano.appendChild(garnishRow);
+  panel.appendChild(garnishRow);
 
   // --- isim & hikâye
-  pano.appendChild(sectionTitle(y(S.isimVeHikaye)));
+  panel.appendChild(sectionTitle(y(S.nameAndNote)));
   const nameInput = hand("input", "workshop-input") as HTMLInputElement;
-  nameInput.placeholder = y(S.tarifAdiIpucu);
+  nameInput.placeholder = y(S.recipeNamePlaceholder);
   nameInput.maxLength = 28;
   nameInput.autocomplete = "off";
   nameInput.oninput = () => {
-    taslak.name = nameInput.value;
+    draft.name = nameInput.value;
     render();
   };
   const storyInput = hand("input", "workshop-input") as HTMLInputElement;
-  storyInput.placeholder = y(S.kisaNot);
+  storyInput.placeholder = y(S.notePlaceholder);
   storyInput.maxLength = 80;
   storyInput.autocomplete = "off";
   storyInput.oninput = () => {
-    taslak.story = storyInput.value;
+    draft.story = storyInput.value;
   };
-  pano.append(nameInput, storyInput);
+  panel.append(nameInput, storyInput);
 
   const unlockNote = hand("div", "unlock-note");
-  pano.appendChild(unlockNote);
+  panel.appendChild(unlockNote);
 
   // --- kayıtlı tarifler
   const savedBox = hand("div", "workshop-saved");
-  pano.appendChild(savedBox);
+  panel.appendChild(savedBox);
 
   // --- butonlar
   const sira = hand("div", "btn-row");
   const saveBtn = hand("button", "btn") as HTMLButtonElement;
-  saveBtn.textContent = y(S.menuyeEkle);
+  saveBtn.textContent = y(S.addToMenu);
   saveBtn.onclick = () => {
     if (saveBtn.disabled) return;
-    cb.kaydet({
-      name: taslak.name.trim(),
-      story: taslak.story.trim(),
-      base: taslak.base,
-      filling: [...taslak.filling],
-      garnish: taslak.garnish,
+    cb.saveLabel({
+      name: draft.name.trim(),
+      story: draft.story.trim(),
+      base: draft.base,
+      filling: [...draft.filling],
+      garnish: draft.garnish,
       day,
     });
   };
   const closeBtn = hand("button", "btn ikincil") as HTMLButtonElement;
-  closeBtn.textContent = y(S.kapat);
-  closeBtn.onclick = () => cb.kapat();
+  closeBtn.textContent = y(S.closeLabel);
+  closeBtn.onclick = () => cb.closeLabel();
   sira.append(closeBtn, saveBtn);
-  pano.appendChild(sira);
+  panel.appendChild(sira);
 
-  perde.appendChild(pano);
+  overlay.appendChild(panel);
 
   function render() {
     // taban seçimi
     for (const b of baseRow.children) {
-      b.classList.toggle("active", (b as HTMLElement).dataset.id === taslak.base);
+      b.classList.toggle("active", (b as HTMLElement).dataset.id === draft.base);
     }
 
     // iç malzemeler tabana göre
-    const secenekler = fillingOptions(day, taslak.base, extraStations);
+    const secenekler = fillingOptions(day, draft.base, extraStations);
     fillingRow.innerHTML = "";
     if (secenekler.length === 0) {
-      const bos = hand("p", "sub small");
-      bos.textContent = y(S.malzemeYok);
-      fillingRow.appendChild(bos);
+      const blank = hand("p", "sub small");
+      blank.textContent = y(S.noFillingsYet);
+      fillingRow.appendChild(blank);
     }
     for (const { ingredient: mid, kilitli } of secenekler) {
-      const secili = taslak.filling.includes(mid);
-      const dolu = !secili && taslak.filling.length >= FILLING_LIMIT;
+      const secili = draft.filling.includes(mid);
+      const full = !secili && draft.filling.length >= FILLING_LIMIT;
       const b = hand("button", `secim kucuk${secili ? "active" : ""}${kilitli ? "locked" : ""}`) as HTMLButtonElement;
-      b.disabled = dolu;
-      if (kilitli) b.title = y(S.kilitliMalzeme);
-      b.innerHTML = `${art(INGREDIENTS[mid].icon, 22)}<b>${y(INGREDIENTS[mid].name)}</b>${kilitli ? `<span class="lock">${art("ui_kilit", 12)}</span>` : ""}`;
+      b.disabled = full;
+      if (kilitli) b.title = y(S.lockedFilling);
+      b.innerHTML = `${art(ingredient(mid).icon, 22)}<b>${y(ingredient(mid).name)}</b>${kilitli ? `<span class="lock">${art("ui_kilit", 12)}</span>` : ""}`;
       b.onclick = () => {
-        if (secili) taslak.filling = taslak.filling.filter((x) => x !== mid);
-        else if (taslak.filling.length < FILLING_LIMIT) taslak.filling.push(mid);
+        if (secili) draft.filling = draft.filling.filter((x) => x !== mid);
+        else if (draft.filling.length < FILLING_LIMIT) draft.filling.push(mid);
         render();
       };
       fillingRow.appendChild(b);
@@ -177,58 +177,58 @@ export function workshopPanel(
 
     for (const b of garnishRow.children) {
       const id = (b as HTMLElement).dataset.id as GarnishId;
-      const secili = taslak.garnish.includes(id);
+      const secili = draft.garnish.includes(id);
       b.classList.toggle("active", secili);
-      (b as HTMLButtonElement).disabled = !secili && taslak.garnish.length >= GARNISH_LIMIT;
+      (b as HTMLButtonElement).disabled = !secili && draft.garnish.length >= GARNISH_LIMIT;
     }
 
     // önizleme
-    const needs = recipeNeeds(taslak);
-    const hearts = recipeHearts(taslak);
-    gorsel.innerHTML = taslak.filling.length
-      ? `<svg class="sv" viewBox="0 0 48 48" width="96" height="96">${recipeArt(taslak)}</svg>`
+    const needs = recipeNeeds(draft);
+    const hearts = recipeHearts(draft);
+    gorsel.innerHTML = draft.filling.length
+      ? `<svg class="sv" viewBox="0 0 48 48" width="96" height="96">${recipeArt(draft)}</svg>`
       : `<span class="workshop-empty">?</span>`;
     bilgi.innerHTML =
-      `<b>${taslak.name.trim() || y(S.isimsizTarif)}</b>` +
-      `<div class="workshop-needs">${needs.map((g2) => `<span class="chip">${art(INGREDIENTS[g2].icon, 18)}<span>${y(INGREDIENTS[g2].name)}</span></span>`).join("")}</div>` +
-      `<div class="workshop-value">${art("ui_kalp", 16)}<span>${format(S.kalpBirimi, { n: hearts })}</span> · ${y(BASE_MAP[taslak.base].name)}</div>`;
+      `<b>${draft.name.trim() || y(S.untitledRecipe)}</b>` +
+      `<div class="workshop-needs">${needs.map((g2) => `<span class="chip">${art(ingredient(g2).icon, 18)}<span>${y(ingredient(g2).name)}</span></span>`).join("")}</div>` +
+      `<div class="workshop-value">${art("ui_kalp", 16)}<span>${format(S.heartsCount, { n: hearts })}</span> · ${y(BASE_MAP[draft.base].name)}</div>`;
 
     // kayıtlı liste
     const liste = allRecipes();
     savedBox.innerHTML = "";
     if (liste.length) {
-      savedBox.appendChild(sectionTitle(format(S.kayitliTarifler, { n: liste.length })));
+      savedBox.appendChild(sectionTitle(format(S.yourRecipes, { n: liste.length })));
       const izgara = hand("div", "saved-grid");
       for (const t of liste) {
         const kart = hand("div", "saved-card");
         kart.innerHTML =
           `<svg class="sv" viewBox="0 0 48 48" width="34" height="34">${recipeArt(t)}</svg>` +
           `<span>${t.name}</span>`;
-        const sil = hand("button", "saved-remove") as HTMLButtonElement;
-        sil.textContent = "×";
-        sil.title = y(S.menudenKaldir);
-        sil.onclick = () => cb.sil(t.id);
-        kart.appendChild(sil);
+        const removeBtn = hand("button", "saved-remove") as HTMLButtonElement;
+        removeBtn.textContent = "×";
+        removeBtn.title = y(S.removeFromMenu);
+        removeBtn.onclick = () => cb.removeBtn(t.id);
+        kart.appendChild(removeBtn);
         izgara.appendChild(kart);
       }
       savedBox.appendChild(izgara);
     }
 
     // kaydet durumu
-    const acilacak = stationsRecipeUnlocks(taslak, day, extraStations);
+    const acilacak = stationsRecipeUnlocks(draft, day, extraStations);
     unlockNote.innerHTML = acilacak.length
-      ? `${art("ui_kilit", 13)}<span>${format(S.istasyonAcilacak, { n: acilacak.length })}</span>`
+      ? `${art("ui_kilit", 13)}<span>${format(S.stationsWillOpen, { n: acilacak.length })}</span>`
       : "";
     unlockNote.style.display = acilacak.length ? "" : "none";
 
-    const adTamam = taslak.name.trim().length >= 2;
-    const cakisma = adTamam && recipeNameTaken(taslak.name);
-    saveBtn.disabled = !adTamam || taslak.filling.length === 0 || cakisma;
-    saveBtn.textContent = y(cakisma ? S.isimKullaniliyor : S.menuyeEkle);
+    const adTamam = draft.name.trim().length >= 2;
+    const cakisma = adTamam && recipeNameTaken(draft.name);
+    saveBtn.disabled = !adTamam || draft.filling.length === 0 || cakisma;
+    saveBtn.textContent = y(cakisma ? S.nameTaken : S.addToMenu);
   }
 
   render();
-  return perde;
+  return overlay;
 }
 
 function sectionTitle(text: string): HTMLElement {

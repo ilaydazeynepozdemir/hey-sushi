@@ -3,7 +3,7 @@ import {
   DECOR_ITEMS,
   STATION_MAP,
   CHARACTER_MAP,
-  INGREDIENTS,
+  ingredient,
   stationsForDay,
   seasonForDay,
   dish,
@@ -76,7 +76,7 @@ export interface ViewCallbacks {
 export class View {
   private kok: HTMLElement;
   private salon!: HTMLElement;
-  private tezgah!: HTMLElement;
+  private counterRow!: HTMLElement;
   private counterWrap!: HTMLElement;
   private eller!: HTMLElement;
   private guideBar!: HTMLElement;
@@ -87,7 +87,7 @@ export class View {
   private quitBtn!: HTMLButtonElement;
   private topRight!: HTMLElement;
   private topBar!: HTMLElement;
-  private badges!: { day: HTMLElement; hearts: HTMLElement; misafir: HTMLElement };
+  private badges!: { day: HTMLElement; hearts: HTMLElement; guest: HTMLElement };
   private overlayHost!: HTMLElement;
   private stationEls = new Map<string, HTMLElement>();
   private seatEls = new Map<string, HTMLElement>();
@@ -102,11 +102,11 @@ export class View {
   private pointerDown = false;
   private lastPointer = { x: 0, y: 0 };
   private myPlayer = 0;
-  private garsonKatman!: HTMLElement;
+  private serverLayer!: HTMLElement;
   private servers = new Map<PlayerId, HTMLElement>();
   private serverHome = new Map<PlayerId, { x: number; y: number }>();
   private serverBusy = new Set<PlayerId>();
-  /** Garsonun geçici olarak durduğu yer (çalıştığı istasyon) — süresi dolunca eve döner. */
+  /** Garsonun geçici olarak durduğu yer (çalıştığı station) — süresi dolunca eve döner. */
   private serverFocus = new Map<PlayerId, number>();
   /** Garson masaya varana kadar gizlenecek tepsi parçaları. */
   private pendingPieces = new Map<string, Set<number>>();
@@ -136,7 +136,7 @@ export class View {
     marka.innerHTML = `${art("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
     const day = hand("div", "badge");
     const hearts = hand("div", "rozet kalp");
-    const misafir = hand("div", "badge guest-badge");
+    const guest = hand("div", "badge guest-badge");
     this.guideBtn = hand("button", "guide-btn") as HTMLButtonElement;
     this.guideBtn.onclick = () => this.cb.onToggleGuide();
     // Sağ üstte dil değiştirici — girişte ve oyun sırasında hep erişilebilir.
@@ -147,7 +147,7 @@ export class View {
     ];
     for (const [code, kisa] of langOptions) {
       const b = hand("button", "lang-btn") as HTMLButtonElement;
-      b.dataset.dil = code;
+      b.dataset.lang = code;
       b.textContent = kisa;
       b.onclick = () => {
         if (activeLang() === code) return;
@@ -157,8 +157,8 @@ export class View {
       this.langSwitch.appendChild(b);
     }
 
-    ust.append(marka, hand("div", "spacer"), this.guideBtn, misafir, day, hearts);
-    this.badges = { day, hearts, misafir };
+    ust.append(marka, hand("div", "spacer"), this.guideBtn, guest, day, hearts);
+    this.badges = { day, hearts, guest };
     this.topBar = ust;
     this.kok.appendChild(ust);
     // Perdenin de üstünde dursun: giriş ekranında da erişilebilir olmalı.
@@ -180,15 +180,15 @@ export class View {
     const sarma = hand("div", "counter-wrap");
     this.counterWrap = sarma;
     this.guideBar = hand("div", "guide-bar");
-    this.tezgah = hand("div", "counter");
+    this.counterRow = hand("div", "counter");
     this.eller = hand("div", "hands");
-    sarma.append(this.guideBar, this.tezgah, this.eller);
+    sarma.append(this.guideBar, this.counterRow, this.eller);
     this.kok.appendChild(sarma);
 
-    this.garsonKatman = hand("div", "server-layer");
+    this.serverLayer = hand("div", "server-layer");
     this.overlayHost = hand("div", "overlay-host");
     this.dragLayer = hand("div", "drag-layer");
-    this.kok.append(this.garsonKatman, this.overlayHost, this.dragLayer);
+    this.kok.append(this.serverLayer, this.overlayHost, this.dragLayer);
 
     // Yakalama aşaması: istasyonun kendi pointerdown'ından ÖNCE çalışmalı ki
     // üretim tamamlandığında parmağın hâlâ basılı olduğunu bilelim.
@@ -216,15 +216,15 @@ export class View {
 
   // ------------------------------------------------------------- sürükle bırak
   /** Üretim tamamlandığında parmak/fare hâlâ basılıysa doğrudan sürüklemeye geç. */
-  dragProduced(ingredient: IngredientId) {
+  dragProduced(item: IngredientId) {
     if (!this.pointerDown || this.dragGhost) return;
-    this.startDrag(ingredient, this.lastPointer.x, this.lastPointer.y);
+    this.startDrag(item, this.lastPointer.x, this.lastPointer.y);
   }
 
-  startDrag(ingredient: IngredientId, x: number, y: number) {
+  startDrag(item: IngredientId, x: number, y: number) {
     if (this.dragGhost) return;
     const h = hand("div", "dragging");
-    h.innerHTML = art(INGREDIENTS[ingredient].icon, 46);
+    h.innerHTML = art(ingredient(item).icon, 46);
     this.dragLayer.appendChild(h);
     this.dragGhost = h;
     this.kok.classList.add("is-dragging");
@@ -270,27 +270,27 @@ export class View {
 
   render(s: GameState, g: ViewInput) {
     this.myPlayer = g.net.role === "off" ? 0 : g.net.myPlayerId;
-    this.sahne.guncelle(seasonForDay(s.day), s.decor);
+    this.sahne.update(seasonForDay(s.day), s.decor);
     this.badges.day.innerHTML = `${art("ui_takvim", 18)}<span>${y(S.day)}</span><b>${s.day}</b>`;
     this.badges.hearts.innerHTML = `${art("ui_kalp", 18)}<b>${s.hearts}</b>`;
     const guestsLeft = Math.max(0, s.guestTarget - s.guestsArrived + s.guests.length);
-    this.badges.misafir.innerHTML = `${art("ui_tabak", 18)}<b>${guestsLeft}</b>`;
-    this.guideBtn.innerHTML = `${art(g.guideOn ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.guideOn ? S.guideOn : S.rehberKapali)}</span>`;
+    this.badges.guest.innerHTML = `${art("ui_tabak", 18)}<b>${guestsLeft}</b>`;
+    this.guideBtn.innerHTML = `${art(g.guideOn ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.guideOn ? S.guideOn : S.guideOffLabel)}</span>`;
     this.guideBtn.classList.toggle("off", !g.guideOn);
     this.sfxBtn.innerHTML = art(g.sfxOn ? "ui_ses" : "ui_sessiz", 16);
     this.sfxBtn.classList.toggle("off", !g.sfxOn);
-    this.sfxBtn.title = y(S.efektler);
+    this.sfxBtn.title = y(S.sfxLabel);
     this.musicBtn.innerHTML = art(g.musicOn ? "ui_muzik" : "ui_muzik_kapali", 15);
     this.musicBtn.classList.toggle("off", !g.musicOn);
-    this.musicBtn.title = y(S.muzik);
-    this.quitBtn.title = y(S.kaydetCik);
+    this.musicBtn.title = y(S.musicLabel);
+    this.quitBtn.title = y(S.saveQuit);
     // Panel açıkken üst bardaki rozetler gizlenir: hem gereksiz hem çakışıyorlardı.
-    const panelOpen = s.phase !== "gun" || g.workshopOpen || g.avatarOpen;
+    const panelOpen = s.phase !== "day" || g.workshopOpen || g.avatarOpen;
     this.topBar.classList.toggle("hidden", panelOpen);
     // Köşedeki küme kadar yer ayır ki rozetler altına girmesin.
     this.topBar.style.paddingRight = `${this.topRight.offsetWidth + 26}px`;
     for (const b of this.langSwitch.children) {
-      b.classList.toggle("active", (b as HTMLElement).dataset.dil === activeLang());
+      b.classList.toggle("active", (b as HTMLElement).dataset.lang === activeLang());
     }
 
     this.renderDining(s, g);
@@ -303,15 +303,15 @@ export class View {
 
   // ------------------------------------------------------------- salon
   private renderDining(s: GameState, g: ViewInput) {
-    const koltuklar: (Guest | null)[] = Array.from({ length: s.seatCount }, () => null);
-    for (const m of s.guests) if (m.seat < koltuklar.length) koltuklar[m.seat] = m;
+    const seats: (Guest | null)[] = Array.from({ length: s.seatCount }, () => null);
+    for (const m of s.guests) if (m.seat < seats.length) seats[m.seat] = m;
 
-    while (this.salon.children.length > koltuklar.length) this.salon.lastElementChild?.remove();
-    while (this.salon.children.length < koltuklar.length) {
+    while (this.salon.children.length > seats.length) this.salon.lastElementChild?.remove();
+    while (this.salon.children.length < seats.length) {
       this.salon.appendChild(hand("div", "seat empty"));
     }
 
-    koltuklar.forEach((m, i) => {
+    seats.forEach((m, i) => {
       const kap = this.salon.children[i] as HTMLElement;
       kap.dataset.color = String(i);
       if (!m) {
@@ -324,7 +324,7 @@ export class View {
         if (kap.dataset.emptyBuilt !== "1") {
           kap.dataset.emptyBuilt = "1";
           kap.className = "seat empty";
-          kap.innerHTML = `${art("ui_tabak", 30)}<span>${y(S.bosMasa)}</span>`;
+          kap.innerHTML = `${art("ui_tabak", 30)}<span>${y(S.emptyTable)}</span>`;
         }
         return;
       }
@@ -350,7 +350,7 @@ export class View {
     const order = hand("div", "order");
     const patience = hand("div", "mood");
     const moodLabel = hand("span", "mood-label");
-    moodLabel.textContent = y(S.keyif);
+    moodLabel.textContent = y(S.moodLabelText);
     const moodTrack = hand("div", "mood-track");
     moodTrack.appendChild(hand("i"));
     patience.append(moodLabel, moodTrack);
@@ -362,21 +362,21 @@ export class View {
       this.cb.onServe(m.id);
     });
     kap.append(balon, face, name, order, patience, tray, btn);
-    kap.dataset.drop = `misafir:${m.id}`;
+    kap.dataset.drop = `guest:${m.id}`;
     kap.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      this.cb.onTarget(`misafir:${m.id}`);
+      this.cb.onTarget(`guest:${m.id}`);
     });
   }
 
   private updateGuestCard(kap: HTMLElement, m: Guest, g: ViewInput) {
     kap.classList.toggle("happy", m.state === "happy");
     kap.classList.toggle("leaving", m.state === "leaving");
-    const secili = g.selectedTarget === `misafir:${m.id}`;
+    const secili = g.selectedTarget === `guest:${m.id}`;
     kap.classList.toggle("selected", secili);
     if (secili) kap.style.setProperty("--secim-renk", g.selectionColor);
-    const rehberBurada = g.guideOn && g.hint?.target === `misafir:${m.id}`;
-    kap.classList.toggle("guide-target", !!rehberBurada && !g.hint?.served);
+    const guideHere = g.guideOn && g.hint?.target === `guest:${m.id}`;
+    kap.classList.toggle("guide-target", !!guideHere && !g.hint?.served);
 
     const [balon, face, , order, patience, tray, btn] = Array.from(kap.children) as HTMLElement[];
     const k = CHARACTER_MAP[m.characterId];
@@ -392,7 +392,7 @@ export class View {
     const ruh = moodArt(m);
     if (face && face.dataset.ruh !== ruh) {
       face.dataset.ruh = ruh;
-      face.innerHTML = `${art(k?.face ?? "kar_efe", 52)}<span class="mood-badge">${art(ruh, 22)}</span>`;
+      face.innerHTML = `${art(k?.face ?? "ch_efe", 52)}<span class="mood-badge">${art(ruh, 22)}</span>`;
     }
 
     const trayItems = m.tray.map((t) => t.ingredient);
@@ -413,13 +413,13 @@ export class View {
     if (patience) {
       const bar = patience.querySelector<HTMLElement>("i");
       const r = Math.min(1, m.waited / (m.patience * 2.4));
-      const keyif = 1 - r;
+      const moodLabelText = 1 - r;
       if (bar) {
-        bar.style.width = `${keyif * 100}%`;
+        bar.style.width = `${moodLabelText * 100}%`;
         bar.style.background =
-          keyif > 0.6 ? "var(--avokado)" : keyif > 0.25 ? "var(--tamago)" : "var(--zencefil)";
+          moodLabelText > 0.6 ? "var(--avokado)" : moodLabelText > 0.25 ? "var(--tamago)" : "var(--zencefil)";
       }
-      patience.classList.toggle("low", keyif <= 0.25);
+      patience.classList.toggle("low", moodLabelText <= 0.25);
     }
 
     if (tray) {
@@ -432,7 +432,7 @@ export class View {
         }
         if (d.dataset.m !== p.ingredient) {
           d.dataset.m = p.ingredient;
-          d.innerHTML = art(INGREDIENTS[p.ingredient].icon, 24);
+          d.innerHTML = art(ingredient(p.ingredient).icon, 24);
         }
         const bekliyor = this.pendingPieces.get(m.id)?.has(i) ?? false;
         d.className = `parca p${p.placedBy + 1}${bekliyor ? "pending" : ""}`;
@@ -445,7 +445,7 @@ export class View {
       const hazir = m.state === "pending" && readyToServe(m.order, trayItems);
       btn.disabled = m.state !== "pending" || m.tray.length === 0;
       btn.classList.toggle("ready", hazir);
-      btn.classList.toggle("guide-target", !!(rehberBurada && g.hint?.served));
+      btn.classList.toggle("guide-target", !!(guideHere && g.hint?.served));
       const imza = m.state === "happy" ? "happy" : hazir ? "ready" : "empty";
       if (btn.dataset.imza !== imza + y(S.onServe)) {
         btn.dataset.imza = imza + y(S.onServe);
@@ -465,10 +465,10 @@ export class View {
     const imza = `${day}|${[...ekstra].sort().join(",")}`;
     if (this.stationsKey === imza) return;
     this.stationsKey = imza;
-    this.tezgah.innerHTML = "";
+    this.counterRow.innerHTML = "";
     this.stationEls.clear();
     for (const ist of stationsForDay(day, ekstra)) {
-      const d = hand("div", ist.id === "mat" ? "istasyon mat" : "station");
+      const d = hand("div", ist.id === "mat" ? "station mat" : "station");
       d.dataset.t = ist.id;
       const icon = hand("div", "icon");
       icon.innerHTML = art(ist.icon, ist.id === "mat" ? 34 : 32);
@@ -483,13 +483,13 @@ export class View {
       const progress = hand("div", "progress");
       progress.style.width = "0%";
       d.appendChild(progress);
-      if (ist.id === "mat" || ist.id === "atik") d.dataset.drop = ist.id;
+      if (ist.id === "mat" || ist.id === "compost") d.dataset.drop = ist.id;
       d.addEventListener("pointerdown", (e) => {
         e.preventDefault();
         this.cb.onTarget(ist.id);
       });
       this.stationEls.set(ist.id, d);
-      this.tezgah.appendChild(d);
+      this.counterRow.appendChild(d);
     }
   }
 
@@ -517,7 +517,7 @@ export class View {
           const anahtar = m ?? "";
           if (sl.dataset.m !== anahtar) {
             sl.dataset.m = anahtar;
-            sl.innerHTML = m ? art(INGREDIENTS[m].icon, 20) : "";
+            sl.innerHTML = m ? art(ingredient(m).icon, 20) : "";
           }
         });
       }
@@ -553,17 +553,17 @@ export class View {
       const anahtar = o.hand ?? "-";
       if (kutu.dataset.m !== anahtar) {
         kutu.dataset.m = anahtar;
-        kutu.innerHTML = o.hand ? art(INGREDIENTS[o.hand].icon, 28) : `<span class="empty-hand">·</span>`;
+        kutu.innerHTML = o.hand ? art(ingredient(o.hand).icon, 28) : `<span class="empty-hand">·</span>`;
       }
       (bilgi.children[0] as HTMLElement).textContent = o.name;
-      (bilgi.children[1] as HTMLElement).textContent = o.hand ? y(INGREDIENTS[o.hand].name) : "";
+      (bilgi.children[1] as HTMLElement).textContent = o.hand ? y(ingredient(o.hand).name) : "";
       (bilgi.children[2] as HTMLElement).textContent =
         s.players.length > 1 && i > 0 ? "← → · space · shift" : "";
     });
   }
 
   private renderGuide(s: GameState, g: ViewInput) {
-    if (s.phase !== "gun" || !g.guideOn || !g.hint) {
+    if (s.phase !== "day" || !g.guideOn || !g.hint) {
       this.guideBar.style.display = "none";
       return;
     }
@@ -602,8 +602,8 @@ export class View {
         const ben = s.players.find((o) => o.id === this.myPlayer) ?? s.players[0];
         if (ben) {
           const p = avatarPanel(ben.avatar, {
-            kaydet: (a) => this.cb.saveAvatar(a),
-            kapat: () => this.cb.onCloseAvatar(),
+            saveLabel: (a) => this.cb.saveAvatar(a),
+            closeLabel: () => this.cb.onCloseAvatar(),
           });
           if (oncedenAcikti) p.classList.add("no-anim");
           this.overlayHost.appendChild(p);
@@ -618,16 +618,16 @@ export class View {
         this.lastOverlay = imza;
         this.overlayHost.innerHTML = "";
         const p = workshopPanel(s.day, s.extraStations, {
-          kaydet: (t) => this.cb.onSaveRecipe(t),
-          sil: (id) => this.cb.onDeleteRecipe(id),
-          kapat: () => this.cb.onCloseWorkshop(),
+          saveLabel: (t) => this.cb.onSaveRecipe(t),
+          removeBtn: (id) => this.cb.onDeleteRecipe(id),
+          closeLabel: () => this.cb.onCloseWorkshop(),
         });
         if (oncedenAcikti) p.classList.add("no-anim");
         this.overlayHost.appendChild(p);
       }
       return;
     }
-    if (s.phase === "gun") {
+    if (s.phase === "day") {
       if (this.lastOverlay !== "") {
         this.overlayHost.innerHTML = "";
         this.lastOverlay = "";
@@ -641,38 +641,38 @@ export class View {
     this.overlaySwap = false;
     this.lastOverlay = imza;
     this.overlayHost.innerHTML = "";
-    const yeni = s.phase === "menu" ? this.menuPanel(s, g) : this.dayEndPanel(s);
-    if (oncedenAcikti) yeni.classList.add("no-anim");
-    this.overlayHost.appendChild(yeni);
+    const next = s.phase === "menu" ? this.menuPanel(s, g) : this.dayEndPanel(s);
+    if (oncedenAcikti) next.classList.add("no-anim");
+    this.overlayHost.appendChild(next);
   }
 
   private menuPanel(s: GameState, g: ViewInput): HTMLElement {
-    const perde = hand("div", "overlay");
-    const pano = hand("div", "pano dikey");
+    const overlay = hand("div", "overlay");
+    const panel = hand("div", "pano dikey");
 
     const h1 = hand("h1");
     h1.innerHTML = s.day === 1 ? "Hey <span>Sushi</span>" : `${y(S.day)} <span>${s.day}</span>`;
     const alt = hand("p", "sub tight");
-    alt.textContent = y(s.day === 1 ? S.girisAlt : S.gunAlt);
-    pano.append(h1, alt);
+    alt.textContent = y(s.day === 1 ? S.introSub : S.daySub);
+    panel.append(h1, alt);
 
     if (s.day === 1) {
       const nasil = hand("div", "howto");
       const adimlar: [string, string, string][] = [
-        ["ist_pirinc", y(S.adim1Baslik), y(S.adim1)],
-        ["ui_tabak", y(S.adim2Baslik), y(S.adim2)],
-        ["ui_kalp", y(S.adim3Baslik), y(S.adim3)],
+        ["st_rice", y(S.step1Title), y(S.step1)],
+        ["ui_tabak", y(S.step2Title), y(S.step2)],
+        ["ui_kalp", y(S.step3Title), y(S.step3)],
       ];
       for (const [icon, baslik, text] of adimlar) {
         const a = hand("div", "howto-step");
         a.innerHTML = `<div class="howto-icon">${art(icon, 34)}</div><div><b>${baslik}</b><p>${text}</p></div>`;
         nasil.appendChild(a);
       }
-      pano.appendChild(nasil);
+      panel.appendChild(nasil);
 
       const note = hand("p", "sub small");
-      note.innerHTML = y(S.kaybetmekYok);
-      pano.appendChild(note);
+      note.innerHTML = y(S.noLosing);
+      panel.appendChild(note);
     }
 
     const menu = hand("div", "menu-row");
@@ -681,7 +681,7 @@ export class View {
       c.innerHTML = `${art(dish(yid).icon, 20)}<span>${y(dish(yid).name)}</span>`;
       menu.appendChild(c);
     }
-    pano.appendChild(menu);
+    panel.appendChild(menu);
 
     // Çevrimdışı mod seçimi — online odadayken anlamsız, gizleniyor.
     if (FEATURES.coopYerel && g.net.role === "off") {
@@ -696,105 +696,105 @@ export class View {
       cift.onclick = () => this.cb.onSetPlayerCount(2);
       kutu.append(tek, cift);
       mod.appendChild(kutu);
-      pano.appendChild(mod);
+      panel.appendChild(mod);
     }
 
-    if (FEATURES.coopOnline) pano.appendChild(this.roomSection(g));
+    if (FEATURES.coopOnline) panel.appendChild(this.roomSection(g));
 
     const sideRow = hand("div", "panel-actions");
     const serverBtn = hand("button", "btn ikincil") as HTMLButtonElement;
-    serverBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
+    serverBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.yourServer)}</span>`;
     serverBtn.onclick = () => this.cb.onOpenAvatar();
     const actionRow = hand("div", "panel-actions");
-    const atolye = hand("button", "btn ikincil") as HTMLButtonElement;
-    atolye.innerHTML = `${art("ui_parilti", 16)}<span>${y(S.tarifAtolyesi)}</span>`;
-    atolye.onclick = () => this.cb.onOpenWorkshop();
+    const workshopBtn = hand("button", "btn ikincil") as HTMLButtonElement;
+    workshopBtn.innerHTML = `${art("ui_parilti", 16)}<span>${y(S.recipeWorkshop)}</span>`;
+    workshopBtn.onclick = () => this.cb.onOpenWorkshop();
 
     const basla = hand("button", "btn") as HTMLButtonElement;
-    if (g.net.role === "misafir") {
+    if (g.net.role === "guest") {
       basla.className = "btn pending";
       basla.innerHTML = "<span>Ev sahibi başlatacak…</span>";
       basla.disabled = true;
     } else {
-      basla.innerHTML = `<span>${y(s.day === 1 ? S.tezgahiAc : S.guneBasla)}</span>${art("ui_fener", 20)}`;
+      basla.innerHTML = `<span>${y(s.day === 1 ? S.openCounter : S.startDay)}</span>${art("ui_fener", 20)}`;
       basla.onclick = () => this.cb.onStartDay();
     }
     sideRow.appendChild(serverBtn);
-    actionRow.append(atolye, basla);
-    pano.append(sideRow, actionRow);
+    actionRow.append(workshopBtn, basla);
+    panel.append(sideRow, actionRow);
 
-    perde.appendChild(pano);
-    return perde;
+    overlay.appendChild(panel);
+    return overlay;
   }
 
   private dayEndPanel(s: GameState): HTMLElement {
-    const perde = hand("div", "overlay");
-    const pano = hand("div", "pano dikey");
+    const overlay = hand("div", "overlay");
+    const panel = hand("div", "pano dikey");
 
     const h2 = hand("h2");
-    h2.innerHTML = `${art("ui_ay", 26)}<span>${format(S.gunKapandi, { day: s.day })}</span>`;
+    h2.innerHTML = `${art("ui_ay", 26)}<span>${format(S.dayOver, { day: s.day })}</span>`;
     const alt = hand("p", "sub tight");
-    alt.textContent = y(S.gunSonuAlt);
+    alt.textContent = y(S.dayEndSub);
 
     const satirlar = hand("div", "rows");
-    const ekle = (etiket: string, deger: string, vurgu = false) => {
+    const addRow = (etiket: string, deger: string, vurgu = false) => {
       const r = hand("div", vurgu ? "row highlight" : "row");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
-    ekle(y(S.servisEdilen), String(s.stats.served));
-    ekle(y(S.kusursuz), String(s.stats.perfect));
-    if (s.players.length > 1) ekle(y(S.birlikteHazir), String(s.stats.together), true);
-    if (s.stats.leftEarly > 0) ekle(y(S.vazgecen), String(s.stats.leftEarly));
-    ekle(y(S.bugunKalp), `${art("ui_kalp", 16)} ${s.dayHearts}`, true);
-    ekle(y(S.toplam), `${art("ui_kalp", 16)} ${s.hearts}`);
+    addRow(y(S.guestsServed), String(s.stats.served));
+    addRow(y(S.perfectPlates), String(s.stats.perfect));
+    if (s.players.length > 1) addRow(y(S.madeTogether), String(s.stats.together), true);
+    if (s.stats.leftEarly > 0) addRow(y(S.gaveUp), String(s.stats.leftEarly));
+    addRow(y(S.todayHearts), `${art("ui_kalp", 16)} ${s.dayHearts}`, true);
+    addRow(y(S.total), `${art("ui_kalp", 16)} ${s.hearts}`);
 
     const eylemler = hand("div", "panel-actions single");
     const btn = hand("button", "btn") as HTMLButtonElement;
-    btn.innerHTML = `<span>${y(S.yarinaGec)}</span>${art("ui_ok", 18)}`;
+    btn.innerHTML = `<span>${y(S.toTomorrow)}</span>${art("ui_ok", 18)}`;
     btn.onclick = () => this.cb.onNextDay();
     eylemler.appendChild(btn);
 
-    pano.append(h2, alt, satirlar, this.shopSection(s), eylemler);
-    perde.appendChild(pano);
-    return perde;
+    panel.append(h2, alt, satirlar, this.shopSection(s), eylemler);
+    overlay.appendChild(panel);
+    return overlay;
   }
 
   /** Kaydet ve çık onayı — puanı da gösterir. */
   private quitPanel(s: GameState): HTMLElement {
-    const perde = hand("div", "overlay");
-    const pano = hand("div", "pano dikey");
+    const overlay = hand("div", "overlay");
+    const panel = hand("div", "pano dikey");
 
     const h2 = hand("h2");
-    h2.innerHTML = `${art("ui_cikis", 24)}<span>${y(S.cikisBaslik)}</span>`;
+    h2.innerHTML = `${art("ui_cikis", 24)}<span>${y(S.quitTitle)}</span>`;
     const alt = hand("p", "sub tight");
-    alt.textContent = y(S.cikisAlt);
+    alt.textContent = y(S.quitSub);
 
     const satirlar = hand("div", "rows");
-    const ekle = (etiket: string, deger: string, vurgu = false) => {
+    const addRow = (etiket: string, deger: string, vurgu = false) => {
       const r = hand("div", vurgu ? "row highlight" : "row");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
-    ekle(y(S.day), String(s.day));
-    ekle(y(S.toplamKalp), `${art("ui_kalp", 16)} ${s.hearts}`, true);
-    ekle(y(S.jetonlar), `${art("ui_jeton", 16)} ${s.coins}`);
-    if (s.decor.length) ekle(y(S.dukkanEsyasi), String(s.decor.length));
+    addRow(y(S.day), String(s.day));
+    addRow(y(S.totalHearts), `${art("ui_kalp", 16)} ${s.hearts}`, true);
+    addRow(y(S.coinsLabel), `${art("ui_jeton", 16)} ${s.coins}`);
+    if (s.decor.length) addRow(y(S.shopItems), String(s.decor.length));
     const customCount = customRecipeCount();
-    if (customCount) ekle(y(S.ozelTarifler), String(customCount));
+    if (customCount) addRow(y(S.yourCustom), String(customCount));
 
     const eylemler = hand("div", "panel-actions");
-    const vazgec = hand("button", "btn ikincil") as HTMLButtonElement;
-    vazgec.textContent = y(S.vazgec);
-    vazgec.onclick = () => this.cb.onCloseQuit();
+    const cancelLabel = hand("button", "btn ikincil") as HTMLButtonElement;
+    cancelLabel.textContent = y(S.cancelLabel);
+    cancelLabel.onclick = () => this.cb.onCloseQuit();
     const cik = hand("button", "btn") as HTMLButtonElement;
-    cik.innerHTML = `<span>${y(S.cikisOnay)}</span>${art("ui_cikis", 17)}`;
+    cik.innerHTML = `<span>${y(S.confirmQuit)}</span>${art("ui_cikis", 17)}`;
     cik.onclick = () => this.cb.onConfirmQuit();
-    eylemler.append(vazgec, cik);
+    eylemler.append(cancelLabel, cik);
 
-    pano.append(h2, alt, satirlar, eylemler);
-    perde.appendChild(pano);
-    return perde;
+    panel.append(h2, alt, satirlar, eylemler);
+    overlay.appendChild(panel);
+    return overlay;
   }
 
   /** Menüdeki online oda bölümü. */
@@ -874,7 +874,7 @@ export class View {
     kap.appendChild(baslik);
 
     const note = hand("p", "sub small");
-    note.textContent = y(S.dukkanNot);
+    note.textContent = y(S.shopNote);
     kap.appendChild(note);
 
     const izgara = hand("div", "shop-grid");
@@ -887,7 +887,7 @@ export class View {
         `<div class="decor-art">${art(d.icon, 40)}</div>` +
         `<b>${y(d.name)}</b>` +
         `<small>${y(d.description)}</small>` +
-        `<span class="price">${sahip ? y(S.alindi) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
+        `<span class="price">${sahip ? y(S.owned) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
       kart.onclick = () => this.cb.onBuyDecor(d.id);
       izgara.appendChild(kart);
     }
@@ -917,13 +917,13 @@ export class View {
   }
 
   // ------------------------------------------------------------- geri bildirim
-  floatText(guestId: string, yazi: string, icon = "ui_kalp") {
+  floatText(guestId: string, caption: string, icon = "ui_kalp") {
     const kap = this.seatEls.get(guestId);
     if (!kap) return;
     const kutu = kap.getBoundingClientRect();
     const kok = this.kok.getBoundingClientRect();
     const d = hand("div", "fly");
-    d.innerHTML = `<span>${yazi}</span>${art(icon, 22)}`;
+    d.innerHTML = `<span>${caption}</span>${art(icon, 22)}`;
     d.style.left = `${kutu.left - kok.left + kutu.width / 2}px`;
     d.style.top = `${kutu.top - kok.top + 10}px`;
     this.kok.appendChild(d);
@@ -953,7 +953,7 @@ export class View {
           `<div class="server-carry"></div>` +
           `<div class="server-body"></div>` +
           `<div class="server-name"></div>`;
-        this.garsonKatman.appendChild(e);
+        this.serverLayer.appendChild(e);
         this.servers.set(o.id, e);
       }
       e.style.setProperty("--renk", o.color);
@@ -983,7 +983,7 @@ export class View {
       const anahtar = o.hand ?? "-";
       if (carrying.dataset.m !== anahtar) {
         carrying.dataset.m = anahtar;
-        carrying.innerHTML = o.hand ? art(INGREDIENTS[o.hand].icon, 26) : "";
+        carrying.innerHTML = o.hand ? art(ingredient(o.hand).icon, 26) : "";
         carrying.classList.toggle("filled", !!o.hand);
       }
     });
@@ -995,26 +995,26 @@ export class View {
   }
 
   /** Garsonu bir istasyonun önüne kaydırır (çalışırken orada durur). */
-  serverToStation(oyuncu: PlayerId, istasyon: TargetId) {
-    if (this.serverBusy.has(oyuncu)) return;
-    const e = this.servers.get(oyuncu);
-    const target = this.stationEls.get(istasyon);
-    const ev = this.serverHome.get(oyuncu);
+  serverToStation(player: PlayerId, station: TargetId) {
+    if (this.serverBusy.has(player)) return;
+    const e = this.servers.get(player);
+    const target = this.stationEls.get(station);
+    const ev = this.serverHome.get(player);
     if (!e || !target || !ev) return;
     const kok = this.kok.getBoundingClientRect();
     const r = target.getBoundingClientRect();
     const x = r.left - kok.left + r.width / 2;
     const elapsed = this.walkDuration(e, x, ev.y);
-    this.serverFocus.set(oyuncu, performance.now() + 1500);
+    this.serverFocus.set(player, performance.now() + 1500);
     this.placeAt(e, x, ev.y, elapsed);
     e.classList.add("walking");
     window.setTimeout(() => e.classList.remove("walking"), elapsed * 1000 + 80);
   }
 
   private walkDuration(e: HTMLElement, x: number, y: number): number {
-    const eski = e.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
-    const ex = eski ? Number(eski[1]) : x;
-    const ey = eski ? Number(eski[2]) : y;
+    const prev = e.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
+    const ex = prev ? Number(prev[1]) : x;
+    const ey = prev ? Number(prev[2]) : y;
     const mesafe = Math.hypot(x - ex, y - ey);
     return Math.min(0.95, 0.26 + mesafe * 0.0013);
   }
@@ -1023,10 +1023,10 @@ export class View {
    * Garson malzemeyi masaya götürür. Tepsi parçası, garson masaya varana
    * kadar görünmez — böylece servis "ışınlanma" değil, gerçek bir yürüyüş olur.
    */
-  serverDeliver(oyuncu: PlayerId, guestId: string, parcaIndex: number, ingredient: IngredientId) {
-    const e = this.servers.get(oyuncu);
+  serverDeliver(player: PlayerId, guestId: string, parcaIndex: number, ingredient: IngredientId) {
+    const e = this.servers.get(player);
     const kart = this.seatEls.get(guestId);
-    const ev = this.serverHome.get(oyuncu);
+    const ev = this.serverHome.get(player);
     if (!e || !kart || !ev) return;
 
     const kume = this.pendingPieces.get(guestId) ?? new Set<number>();
@@ -1039,8 +1039,8 @@ export class View {
     const x = r.left - kok.left + r.width / 2;
     const y = r.bottom - kok.top + (e.offsetHeight || 80) + 8;
 
-    this.serverBusy.add(oyuncu);
-    this.serverFocus.delete(oyuncu);
+    this.serverBusy.add(player);
+    this.serverFocus.delete(player);
     const farewell = this.walkDuration(e, x, y);
     this.placeAt(e, x, y, farewell);
     e.classList.add("walking");
@@ -1062,21 +1062,21 @@ export class View {
       this.sparkle(x, y - 26, ingredient);
 
       window.setTimeout(() => {
-        const evYeri = this.serverHome.get(oyuncu) ?? ev;
+        const evYeri = this.serverHome.get(player) ?? ev;
         this.placeAt(e, evYeri.x, evYeri.y, this.walkDuration(e, evYeri.x, evYeri.y));
         e.classList.add("walking");
         window.setTimeout(() => {
           e.classList.remove("walking");
-          this.serverBusy.delete(oyuncu);
+          this.serverBusy.delete(player);
         }, 700);
       }, 220);
     }, farewell * 1000);
   }
 
   /** Teslim anında küçük bir ışıltı. */
-  private sparkle(x: number, y: number, ingredient: IngredientId) {
+  private sparkle(x: number, y: number, item: IngredientId) {
     const d = hand("div", "deliver-spark");
-    d.innerHTML = art(INGREDIENTS[ingredient].icon, 26);
+    d.innerHTML = art(ingredient(item).icon, 26);
     d.style.left = `${x}px`;
     d.style.top = `${y}px`;
     this.kok.appendChild(d);
@@ -1084,20 +1084,20 @@ export class View {
   }
 
   /** Malzemenin kaynaktan tepsiye/mata uçuşu. */
-  flyIngredient(ingredient: IngredientId, hedefAnahtar: TargetId) {
-    const hedefEl =
-      hedefAnahtar === "mat"
+  flyIngredient(item: IngredientId, targetKey: TargetId) {
+    const targetEl =
+      targetKey === "mat"
         ? this.stationEls.get("mat")
-        : this.seatEls.get(hedefAnahtar.replace("misafir:", ""))?.querySelector<HTMLElement>(".tray");
-    if (!hedefEl) return;
+        : this.seatEls.get(targetKey.replace("guest:", ""))?.querySelector<HTMLElement>(".tray");
+    if (!targetEl) return;
 
     const kok = this.kok.getBoundingClientRect();
-    const target = hedefEl.getBoundingClientRect();
+    const target = targetEl.getBoundingClientRect();
     const bx = this.lastPointer.x || target.left + target.width / 2;
     const by = this.lastPointer.y || target.top;
 
     const g = hand("div", "ingredient-fly");
-    g.innerHTML = art(INGREDIENTS[ingredient].icon, 34);
+    g.innerHTML = art(ingredient(item).icon, 34);
     g.style.left = `${bx - kok.left}px`;
     g.style.top = `${by - kok.top}px`;
     this.kok.appendChild(g);
@@ -1120,9 +1120,9 @@ export class View {
       { duration: 430, easing: "cubic-bezier(.35,.9,.35,1)" },
     );
     animasyon.onfinish = () => g.remove();
-    hedefEl.classList.remove("landed");
-    void hedefEl.offsetWidth;
-    hedefEl.classList.add("landed");
+    targetEl.classList.remove("landed");
+    void targetEl.offsetWidth;
+    targetEl.classList.add("landed");
   }
 
   /** Üretim tamamlandığında istasyonda küçük bir halka. */
@@ -1139,18 +1139,18 @@ export class View {
     this.kok.querySelector(".update-bar")?.remove();
     const d = hand("div", "update-bar");
     const text = hand("div", "update-text");
-    text.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
+    text.innerHTML = `<b>${y(S.updateReady)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
     const sonra = hand("button", "btn ikincil ufak") as HTMLButtonElement;
-    sonra.textContent = y(S.guncelleSonra);
+    sonra.textContent = y(S.updateLater);
     sonra.onclick = () => {
       d.remove();
       secim.sonra();
     };
     const simdi = hand("button", "btn ufak") as HTMLButtonElement;
-    simdi.textContent = y(S.guncelleSimdi);
+    simdi.textContent = y(S.updateNow);
     simdi.onclick = () => {
       simdi.disabled = true;
-      simdi.textContent = y(S.guncelleniyor);
+      simdi.textContent = y(S.updating);
       secim.simdi();
     };
     d.append(text, sonra, simdi);
@@ -1166,8 +1166,8 @@ export class View {
   }
 
   bump(target: TargetId) {
-    const d = target.startsWith("misafir:")
-      ? this.seatEls.get(target.slice(8))
+    const d = target.startsWith("guest:")
+      ? this.seatEls.get(target.slice("guest:".length))
       : this.stationEls.get(target);
     if (!d) return;
     d.classList.remove("pulse");
@@ -1179,13 +1179,13 @@ export class View {
 export function targetList(s: GameState): TargetId[] {
   const liste: TargetId[] = stationsForDay(s.day, s.extraStations).map((i) => i.id);
   const sirali = [...s.guests].sort((a, b) => a.seat - b.seat);
-  for (const m of sirali) if (m.state === "pending") liste.push(`misafir:${m.id}`);
+  for (const m of sirali) if (m.state === "pending") liste.push(`guest:${m.id}`);
   return liste;
 }
 
 export function targetName(h: TargetId, s: GameState): string {
-  if (h.startsWith("misafir:")) {
-    const m = s.guests.find((x) => x.id === h.slice(8));
+  if (h.startsWith("guest:")) {
+    const m = s.guests.find((x) => x.id === h.slice("guest:".length));
     const k = m ? CHARACTER_MAP[m.characterId] : undefined;
     return k ? y(k.name) : "";
   }
