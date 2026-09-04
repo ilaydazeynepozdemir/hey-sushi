@@ -1,0 +1,12 @@
+android/keystore.properties
+*.keystore
+*.jks
+ota/
+dist/
+node_modules/
+android/app/build/
+android/build/
+android/.gradle/
+ios/Pods/
+ios/App/App/public/
+.DS_Store
