@@ -12,12 +12,14 @@
     "ota": "node scripts/ota.mjs",
     "mobil": "npm run build && npx cap sync",
     "surum": "node scripts/surum.mjs",
-    "android:release": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease"
+    "android:release": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
+    "ekran": "node scripts/ekran.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^7.6.9",
     "@types/ws": "^8.18.1",
+    "playwright": "^1.62.1",
     "typescript": "^5.6.3",
     "vite": "^5.4.10",
     "ws": "^8.18.0"

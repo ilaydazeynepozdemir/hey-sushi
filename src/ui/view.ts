@@ -136,7 +136,7 @@ export class Arayuz {
     marka.innerHTML = `${sanat("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
     const gun = el("div", "rozet");
     const kalp = el("div", "rozet kalp");
-    const misafir = el("div", "rozet");
+    const misafir = el("div", "rozet misafir-rozet");
     this.rehberBtn = el("button", "rehber-btn") as HTMLButtonElement;
     this.rehberBtn.onclick = () => this.cb.rehberDegis();
     // Sağ üstte dil değiştirici — girişte ve oyun sırasında hep erişilebilir.

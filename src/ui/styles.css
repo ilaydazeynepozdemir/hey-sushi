@@ -495,7 +495,8 @@ html, body {
 .dekor { position: absolute; filter: drop-shadow(0 6px 12px rgba(174,140,130,0.28)); }
 .dekor-sol { left: calc(2.5% + var(--sira) * 84px); top: 22%; animation: dekorSalin 7s ease-in-out infinite; }
 .dekor-sag { right: calc(2.5% + var(--sira) * 84px); top: 24%; animation: dekorSalin 8s ease-in-out infinite; }
-.dekor-tavan { top: 2px; left: calc(50% - 130px + var(--sira) * 130px); animation: dekorSalin 5s ease-in-out infinite; }
+/* üst barın altında kalsın, rozetlerle karışmasın */
+.dekor-tavan { top: 52px; left: calc(50% - 130px + var(--sira) * 130px); animation: dekorSalin 5s ease-in-out infinite; }
 .dekor-tezgah { bottom: calc(30% + 4px); left: calc(8% + var(--sira) * 78px); }
 @keyframes dekorSalin { 0%, 100% { transform: rotate(-1.5deg); } 50% { transform: rotate(1.5deg); } }
 
@@ -1122,4 +1123,24 @@ html, body {
   background: var(--tamago-acik); border: 1px solid var(--tamago);
   border-radius: 12px; padding: 8px 12px; margin-top: 10px;
   font-size: 12px; color: #8a6c36;
+}
+
+/* ================================================================ dar ekranda üst bar
+   360px'te marka + rehber + üç rozet + köşe kümesi aynı satıra sığmıyordu ve
+   birbirinin üstüne biniyordu. Dar ekranda ikincil olanları düşürüyoruz. */
+/* Rozetler daralabilsin; sığmazsa taşmak yerine küçülsünler. */
+.ust > * { min-width: 0; }
+.ust .bosluk { flex: 1 1 auto; }
+
+@media (max-width: 520px) {
+  /* misafir sayacı ikincil bilgi: gün ve kalp kalsın yeter */
+  .misafir-rozet { display: none; }
+  .ust { gap: 5px; padding-left: 10px; }
+  .rozet { padding: 5px 9px; font-size: 12px; }
+  .rozet b { font-size: 14px; }
+  .rehber-btn { padding: 5px 8px; }
+}
+
+@media (max-width: 400px) {
+  .marka { display: none; }
 }
