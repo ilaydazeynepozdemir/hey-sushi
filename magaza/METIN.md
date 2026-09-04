@@ -133,3 +133,38 @@ Gizlilik politikası sayfası gerekiyor (github.io'da bir sayfa yeter) — metin
 
 > iPad görselleri Capacitor varsayılanı iPad'i desteklediği için zorunlu.
 > İstemezseniz Xcode'da hedefi yalnızca iPhone yapıp bu satırı atlayabilirsiniz.
+
+---
+
+## Konsol adımları (sizin yapmanız gerekenler)
+
+Bu iki adımı ben yapamıyorum: geliştirici hesaplarınıza girmek ve sizin adınıza
+sözleşme/beyan onaylamak gerekiyor. Değerlerin hepsi yukarıda hazır, kopyala-yapıştır.
+
+### Google Play Console
+1. **Create app** → Ad: `Hey Sushi` · Dil: English (US) · Tür: **Game** · Ücretsiz
+2. **Store listing** → kısa/tam açıklama (yukarıdan), `magaza/play-*.png` görselleri,
+   512×512 ikon, 1024×500 öne çıkan görsel
+3. **App content**:
+   - Privacy policy → github.io'daki gizlilik sayfanızın adresi
+   - Ads → **No ads**
+   - Data safety → **No data collected / No data shared**
+   - Content rating anketi → şiddet yok, sohbet yok, satın alma yok → Everyone
+   - Target audience → 13+ (çocuklara özel pazarlamıyorsanız en sade yol)
+4. **Testing → Closed testing** → `.aab` yükle → test kullanıcıları ekle
+5. Sorunsuzsa **Production**
+
+### App Store Connect
+1. **My Apps → +** → New App
+   - Platform: iOS · Ad: `Hey Sushi` · Birincil dil: English (U.S.)
+   - **Bundle ID: `app.heysushi`** (önce Developer portalda kaydedilmeli)
+   - SKU: `heysushi-001`
+2. **App Information** → kategori: Games (alt: Simulation, Casual) · yaş: 4+
+3. **App Privacy** → **Data Not Collected**
+4. **Pricing** → Free
+5. **Prepare for Submission** → alt başlık, açıklama, anahtar kelimeler,
+   `magaza/ios67-*.png` ve `magaza/ios-ipad-*` görselleri
+6. Build TestFlight'a düştükten sonra seçip **Submit for Review**
+
+> Not: iPad görselleri, hedef iPad'i desteklediği için zorunlu. İstemezseniz
+> Xcode'da `TARGETED_DEVICE_FAMILY` değerini `1` yapıp iPhone'a kısıtlayın.
