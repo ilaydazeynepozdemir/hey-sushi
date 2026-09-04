@@ -6,23 +6,23 @@ import {
   removeRecipe,
   applyRecipe,
   loadRecipes,
-} from "./core/atolye";
-import type { CustomRecipe } from "./core/atolye";
+} from "./core/workshop";
+import type { CustomRecipe } from "./core/workshop";
 import { setAvatar, unlockStations, removePlayer, addPlayer, apply, newGame } from "./core/game";
 import { saveAvatar as avatarDepola, loadAvatar } from "./core/avatar";
 import type { Avatar } from "./core/avatar";
-import { S, format, initLang, y } from "./core/dil";
-import { nextHint } from "./core/ipucu";
+import { S, format, initLang, y } from "./core/i18n";
+import { nextHint } from "./core/hint";
 import { seasonForDay } from "./core/content";
-import { readSave, applySave, writeSave } from "./core/kayit";
+import { readSave, applySave, writeSave } from "./core/save";
 import type { Action, GameState, GameEvent, PlayerId } from "./core/types";
 import { Capacitor } from "@capacitor/core";
-import { restoreStorage, storageSet } from "./core/depo";
-import { startUpdates, deferUpdate, applyUpdate } from "./core/guncelleme";
+import { restoreStorage, storageSet } from "./core/storage";
+import { startUpdates, deferUpdate, applyUpdate } from "./core/updates";
 import { initNative } from "./core/native";
-import { hapticSuccess, hapticLight } from "./core/titresim";
-import { Oda } from "./net/oda";
-import { toggleMusic, musicEnabled, startMusic, pauseMusic, setMusicSeason } from "./ui/muzik";
+import { hapticSuccess, hapticLight } from "./core/haptics";
+import { Oda } from "./net/room";
+import { toggleMusic, musicEnabled, startMusic, pauseMusic, setMusicSeason } from "./ui/music";
 import {
   toggleSfx,
   sfxTogether,
@@ -121,276 +121,276 @@ const oda = new Oda({
     oda.send({ t: "kimlik", myPlayerId: oyuncu, tarifler: tumTarifler() }, id);
     broadcast(true);
     arayuz.toast(`${state.players[oyuncu]?.ad ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
-    arayuz.perdeYenile();
-    ciz();
+    arayuz.invalidateOverlay();
+    render();
   },
-  onUyeCikti(id) {
-    const oyuncu = uyeOyuncu.get(id);
+  onMemberLeft(id) {
+    const oyuncu = memberToPlayer.get(id);
     if (oyuncu !== undefined) {
-      oyuncuCikar(durum, oyuncu);
-      uyeOyuncu.delete(id);
+      removePlayer(state, oyuncu);
+      memberToPlayer.delete(id);
     }
-    yayinla(true);
-    arayuz.perdeYenile();
-    ciz();
+    broadcast(true);
+    arayuz.invalidateOverlay();
+    render();
   },
-  onKapandi(sebep) {
-    netUyari = `${y({ en: "Room closed", tr: "Oda kapandı" })}: ${sebep}`;
-    uyeOyuncu.clear();
-    benId = 0;
-    durum = tekBasinaDevam(durum);
-    arayuz.uyar(netUyari);
-    arayuz.perdeYenile();
-    ciz();
+  onClosed(sebep) {
+    netWarning = `${y({ en: "Room closed", tr: "Oda kapandı" })}: ${sebep}`;
+    memberToPlayer.clear();
+    myPlayerId = 0;
+    state = continueSolo(state);
+    arayuz.toast(netWarning);
+    arayuz.invalidateOverlay();
+    render();
   },
-  onHata(mesaj) {
-    netUyari = mesaj;
-    arayuz.uyar(mesaj);
-    arayuz.perdeYenile();
-    ciz();
+  onError(onMessage) {
+    netWarning = onMessage;
+    arayuz.toast(onMessage);
+    arayuz.invalidateOverlay();
+    render();
   },
-  onDegisti() {
-    arayuz.perdeYenile();
-    ciz();
+  onChanged() {
+    arayuz.invalidateOverlay();
+    render();
   },
 });
 
 /** Oda dağılınca tek kişilik oyuna düş. */
-function tekBasinaDevam(eski: OyunDurumu): OyunDurumu {
-  const yeni = yeniOyun(1, undefined, benimAvatar);
-  yeni.gun = eski.gun;
-  yeni.kalp = eski.kalp;
-  yeni.jeton = eski.jeton;
-  yeni.dekor = eski.dekor;
+function continueSolo(eski: GameState): GameState {
+  const yeni = newGame(1, undefined, myAvatar);
+  yeni.day = eski.day;
+  yeni.hearts = eski.hearts;
+  yeni.coins = eski.coins;
+  yeni.decor = eski.decor;
   return yeni;
 }
 
-function yayinla(zorla = false) {
-  if (oda.rol !== "host" || !oda.bagli) return;
+function broadcast(zorla = false) {
+  if (oda.role !== "host" || !oda.connected) return;
   const simdi = performance.now();
-  if (!zorla && simdi - sonYayin < 80) return;
-  sonYayin = simdi;
-  oda.yolla({ t: "durum", durum });
+  if (!zorla && simdi - lastBroadcast < 80) return;
+  lastBroadcast = simdi;
+  oda.send({ t: "durum", state });
 }
 
 // ---------------------------------------------------------------- arayüz
-const arayuz = new Arayuz(kok, {
-  hedefeTikla(hedef) {
-    calistir({ tip: "etkilesim", oyuncu: benimId(), hedef });
+const arayuz = new View(kok, {
+  onTarget(target) {
+    dispatch({ kind: "etkilesim", oyuncu: myId(), target });
   },
-  servisEt(misafirId) {
-    calistir({ tip: "servis", oyuncu: benimId(), misafirId });
+  onServe(guestId) {
+    dispatch({ kind: "servis", oyuncu: myId(), guestId });
   },
-  gunBasla() {
-    calistir({ tip: "gun_basla" });
+  onStartDay() {
+    dispatch({ kind: "gun_basla" });
   },
-  sonrakiGun() {
-    calistir({ tip: "sonraki_gun" });
+  onNextDay() {
+    dispatch({ kind: "sonraki_gun" });
   },
-  dekorAl(id) {
-    calistir({ tip: "dekor_al", id });
+  onBuyDecor(id) {
+    dispatch({ kind: "dekor_al", id });
   },
-  sesDegis() {
-    sesAcik = sesAcKapa();
-    ciz();
+  onToggleSfx() {
+    sfxOn = toggleSfx();
+    render();
   },
-  muzikDegis() {
-    muzikAcKapa();
-    ciz();
+  onToggleMusic() {
+    toggleMusic();
+    render();
   },
-  cikisAc() {
-    cikisAcik = true;
-    arayuz.perdeYenile();
-    ciz();
+  onOpenQuit() {
+    quitOpen = true;
+    arayuz.invalidateOverlay();
+    render();
   },
-  cikisKapat() {
-    cikisAcik = false;
-    arayuz.perdeYenile();
-    ciz();
+  onCloseQuit() {
+    quitOpen = false;
+    arayuz.invalidateOverlay();
+    render();
   },
-  cikisOnayla() {
-    kayitYaz(durum);
-    cikisAcik = false;
-    void cikisYap();
+  onConfirmQuit() {
+    writeSave(state);
+    quitOpen = false;
+    void quitApp();
   },
-  dilDegis() {
+  onChangeLang() {
     // Metinler her yerde yeniden okunmalı: arayüzü baştan kur.
-    arayuz.yenidenKur();
-    arayuz.perdeYenile();
-    ciz();
+    arayuz.rebuild();
+    arayuz.invalidateOverlay();
+    render();
   },
-  avatarAc() {
-    avatarAcik = true;
-    arayuz.perdeYenile();
-    ciz();
+  onOpenAvatar() {
+    avatarOpen = true;
+    arayuz.invalidateOverlay();
+    render();
   },
-  avatarKapat() {
-    avatarAcik = false;
-    arayuz.perdeYenile();
-    ciz();
+  onCloseAvatar() {
+    avatarOpen = false;
+    arayuz.invalidateOverlay();
+    render();
   },
-  avatarKaydet(a) {
-    benimAvatar = a;
+  saveAvatar(a) {
+    myAvatar = a;
     avatarDepola(a);
-    avatarAcik = false;
-    if (oda.rol === "misafir") {
-      oda.yolla({ t: "avatar", avatar: a });
+    avatarOpen = false;
+    if (oda.role === "misafir") {
+      oda.send({ t: "avatar", avatar: a });
     } else {
-      avatarAta(durum, benimId(), a);
-      yayinla(true);
+      setAvatar(state, myId(), a);
+      broadcast(true);
     }
-    arayuz.uyar(bicim(S.merhaba, { ad: a.ad }));
-    arayuz.perdeYenile();
-    ciz();
+    arayuz.toast(format(S.merhaba, { ad: a.ad }));
+    arayuz.invalidateOverlay();
+    render();
   },
-  atolyeAc() {
-    atolyeAcik = true;
-    arayuz.perdeYenile();
-    ciz();
+  onOpenWorkshop() {
+    workshopOpen = true;
+    arayuz.invalidateOverlay();
+    render();
   },
-  atolyeKapat() {
-    atolyeAcik = false;
-    arayuz.perdeYenile();
-    ciz();
+  onCloseWorkshop() {
+    workshopOpen = false;
+    arayuz.invalidateOverlay();
+    render();
   },
-  tarifKaydet(t) {
+  onSaveRecipe(t) {
     // Tarifin malzemeleri oyunda üretilebilir olmalı: eksik istasyonları aç.
-    const acilacak = tarifinAcacagiIstasyonlar(t, durum.gun, durum.ekstraIstasyon);
-    if (acilacak.length) istasyonAc(durum, acilacak);
-    const tam = tarifEkle(t);
-    atolyeAcik = false;
-    if (oda.rol === "host") oda.yolla({ t: "kimlik", benId: -1, tarifler: [tam] });
-    arayuz.uyar(bicim(S.menuyeEklendi, { ad: t.ad }));
-    arayuz.perdeYenile();
-    ciz();
+    const acilacak = stationsRecipeUnlocks(t, state.day, state.extraStations);
+    if (acilacak.length) unlockStations(state, acilacak);
+    const tam = addRecipe(t);
+    workshopOpen = false;
+    if (oda.role === "host") oda.send({ t: "kimlik", myPlayerId: -1, tarifler: [tam] });
+    arayuz.toast(format(S.menuyeEklendi, { ad: t.ad }));
+    arayuz.invalidateOverlay();
+    render();
   },
-  tarifSil(id) {
-    tarifiKaldir(id);
-    arayuz.perdeYenile();
-    ciz();
+  onDeleteRecipe(id) {
+    removeRecipe(id);
+    arayuz.invalidateOverlay();
+    render();
   },
-  rehberDegis() {
-    rehberAcik = !rehberAcik;
-    depoYaz("tsuki.rehber", rehberAcik ? "1" : "0");
-    ciz();
+  onToggleGuide() {
+    guideOn = !guideOn;
+    storageSet("tsuki.rehber", guideOn ? "1" : "0");
+    render();
   },
-  oyuncuSayisiDegistir(n) {
-    if (oda.rol !== "kapali") return;
-    const kaydedilen = { gun: durum.gun, kalp: durum.kalp, jeton: durum.jeton, dekor: durum.dekor };
-    durum = yeniOyun(n, undefined, benimAvatar);
-    Object.assign(durum, kaydedilen);
-    arayuz.perdeYenile();
-    ciz();
+  onSetPlayerCount(n) {
+    if (oda.role !== "kapali") return;
+    const kaydedilen = { day: state.day, hearts: state.hearts, coins: state.coins, decor: state.decor };
+    state = newGame(n, undefined, myAvatar);
+    Object.assign(state, kaydedilen);
+    arayuz.invalidateOverlay();
+    render();
   },
-  odaKur() {
-    netUyari = "";
-    durum = yeniOyun(1, undefined, benimAvatar);
-    uyeOyuncu.clear();
-    benId = 0;
-    void oda.kur();
+  onCreateRoom() {
+    netWarning = "";
+    state = newGame(1, undefined, myAvatar);
+    memberToPlayer.clear();
+    myPlayerId = 0;
+    void oda.create();
   },
-  odaKatil(kod: string) {
-    netUyari = "";
-    void oda.katil(kod, benimAvatar.ad);
+  onJoinRoom(code: string) {
+    netWarning = "";
+    void oda.join(code, myAvatar.ad);
   },
-  odaAyril() {
-    oda.ayril();
-    uyeOyuncu.clear();
-    benId = 0;
-    durum = tekBasinaDevam(durum);
-    arayuz.perdeYenile();
-    ciz();
+  onLeaveRoom() {
+    oda.leave();
+    memberToPlayer.clear();
+    myPlayerId = 0;
+    state = continueSolo(state);
+    arayuz.invalidateOverlay();
+    render();
   },
 });
 
 /** Bu istemcinin sürdüğü oyuncu — çevrimdışıyken hep 0 (fare). */
-function benimId(): PlayerId {
-  return oda.rol === "kapali" ? 0 : benId;
+function myId(): PlayerId {
+  return oda.role === "kapali" ? 0 : myPlayerId;
 }
 
 /** Klavye: çevrimdışı iki kişilikte 2. oyuncu, diğer hâllerde kendi oyuncun. */
-function klavyeOyuncusu(): PlayerId {
-  if (oda.rol !== "kapali") return benId;
-  return (durum.oyuncular.length - 1) as PlayerId;
+function keyboardPlayer(): PlayerId {
+  if (oda.role !== "kapali") return myPlayerId;
+  return (state.players.length - 1) as PlayerId;
 }
 
-function calistir(a: Aksiyon) {
-  if (a.tip === "etkilesim" || a.tip === "servis") sonAksiyonOyuncu = a.oyuncu;
-  if (oda.rol === "misafir") {
-    if (a.tip === "etkilesim" || a.tip === "servis") {
-      oda.yolla({ t: "aksiyon", aksiyon: { ...a, oyuncu: benId } });
-      if (a.tip === "etkilesim") arayuz.carp(a.hedef);
+function dispatch(a: Action) {
+  if (a.kind === "etkilesim" || a.kind === "servis") lastActor = a.oyuncu;
+  if (oda.role === "misafir") {
+    if (a.kind === "etkilesim" || a.kind === "servis") {
+      oda.send({ t: "aksiyon", aksiyon: { ...a, oyuncu: myPlayerId } });
+      if (a.kind === "etkilesim") arayuz.bump(a.target);
     } else {
-      arayuz.uyar({ en: "Only the host can do that", tr: "Bunu ev sahibi yapabilir" });
+      arayuz.toast({ en: "Only the host can do that", tr: "Bunu ev sahibi yapabilir" });
     }
     return;
   }
-  olaylariIsle(uygula(durum, a));
-  yayinla(true);
-  ciz();
+  handleEvents(apply(state, a));
+  broadcast(true);
+  render();
 }
 
-function olaylariIsle(olaylar: OyunOlayi[]) {
-  for (const o of olaylar) {
-    switch (o.tip) {
-      case "tik":
-        arayuz.carp(o.hedef);
-        sonTikHedef = o.hedef;
-        sesTik(tikSayaci++ % 3);
-        if (!o.hedef.startsWith("misafir:")) arayuz.garsonIstasyonda(sonAksiyonOyuncu, o.hedef);
+function handleEvents(events: GameEvent[]) {
+  for (const o of events) {
+    switch (o.kind) {
+      case "tick":
+        arayuz.bump(o.target);
+        lastTapTarget = o.target;
+        sfxTap(tapCount++ % 3);
+        if (!o.target.startsWith("misafir:")) arayuz.serverToStation(lastActor, o.target);
         break;
       case "uretildi":
-        sesUretim();
-        if (o.oyuncu === benimId()) titresimHafif();
-        tikSayaci = 0;
-        if (sonTikHedef) arayuz.patlama(sonTikHedef);
+        sfxProduce();
+        if (o.oyuncu === myId()) hapticLight();
+        tapCount = 0;
+        if (lastTapTarget) arayuz.burstAt(lastTapTarget);
         // Parmak hâlâ basılıysa üretilen malzeme doğrudan sürüklenmeye başlar.
-        if (o.oyuncu === benimId()) arayuz.uretimSurukle(o.malzeme);
+        if (o.oyuncu === myId()) arayuz.dragProduced(o.ingredient);
         break;
       case "ikram":
-        sesUretim();
-        arayuz.ucur(o.misafirId, "", "ui_kalp");
-        if (!o.bot && o.oyuncu === benimId()) titresimHafif();
+        sfxProduce();
+        arayuz.floatText(o.guestId, "", "ui_kalp");
+        if (!o.bot && o.oyuncu === myId()) hapticLight();
         break;
       case "tepsiye_kondu": {
         // Işınlanma yok: garson malzemeyi masaya yürüyerek götürür.
-        const misafir = durum.misafirler.find((m) => m.id === o.misafirId);
-        const index = misafir ? misafir.tepsi.length - 1 : 0;
-        arayuz.garsonTeslimat(o.oyuncu, o.misafirId, index, o.malzeme);
+        const misafir = state.guests.find((m) => m.id === o.guestId);
+        const index = misafir ? misafir.tray.length - 1 : 0;
+        arayuz.serverDeliver(o.oyuncu, o.guestId, index, o.ingredient);
         break;
       }
       case "mata_kondu":
-        sesBirak();
-        arayuz.garsonIstasyonda(o.oyuncu, "mat");
-        if (o.oyuncu === benimId()) arayuz.malzemeUcusu(o.malzeme, "mat");
+        sfxDrop();
+        arayuz.serverToStation(o.oyuncu, "mat");
+        if (o.oyuncu === myId()) arayuz.flyIngredient(o.ingredient, "mat");
         break;
       case "tepsiden_alindi":
-        sesTik(0);
+        sfxTap(0);
         break;
       case "birakildi":
-        sesBirak();
+        sfxDrop();
         break;
       case "servis":
-        sesServis(o.guzel);
-        titresimBasari();
-        if (o.beraber) setTimeout(sesBeraber, 180);
-        arayuz.ucur(o.misafirId, `+${o.hearts}`);
-        if (o.beraber) setTimeout(() => arayuz.ucur(o.misafirId, y(S.birlikte), "ui_parilti"), 260);
+        sfxServe(o.guzel);
+        hapticSuccess();
+        if (o.together) setTimeout(sfxTogether, 180);
+        arayuz.floatText(o.guestId, `+${o.hearts}`);
+        if (o.together) setTimeout(() => arayuz.floatText(o.guestId, y(S.birlikte), "ui_parilti"), 260);
         break;
       case "eksik":
-        arayuz.uyar(S.siparisEksik);
+        arayuz.toast(S.siparisEksik);
         break;
       case "misafir_geldi":
-        sesMisafir();
+        sfxGuest();
         break;
       case "gun_bitti":
-        sesGunSonu();
-        kayitYaz(durum); // gün bitti: ilerleme otomatik kaydedilir
+        sfxDayEnd();
+        writeSave(state); // gün bitti: ilerleme otomatik kaydedilir
         break;
       case "hata":
-        if (o.oyuncu === benimId()) {
-          sesHata();
-          arayuz.uyar(o.mesaj);
+        if (o.oyuncu === myId()) {
+          sfxError();
+          arayuz.toast(o.onMessage);
         }
         break;
       case "dekor_alindi":
@@ -400,34 +400,34 @@ function olaylariIsle(olaylar: OyunOlayi[]) {
   }
 }
 
-function ciz() {
+function render() {
   // Mevsim değişince müziğin rengi de değişsin (tempo, yoğunluk, parlaklık).
-  const mevsim = mevsimGun(durum.gun).id;
-  if (mevsim !== muzikMevsimi) {
-    muzikMevsimi = mevsim;
-    muzikMevsim(mevsim);
+  const mevsim = seasonForDay(state.day).id;
+  if (mevsim !== musicSeason) {
+    musicSeason = mevsim;
+    setMusicSeason(mevsim);
   }
-  const liste = hedefListesi(durum);
+  const liste = targetList(state);
   if (secim >= liste.length) secim = Math.max(0, liste.length - 1);
-  const kOyuncu = durum.oyuncular[klavyeOyuncusu()];
-  const cokOyunculu = durum.oyuncular.length > 1 || oda.rol !== "kapali";
-  arayuz.ciz(durum, {
-    seciliHedef: cokOyunculu || klavyeAktif ? (liste[secim] ?? null) : null,
-    seciliRenk: kOyuncu?.renk ?? "#ffb9a3",
-    sesAcik,
-    muzikAcik: muzikAcikMi(),
-    ipucu: rehberAcik ? sonrakiIpucu(durum, benimId()) : null,
-    rehberAcik,
-    atolyeAcik,
-    avatarAcik,
-    cikisAcik,
+  const kbPlayer = state.players[keyboardPlayer()];
+  const multiplayer = state.players.length > 1 || oda.role !== "kapali";
+  arayuz.render(state, {
+    selectedTarget: multiplayer || keyboardActive ? (liste[secim] ?? null) : null,
+    selectionColor: kbPlayer?.color ?? "#ffb9a3",
+    sfxOn,
+    musicOn: musicEnabled(),
+    hint: guideOn ? nextHint(state, myId()) : null,
+    guideOn,
+    workshopOpen,
+    avatarOpen,
+    quitOpen,
     net: {
-      rol: oda.rol,
-      kod: oda.kod,
-      baglaniyor: oda.baglaniyor,
-      uyeler: [...oda.uyeler.values()],
-      uyari: netUyari,
-      benId,
+      role: oda.role,
+      code: oda.code,
+      connecting: oda.connecting,
+      members: [...oda.members.values()],
+      uyari: netWarning,
+      myPlayerId,
     },
   });
 }
@@ -437,113 +437,113 @@ window.addEventListener("keydown", (e) => {
   const yaziyor = document.activeElement instanceof HTMLInputElement;
   if (yaziyor) return;
 
-  if (durum.faz !== "gun") {
-    if ((e.code === "Space" || e.code === "Enter") && !atolyeAcik && oda.rol !== "misafir") {
+  if (state.phase !== "gun") {
+    if ((e.code === "Space" || e.code === "Enter") && !workshopOpen && oda.role !== "misafir") {
       e.preventDefault();
-      calistir(durum.faz === "menu" ? { tip: "gun_basla" } : { tip: "sonraki_gun" });
+      dispatch(state.phase === "menu" ? { kind: "gun_basla" } : { kind: "sonraki_gun" });
     }
     return;
   }
-  const liste = hedefListesi(durum);
-  const oyuncu = klavyeOyuncusu();
+  const liste = targetList(state);
+  const oyuncu = keyboardPlayer();
 
   switch (e.code) {
     case "ArrowLeft":
     case "KeyA":
       e.preventDefault();
-      klavyeAktif = true;
+      keyboardActive = true;
       secim = (secim - 1 + liste.length) % liste.length;
-      ciz();
+      render();
       break;
     case "ArrowRight":
     case "KeyD":
       e.preventDefault();
-      klavyeAktif = true;
+      keyboardActive = true;
       secim = (secim + 1) % liste.length;
-      ciz();
+      render();
       break;
     case "Space":
     case "Enter": {
       e.preventDefault();
-      klavyeAktif = true;
-      const hedef = liste[secim];
-      if (hedef) calistir({ tip: "etkilesim", oyuncu, hedef });
+      keyboardActive = true;
+      const target = liste[secim];
+      if (target) dispatch({ kind: "etkilesim", oyuncu, target });
       break;
     }
     case "ShiftLeft":
     case "ShiftRight": {
       e.preventDefault();
-      klavyeAktif = true;
-      const hedef = liste[secim];
-      if (hedef?.startsWith("misafir:")) {
-        calistir({ tip: "servis", oyuncu, misafirId: hedef.slice(8) });
+      keyboardActive = true;
+      const target = liste[secim];
+      if (target?.startsWith("misafir:")) {
+        dispatch({ kind: "servis", oyuncu, guestId: target.slice(8) });
       }
       break;
     }
     case "KeyM":
-      sesAcik = sesAcKapa();
-      arayuz.uyar(sesAcik ? S.sesAcik : S.sesKapali);
-      ciz();
+      sfxOn = toggleSfx();
+      arayuz.toast(sfxOn ? S.sfxOn : S.sesKapali);
+      render();
       break;
     case "KeyR":
-      rehberAcik = !rehberAcik;
-      depoYaz("tsuki.rehber", rehberAcik ? "1" : "0");
-      arayuz.uyar(rehberAcik ? S.rehberAcik : S.rehberKapali);
-      ciz();
+      guideOn = !guideOn;
+      storageSet("tsuki.rehber", guideOn ? "1" : "0");
+      arayuz.toast(guideOn ? S.guideOn : S.rehberKapali);
+      render();
       break;
   }
 });
 
 // ---------------------------------------------------------------- döngü
-let sonZaman = performance.now();
-function dongu(t: number) {
+let lastTime = performance.now();
+function loop(t: number) {
   // Not: sekme arka plandayken rAF durur — oyun kendiliğinden duraklar,
   // misafirler beklemez. Geri dönüldüğünde dt zaten 0.1 sn ile sınırlanıyor.
-  const dt = Math.min(0.1, (t - sonZaman) / 1000);
-  sonZaman = t;
+  const dt = Math.min(0.1, (t - lastTime) / 1000);
+  lastTime = t;
   // Misafir istemciler simülasyonu çalıştırmaz; durumu ev sahibinden alır.
-  if (durum.faz === "gun" && oda.rol !== "misafir") {
-    const olaylar = uygula(durum, { tip: "tik", dt });
-    if (olaylar.length) olaylariIsle(olaylar);
-    yayinla();
-    ciz();
-  } else if (oda.rol === "misafir") {
-    ciz();
+  if (state.phase === "gun" && oda.role !== "misafir") {
+    const events = apply(state, { kind: "tick", dt });
+    if (events.length) handleEvents(events);
+    broadcast();
+    render();
+  } else if (oda.role === "misafir") {
+    render();
   }
-  requestAnimationFrame(dongu);
+  requestAnimationFrame(loop);
 }
 
-ciz();
-requestAnimationFrame(dongu);
+render();
+requestAnimationFrame(loop);
 
 /**
  * Ev sahibi sekmeyi arka plana alırsa rAF durur ve odadaki HERKES donar.
- * Tek kişilik oyunda duraklamak istenen davranış, o yüzden bu yedek tik
+ * Tek kişilik oyunda duraklamak istenen davranış, o yüzden bu yedek tick
  * yalnızca ev sahibiyken ve sekme gizliyken çalışır. Tarayıcı arka planda
  * zamanlayıcıyı ~1 sn'ye kısar; dt sınırlı olduğu için oyun donmak yerine yavaşlar.
  */
 setInterval(() => {
-  if (!document.hidden || oda.rol !== "host" || durum.faz !== "gun") return;
+  if (!document.hidden || oda.role !== "host" || state.phase !== "gun") return;
   const simdi = performance.now();
-  const dt = Math.min(0.25, (simdi - sonZaman) / 1000);
-  sonZaman = simdi;
-  const olaylar = uygula(durum, { tip: "tik", dt });
-  if (olaylar.length) olaylariIsle(olaylar);
-  yayinla(true);
+  const dt = Math.min(0.25, (simdi - lastTime) / 1000);
+  lastTime = simdi;
+  const events = apply(state, { kind: "tick", dt });
+  if (events.length) handleEvents(events);
+  broadcast(true);
 }, 100);
 
-// Yalnızca geliştirmede: konsoldan durumu okuyup elle tik atabilmek için.
+// Yalnızca geliştirmede: konsoldan durumu okuyup elle tick atabilmek için.
 // Üretim derlemesinde bu blok tamamen elenir.
 if (import.meta.env.DEV) {
   (window as unknown as { __tsuki?: unknown }).__tsuki = {
-    get durum() {
-      return durum;
+    get state() {
+      return state;
     },
-    tik(dt = 1 / 60) {
-      olaylariIsle(uygula(durum, { tip: "tik", dt }));
-      ciz();
+    tick(dt = 1 / 60) {
+      handleEvents(apply(state, { kind: "tick", dt }));
+      render();
     },
-    calistir,
+    dispatch,
   };
 }
 
@@ -552,67 +552,67 @@ if (import.meta.env.DEV) {
  * Native'de localStorage temizlenmiş olabilir; Preferences'taki yedeği geri
  * yükleyip ayarları tazeliyoruz. Web'de bu bir no-op.
  */
-void depoGeriYukle().then(() => {
+void restoreStorage().then(() => {
   if (!Capacitor.isNativePlatform()) return;
-  dilBaslat();
-  benimAvatar = avatarYukle();
-  tarifleriYukle();
-  avatarAta(durum, 0, benimAvatar);
-  arayuz.yenidenKur();
-  arayuz.perdeYenile();
-  ciz();
+  initLang();
+  myAvatar = loadAvatar();
+  loadRecipes();
+  setAvatar(state, 0, myAvatar);
+  arayuz.rebuild();
+  arayuz.invalidateOverlay();
+  render();
 });
 
 // ---------------------------------------------------------------- müzik
 // Tarayıcılar otomatik oynatmayı engeller: ilk dokunuşu bekliyoruz.
-function muzigiUyandir() {
-  if (muzikBasladi) return;
-  muzikBasladi = true;
-  muzikMevsim(mevsimGun(durum.gun).id);
-  muzikBaslat();
+function wakeMusic() {
+  if (musicStarted) return;
+  musicStarted = true;
+  setMusicSeason(seasonForDay(state.day).id);
+  startMusic();
 }
-window.addEventListener("pointerdown", muzigiUyandir, { once: true });
-window.addEventListener("keydown", muzigiUyandir, { once: true });
+window.addEventListener("pointerdown", wakeMusic, { once: true });
+window.addEventListener("keydown", wakeMusic, { once: true });
 
 // ---------------------------------------------------------------- OTA güncelleme
-void guncellemeBaslat({
+void startUpdates({
   hazir(manifest) {
-    arayuz.guncellemeSor(manifest.not, {
-      simdi: () => void guncellemeyiUygula(),
-      sonra: () => void guncellemeyiErtele(),
+    arayuz.askForUpdate(manifest.note, {
+      simdi: () => void applyUpdate(),
+      sonra: () => void deferUpdate(),
     });
   },
 });
 
 // ---------------------------------------------------------------- native kabuk
-void nativeBaslat({
+void initNative({
   geriTusu() {
     // Açık bir panel varsa geri tuşu onu kapatsın, uygulamadan çıkmasın.
-    if (cikisAcik) {
-      cikisAcik = false;
-      arayuz.perdeYenile();
-      ciz();
+    if (quitOpen) {
+      quitOpen = false;
+      arayuz.invalidateOverlay();
+      render();
       return true;
     }
-    if (avatarAcik) {
-      avatarAcik = false;
-      arayuz.perdeYenile();
-      ciz();
+    if (avatarOpen) {
+      avatarOpen = false;
+      arayuz.invalidateOverlay();
+      render();
       return true;
     }
-    if (atolyeAcik) {
-      atolyeAcik = false;
-      arayuz.perdeYenile();
-      ciz();
+    if (workshopOpen) {
+      workshopOpen = false;
+      arayuz.invalidateOverlay();
+      render();
       return true;
     }
     return false;
   },
   gorunurluk(aktif) {
     // Arka plandan dönüşte zaman sıçramasın: saati şimdiye çek.
-    if (aktif) sonZaman = performance.now();
-    muzikDuraklat(!aktif);
-    if (!aktif) kayitYaz(durum); // arka plana alınırken kaydet
+    if (aktif) lastTime = performance.now();
+    pauseMusic(!aktif);
+    if (!aktif) writeSave(state); // arka plana alınırken kaydet
   },
 });
 

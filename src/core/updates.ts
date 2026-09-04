@@ -77,13 +77,13 @@ export async function startUpdates(kanca: UpdateHooks) {
     const cevap = await fetch(`${MANIFEST_URL}?t=${Date.now()}`, { cache: "no-store" });
     if (!cevap.ok) return;
     const manifest = (await cevap.json()) as Manifest;
-    if (!manifest?.surum || !manifest.url) return;
-    if (!surumBuyukMu(manifest.surum, mevcutSurum())) return;
+    if (!manifest?.version || !manifest.url) return;
+    if (!isNewerVersion(manifest.version, currentVersion())) return;
 
-    const paket = await CapacitorUpdater.download({ url: manifest.url, version: manifest.surum });
+    const paket = await CapacitorUpdater.download({ url: manifest.url, version: manifest.version });
     bekleyen = { manifest, id: paket.id };
 
-    if (manifest.sessiz) {
+    if (manifest.silent) {
       // Sessiz mod: kullanıcı uygulamayı bir dahaki açışında yeni paket devrede.
       await CapacitorUpdater.next({ id: paket.id });
       return;
@@ -95,7 +95,7 @@ export async function startUpdates(kanca: UpdateHooks) {
 }
 
 /** Kullanıcı "şimdi güncelle" dedi. */
-export async function guncellemeyiUygula() {
+export async function applyUpdate() {
   if (!bekleyen) return;
   try {
     await CapacitorUpdater.set({ id: bekleyen.id });
@@ -105,7 +105,7 @@ export async function guncellemeyiUygula() {
 }
 
 /** Kullanıcı "sonra" dedi: bir sonraki açılışta devreye girsin. */
-export async function guncellemeyiErtele() {
+export async function deferUpdate() {
   if (!bekleyen) return;
   try {
     await CapacitorUpdater.next({ id: bekleyen.id });

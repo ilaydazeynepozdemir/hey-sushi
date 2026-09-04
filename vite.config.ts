@@ -9,6 +9,7 @@ export default defineConfig({
     // OTA sürüm karşılaştırması için paket sürümü gömülür.
     __SURUM__: JSON.stringify(process.env.npm_package_version ?? "0.0.0"),
   },
-  server: { port: 5180 },
+  // Port harness tarafından PORT ile atanabilir; sabitlemiyoruz.
+  server: { port: Number(process.env.PORT ?? 5180) },
   build: { target: "es2022" },
 });

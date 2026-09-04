@@ -3,7 +3,7 @@
  * hâli (masadaki misafirler) değil: gün ortasında çıkılırsa o gün baştan başlar.
  * Cozy bir oyunda bu, yarım kalmış bir günü geri yüklemekten daha az sinir bozucu.
  */
-import { storageGet, storageRemove, storageSet } from "./depo";
+import { storageGet, storageRemove, storageSet } from "./storage";
 import type { GameState } from "./types";
 
 const ANAHTAR = "tsuki.kayit";
@@ -58,5 +58,5 @@ export function applySave(s: GameState, k: SaveData) {
   s.hearts = k.hearts;
   s.coins = k.coins;
   s.decor = [...k.decor];
-  s.extraStations = [...k.extraStations] as GameState["ekstraIstasyon"];
+  s.extraStations = [...k.extraStations] as GameState["extraStations"];
 }

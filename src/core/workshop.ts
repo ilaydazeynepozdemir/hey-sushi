@@ -3,7 +3,7 @@
  * Şimdilik tamamen çevrimdışı (localStorage). Global menü oylaması bunun
  * üstüne, aynı veri şekliyle eklenecek (bkz. ROADMAP.md).
  */
-import { storageGet, storageSet } from "./depo";
+import { storageGet, storageSet } from "./storage";
 import {
   MAKI_RECIPES,
   INGREDIENTS,
@@ -13,7 +13,7 @@ import {
   registerDish,
   unregisterDish,
 } from "./content";
-import { m, y, type Localized } from "./dil";
+import { m, y, type Localized } from "./i18n";
 import { INGREDIENT_COLORS, customRecipeArt, addArt } from "../ui/art";
 import type { StationId, IngredientId } from "./types";
 
@@ -97,7 +97,7 @@ export interface CustomRecipe {
 
 const DEPO = "tsuki.tarifler";
 
-export function recipeHearts(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">): number {
+export function recipeHearts(t: Pick<CustomRecipe, "base" | "filling" | "garnish">): number {
   const base = BASE_MAP[t.base];
   const garnish = t.garnish.reduce(
     (toplam, id) => toplam + (GARNISHES.find((g) => g.id === id)?.hearts ?? 0),
@@ -106,11 +106,11 @@ export function recipeHearts(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">)
   return base.hearts + Math.max(0, t.filling.length - 1) * 2 + garnish;
 }
 
-export function recipeNeeds(t: Pick<CustomRecipe, "taban" | "ic">): IngredientId[] {
+export function recipeNeeds(t: Pick<CustomRecipe, "base" | "filling">): IngredientId[] {
   return [...BASE_MAP[t.base].basics, ...t.filling];
 }
 
-export function recipeArt(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">): string {
+export function recipeArt(t: Pick<CustomRecipe, "base" | "filling" | "garnish">): string {
   const renkler = t.filling.map((m) => INGREDIENT_COLORS[m] ?? INGREDIENT_COLORS.dilim_somon!) as [string, string][];
   return customRecipeArt(t.base, renkler, t.garnish);
 }
@@ -118,36 +118,36 @@ export function recipeArt(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">): s
 /** Tarifi menüye ve sanat kaydına yazar. */
 export function applyRecipe(t: CustomRecipe) {
   const artId = `ozel_${t.id}`;
-  sanatEkle(cizimId, tarifCizim(t));
-  yemekKaydet(t.id, {
+  addArt(artId, recipeArt(t));
+  registerDish(t.id, {
     ad: m(t.ad, t.ad),
-    ikon: cizimId,
-    gerek: tarifGerek(t),
-    kalp: tarifKalp(t),
-    gun: t.gun,
+    icon: artId,
+    needs: recipeNeeds(t),
+    hearts: recipeHearts(t),
+    day: t.day,
     ozel: true,
-    hikaye: t.hikaye,
+    story: t.story,
   });
 }
 
-export function tarifiKaldir(id: string) {
-  yemekSil(id);
-  kaydet(hepsi().filter((t) => t.id !== id));
+export function removeRecipe(id: string) {
+  unregisterDish(id);
+  kaydet(allRecipes().filter((t) => t.id !== id));
 }
 
-export function hepsi(): OzelTarif[] {
+export function allRecipes(): CustomRecipe[] {
   try {
-    const ham = depoOku(DEPO);
+    const ham = storageGet(DEPO);
     if (!ham) return [];
-    const liste = JSON.parse(ham) as OzelTarif[];
+    const liste = JSON.parse(ham) as CustomRecipe[];
     if (!Array.isArray(liste)) return [];
     // v0.2 kayıtlarında garnitür tek bir stringdi — diziye taşı.
     return liste.map((t) => ({
       ...t,
-      garnitur: Array.isArray(t.garnitur)
-        ? t.garnitur
-        : t.garnitur && t.garnitur !== ("yok" as unknown as GarniturId)
-          ? [t.garnitur as GarniturId]
+      garnish: Array.isArray(t.garnish)
+        ? t.garnish
+        : t.garnish && t.garnish !== ("yok" as unknown as GarnishId)
+          ? [t.garnish as GarnishId]
           : [],
     }));
   } catch {
@@ -155,43 +155,43 @@ export function hepsi(): OzelTarif[] {
   }
 }
 
-function kaydet(liste: OzelTarif[]) {
+function kaydet(liste: CustomRecipe[]) {
   try {
-    depoYaz(DEPO, JSON.stringify(liste));
+    storageSet(DEPO, JSON.stringify(liste));
   } catch {
     /* özel sekmede yazamayabiliriz — oyun yine çalışsın */
   }
 }
 
-export function tarifEkle(t: Omit<OzelTarif, "id">): OzelTarif {
-  const tam: OzelTarif = { ...t, id: `ozel_${Date.now().toString(36)}` };
-  kaydet([...hepsi(), tam]);
-  tarifiUygula(tam);
+export function addRecipe(t: Omit<CustomRecipe, "id">): CustomRecipe {
+  const tam: CustomRecipe = { ...t, id: `ozel_${Date.now().toString(36)}` };
+  kaydet([...allRecipes(), tam]);
+  applyRecipe(tam);
   return tam;
 }
 
 /** Açılışta kayıtlı tarifleri menüye geri yükler. */
-export function tarifleriYukle() {
-  for (const t of hepsi()) tarifiUygula(t);
+export function loadRecipes() {
+  for (const t of allRecipes()) applyRecipe(t);
 }
 
 /** Bir malzemenin insan okunur adı (panelde kullanılıyor). */
-export function malzemeAdi(id: MalzemeId): string {
-  return y(MALZEMELER[id].ad);
+export function ingredientName(id: IngredientId): string {
+  return y(INGREDIENTS[id].ad);
 }
 
-export function tarifVarMi(ad: string): boolean {
-  return Object.values(YEMEKLER).some((v) => y(v.ad).toLowerCase() === ad.trim().toLowerCase());
+export function recipeNameTaken(ad: string): boolean {
+  return Object.values(DISHES).some((v) => y(v.ad).toLowerCase() === ad.trim().toLowerCase());
 }
 
 
 /** O gün üretilebilen malzemeler — atölyede sadece bunlar seçilebilir. */
-export function uretilebilirMalzemeler(gun: number, ekstra: IstasyonId[] = []): Set<MalzemeId> {
-  const acik = istasyonlarGun(gun, ekstra);
-  const set = new Set<MalzemeId>();
-  for (const i of acik) if (i.uretir) set.add(i.uretir);
+export function producibleIngredients(day: number, ekstra: StationId[] = []): Set<IngredientId> {
+  const acik = stationsForDay(day, ekstra);
+  const set = new Set<IngredientId>();
+  for (const i of acik) if (i.produces) set.add(i.produces);
   if (acik.some((i) => i.id === "mat")) {
-    for (const t of MAKI_TARIFLERI) if (set.has(t.ic)) set.add(t.sonuc);
+    for (const t of MAKI_RECIPES) if (set.has(t.filling)) set.add(t.sonuc);
   }
   return set;
 }
@@ -201,25 +201,25 @@ export function uretilebilirMalzemeler(gun: number, ekstra: IstasyonId[] = []): 
  * olanlar `kilitli` işaretiyle gelir ve tarif kaydedilince istasyonları açılır —
  * böylece tasarlanan her tarif oyunda gerçekten yapılabilir olur.
  */
-export function icSecenekleri(
-  gun: number,
-  taban: TabanId,
-  ekstra: IstasyonId[] = [],
-): { malzeme: MalzemeId; kilitli: boolean }[] {
-  const uretilebilir = uretilebilirMalzemeler(gun, ekstra);
-  return TABAN_MAP[taban].izinli.map((m) => ({ malzeme: m, kilitli: !uretilebilir.has(m) }));
+export function fillingOptions(
+  day: number,
+  base: BaseId,
+  ekstra: StationId[] = [],
+): { ingredient: IngredientId; kilitli: boolean }[] {
+  const uretilebilir = producibleIngredients(day, ekstra);
+  return BASE_MAP[base].allowed.map((m) => ({ ingredient: m, kilitli: !uretilebilir.has(m) }));
 }
 
 /** Tarifin gerektirdiği ama henüz açık olmayan istasyonlar. */
-export function tarifinAcacagiIstasyonlar(
-  t: Pick<OzelTarif, "taban" | "ic">,
-  gun: number,
-  ekstra: IstasyonId[] = [],
-): IstasyonId[] {
-  const acik = new Set(istasyonlarGun(gun, ekstra).map((i) => i.id));
-  const gerekli = new Set<IstasyonId>();
-  for (const malzeme of tarifGerek(t)) {
-    for (const ist of malzemeIstasyonlari(malzeme)) {
+export function stationsRecipeUnlocks(
+  t: Pick<CustomRecipe, "base" | "filling">,
+  day: number,
+  ekstra: StationId[] = [],
+): StationId[] {
+  const acik = new Set(stationsForDay(day, ekstra).map((i) => i.id));
+  const gerekli = new Set<StationId>();
+  for (const ingredient of recipeNeeds(t)) {
+    for (const ist of stationsForIngredient(ingredient)) {
       if (!acik.has(ist)) gerekli.add(ist);
     }
   }

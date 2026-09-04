@@ -4,7 +4,7 @@
  * adımı türetir. Bu yüzden hem ilk gün öğretici, hem sonraki günlerde yardımcı olur.
  */
 import { STATION_MAP, CHARACTER_MAP, MAKI_RECIPES, INGREDIENTS, isMakiFilling, dish } from "./content";
-import { S, format, y } from "./dil";
+import { S, format, y } from "./i18n";
 import { readyToServe, orderIngredients } from "./game";
 import type { TargetId, StationId, IngredientId, Guest, GameState, PlayerId } from "./types";
 
@@ -85,52 +85,52 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
     // Maki için mata mı gitmeli?
     const makiIsteyen = bekleyen.find((m) =>
       eksikler(m).some((e) => {
-        const ic = MAKI_ICI[e];
-        return ic !== undefined && (el === "nori" || el === "pirinc" || el === ic);
+        const filling = MAKI_FILLING_OF[e];
+        return filling !== undefined && (hand === "nori" || hand === "pirinc" || hand === filling);
       }),
     );
-    if (makiIsteyen && !s.matSonuc) {
-      const zatenVar = s.matSlotlari.some((x) => (makiIciMi(el) ? makiIciMi(x) : x === el));
+    if (makiIsteyen && !s.matResult) {
+      const zatenVar = s.matSlots.some((x) => (isMakiFilling(hand) ? isMakiFilling(x) : x === hand));
       if (!zatenVar) {
-        return { metin: bicim(S.ipucuMat, { malzeme: isim }), hedef: "mat" };
+        return { text: format(S.ipucuMat, { ingredient: isim }), target: "mat" };
       }
     }
 
-    return { metin: bicim(S.ipucuGereksiz, { malzeme: isim }), hedef: "atik" };
+    return { text: format(S.ipucuGereksiz, { ingredient: isim }), target: "atik" };
   }
 
   // 1.5) Keyfi çok düşen biri varsa ikram öncelikli — sipariş beklemeye devam eder.
-  const sikilan = bekleyen.find((mm) => mm.bekledi > mm.sabir * 1.15);
-  if (sikilan && ISTASYON_MAP.ikram) {
-    if (oyuncu.el === "ikram") {
+  const sikilan = bekleyen.find((mm) => mm.waited > mm.patience * 1.15);
+  if (sikilan && STATION_MAP.ikram) {
+    if (oyuncu.hand === "ikram") {
       return {
-        metin: bicim(S.ipucuBirak, { malzeme: y(MALZEMELER.ikram.ad), ad: ad(sikilan) }),
-        hedef: `misafir:${sikilan.id}`,
+        text: format(S.ipucuBirak, { ingredient: y(INGREDIENTS.ikram.ad), ad: ad(sikilan) }),
+        target: `misafir:${sikilan.id}`,
       };
     }
-    if (!oyuncu.el) {
-      return { metin: bicim(S.ipucuIkram, { ad: ad(sikilan) }), hedef: "ikram" };
+    if (!oyuncu.hand) {
+      return { text: format(S.ipucuIkram, { ad: ad(sikilan) }), target: "ikram" };
     }
   }
 
   // 2) Elin boş: servise hazır bir tepsi var mı?
   const hazir = bekleyen.find((m) =>
-    servisHazir(
-      m.siparis,
-      m.tepsi.map((t) => t.malzeme),
+    readyToServe(
+      m.order,
+      m.tray.map((t) => t.ingredient),
     ),
   );
   if (hazir) {
     return {
-      metin: bicim(S.ipucuServis, { ad: ad(hazir) }),
-      hedef: `misafir:${hazir.id}`,
-      servis: true,
+      text: format(S.ipucuServis, { ad: ad(hazir) }),
+      target: `misafir:${hazir.id}`,
+      served: true,
     };
   }
 
   // 3) Mattaki iş yarım mı?
-  if (s.matSonuc) {
-    return { metin: y(S.ipucuMakiAl), hedef: "mat" };
+  if (s.matResult) {
+    return { text: y(S.ipucuMakiAl), target: "mat" };
   }
 
   // 4) Eksik ilk malzemeyi üret
@@ -139,45 +139,45 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
     const ilk = eksik[0];
     if (!ilk) continue;
 
-    const ic = MAKI_ICI[ilk];
-    if (ic) {
-      const varNori = s.matSlotlari.includes("nori");
-      const varPirinc = s.matSlotlari.includes("pirinc");
-      const varIc = s.matSlotlari.some((x) => makiIciMi(x));
+    const filling = MAKI_FILLING_OF[ilk];
+    if (filling) {
+      const varNori = s.matSlots.includes("nori");
+      const varPirinc = s.matSlots.includes("pirinc");
+      const varIc = s.matSlots.some((x) => isMakiFilling(x));
       if (varNori && varPirinc && varIc) {
         return {
-          metin: bicim(S.ipucuMatSar, { n: ISTASYON_MAP.mat.tap }),
-          hedef: "mat",
+          text: format(S.ipucuMatSar, { n: STATION_MAP.mat.taps }),
+          target: "mat",
         };
       }
-      const sirada: MalzemeId = !varNori ? "nori" : !varPirinc ? "pirinc" : ic;
-      const ist = MALZEME_ISTASYON[sirada];
-      const yemekAd = y(yemek(m.siparis.find((yy) => yemek(yy).gerek.includes(ilk)) ?? m.siparis[0]!).ad);
+      const sirada: IngredientId = !varNori ? "nori" : !varPirinc ? "pirinc" : filling;
+      const ist = INGREDIENT_STATION[sirada];
+      const dishName = y(dish(m.order.find((yy) => dish(yy).needs.includes(ilk)) ?? m.order[0]!).ad);
       return {
-        metin: bicim(S.ipucuUret, {
-          yemek: yemekAd,
-          malzeme: y(MALZEMELER[sirada].ad),
-          istasyon: ist ? y(ISTASYON_MAP[ist].ad) : "",
+        text: format(S.ipucuUret, {
+          dish: dishName,
+          ingredient: y(INGREDIENTS[sirada].ad),
+          istasyon: ist ? y(STATION_MAP[ist].ad) : "",
         }),
-        hedef: ist ?? null,
+        target: ist ?? null,
       };
     }
 
-    const ist = MALZEME_ISTASYON[ilk];
+    const ist = INGREDIENT_STATION[ilk];
     if (ist) {
-      const ib = ISTASYON_MAP[ist];
-      const kalan = ib.tap - (s.ilerleme[ist] ?? 0);
+      const ib = STATION_MAP[ist];
+      const kalan = ib.taps - (s.progress[ist] ?? 0);
       return {
-        metin: bicim(S.ipucuUretKisi, {
+        text: format(S.ipucuUretKisi, {
           ad: ad(m),
-          malzeme: y(MALZEMELER[ilk].ad),
+          ingredient: y(INGREDIENTS[ilk].ad),
           istasyon: y(ib.ad),
           n: kalan,
         }),
-        hedef: ist,
+        target: ist,
       };
     }
   }
 
-  return { metin: y(S.ipucuKontrol), hedef: null };
+  return { text: y(S.ipucuKontrol), target: null };
 }

@@ -9,19 +9,19 @@ import {
   dish,
 } from "../core/content";
 import { menuForDay, moodArt, readyToServe, orderProgress } from "../core/game";
-import type { Hint } from "../core/ipucu";
+import type { Hint } from "../core/hint";
 import type { TargetId, StationId, IngredientId, Guest, GameState, PlayerId } from "../core/types";
 import { serverSvg, art } from "./art";
 import { defaultAvatar } from "../core/avatar";
-import { S, format, activeLang, setLang, y, type LangCode } from "../core/dil";
-import { FEATURES } from "../core/ozellikler";
-import { Sahne } from "./sahne";
-import { hapticSelect } from "../core/titresim";
-import { workshopPanel } from "./atolye-panel";
+import { S, format, activeLang, setLang, y, type LangCode } from "../core/i18n";
+import { FEATURES } from "../core/features";
+import { Sahne } from "./scene";
+import { hapticSelect } from "../core/haptics";
+import { workshopPanel } from "./workshop-panel";
 import { avatarPanel } from "./avatar-panel";
 import type { Avatar } from "../core/avatar";
-import type { CustomRecipe } from "../core/atolye";
-import type { NetRole } from "../net/oda";
+import type { CustomRecipe } from "../core/workshop";
+import type { NetRole } from "../net/room";
 
 const PASTEL_BLOBS = ["#ffd7c9", "#d8eed3", "#cbe7e2", "#fff0cf", "#d5cbe9"];
 
@@ -125,333 +125,333 @@ export class View {
       const f = hand("div", "fener");
       f.style.left = `${x}%`;
       f.style.top = `${y}%`;
-      f.style.background = PASTEL_BLOB[i % PASTEL_BLOB.length]!;
+      f.style.background = PASTEL_BLOBS[i % PASTEL_BLOBS.length]!;
       f.style.animationDelay = `${i * 1.3}s`;
       fenerler.appendChild(f);
     });
     this.kok.appendChild(fenerler);
 
-    const ust = el("div", "ust");
-    const marka = el("div", "marka");
+    const ust = hand("div", "ust");
+    const marka = hand("div", "marka");
     marka.innerHTML = `${art("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
-    const gun = el("div", "rozet");
-    const kalp = el("div", "rozet kalp");
-    const misafir = el("div", "rozet misafir-rozet");
-    this.rehberBtn = el("button", "rehber-btn") as HTMLButtonElement;
-    this.rehberBtn.onclick = () => this.cb.rehberDegis();
+    const day = hand("div", "rozet");
+    const hearts = hand("div", "rozet kalp");
+    const misafir = hand("div", "rozet misafir-rozet");
+    this.guideBtn = hand("button", "rehber-btn") as HTMLButtonElement;
+    this.guideBtn.onclick = () => this.cb.onToggleGuide();
     // Sağ üstte dil değiştirici — girişte ve oyun sırasında hep erişilebilir.
-    this.dilBtn = el("div", "dil-anahtar");
-    const dilSecenekleri: [DilKodu, string][] = [
+    this.langSwitch = hand("div", "dil-anahtar");
+    const langOptions: [LangCode, string][] = [
       ["en", "EN"],
       ["tr", "TR"],
     ];
-    for (const [kod, kisa] of dilSecenekleri) {
-      const b = el("button", "dil-dugme") as HTMLButtonElement;
-      b.dataset.dil = kod;
+    for (const [code, kisa] of langOptions) {
+      const b = hand("button", "dil-dugme") as HTMLButtonElement;
+      b.dataset.dil = code;
       b.textContent = kisa;
       b.onclick = () => {
-        if (dilAktif() === kod) return;
-        dilAyarla(kod);
-        this.cb.dilDegis(kod);
+        if (activeLang() === code) return;
+        setLang(code);
+        this.cb.onChangeLang(code);
       };
-      this.dilBtn.appendChild(b);
+      this.langSwitch.appendChild(b);
     }
 
-    ust.append(marka, el("div", "bosluk"), this.rehberBtn, misafir, gun, kalp);
-    this.rozetler = { gun, kalp, misafir };
-    this.ustBar = ust;
+    ust.append(marka, hand("div", "bosluk"), this.guideBtn, misafir, day, hearts);
+    this.badges = { day, hearts, misafir };
+    this.topBar = ust;
     this.kok.appendChild(ust);
     // Perdenin de üstünde dursun: giriş ekranında da erişilebilir olmalı.
-    this.muzikBtn = el("button", "yuvarlak-dugme") as HTMLButtonElement;
-    this.muzikBtn.onclick = () => this.cb.muzikDegis();
-    this.sesBtn = el("button", "yuvarlak-dugme") as HTMLButtonElement;
-    this.sesBtn.onclick = () => this.cb.sesDegis();
-    this.cikisBtn = el("button", "yuvarlak-dugme cikis") as HTMLButtonElement;
-    this.cikisBtn.innerHTML = sanat("ui_cikis", 15);
-    this.cikisBtn.onclick = () => this.cb.cikisAc();
+    this.musicBtn = hand("button", "yuvarlak-dugme") as HTMLButtonElement;
+    this.musicBtn.onclick = () => this.cb.onToggleMusic();
+    this.sfxBtn = hand("button", "yuvarlak-dugme") as HTMLButtonElement;
+    this.sfxBtn.onclick = () => this.cb.onToggleSfx();
+    this.quitBtn = hand("button", "yuvarlak-dugme cikis") as HTMLButtonElement;
+    this.quitBtn.innerHTML = art("ui_cikis", 15);
+    this.quitBtn.onclick = () => this.cb.onOpenQuit();
 
-    this.ustSag = el("div", "ust-sag");
-    this.ustSag.append(this.cikisBtn, this.muzikBtn, this.sesBtn, this.dilBtn);
-    this.kok.appendChild(this.ustSag);
+    this.topRight = hand("div", "ust-sag");
+    this.topRight.append(this.quitBtn, this.musicBtn, this.sfxBtn, this.langSwitch);
+    this.kok.appendChild(this.topRight);
 
-    this.salon = el("div", "salon");
+    this.salon = hand("div", "salon");
     this.kok.appendChild(this.salon);
 
-    const sarma = el("div", "tezgah-sarma");
-    this.tezgahSarma = sarma;
-    this.rehberBar = el("div", "rehber-bar");
-    this.tezgah = el("div", "tezgah");
-    this.eller = el("div", "eller");
-    sarma.append(this.rehberBar, this.tezgah, this.eller);
+    const sarma = hand("div", "tezgah-sarma");
+    this.counterWrap = sarma;
+    this.guideBar = hand("div", "rehber-bar");
+    this.tezgah = hand("div", "tezgah");
+    this.eller = hand("div", "eller");
+    sarma.append(this.guideBar, this.tezgah, this.eller);
     this.kok.appendChild(sarma);
 
-    this.garsonKatman = el("div", "garson-katman");
-    this.perdeKap = el("div", "perde-kap");
-    this.surukleKatman = el("div", "surukle-katman");
-    this.kok.append(this.garsonKatman, this.perdeKap, this.surukleKatman);
+    this.garsonKatman = hand("div", "garson-katman");
+    this.overlayHost = hand("div", "perde-kap");
+    this.dragLayer = hand("div", "surukle-katman");
+    this.kok.append(this.garsonKatman, this.overlayHost, this.dragLayer);
 
     // Yakalama aşaması: istasyonun kendi pointerdown'ından ÖNCE çalışmalı ki
     // üretim tamamlandığında parmağın hâlâ basılı olduğunu bilelim.
     window.addEventListener(
       "pointerdown",
       (e) => {
-        this.pointerBasili = true;
-        this.sonPointer = { x: e.clientX, y: e.clientY };
+        this.pointerDown = true;
+        this.lastPointer = { x: e.clientX, y: e.clientY };
       },
       true,
     );
     window.addEventListener("pointermove", (e) => {
-      this.sonPointer = { x: e.clientX, y: e.clientY };
-      if (this.surukleHayalet) this.surukleTasi(e.clientX, e.clientY);
+      this.lastPointer = { x: e.clientX, y: e.clientY };
+      if (this.dragGhost) this.moveDrag(e.clientX, e.clientY);
     });
     window.addEventListener("pointerup", (e) => {
-      this.pointerBasili = false;
-      if (this.surukleHayalet) this.surukleBitir(e.clientX, e.clientY);
+      this.pointerDown = false;
+      if (this.dragGhost) this.endDrag(e.clientX, e.clientY);
     });
     window.addEventListener("pointercancel", () => {
-      this.pointerBasili = false;
-      if (this.surukleHayalet) this.surukleIptal();
+      this.pointerDown = false;
+      if (this.dragGhost) this.cancelDrag();
     });
   }
 
   // ------------------------------------------------------------- sürükle bırak
   /** Üretim tamamlandığında parmak/fare hâlâ basılıysa doğrudan sürüklemeye geç. */
-  uretimSurukle(malzeme: MalzemeId) {
-    if (!this.pointerBasili || this.surukleHayalet) return;
-    this.surukleBaslat(malzeme, this.sonPointer.x, this.sonPointer.y);
+  dragProduced(ingredient: IngredientId) {
+    if (!this.pointerDown || this.dragGhost) return;
+    this.startDrag(ingredient, this.lastPointer.x, this.lastPointer.y);
   }
 
-  surukleBaslat(malzeme: MalzemeId, x: number, y: number) {
-    if (this.surukleHayalet) return;
-    const h = el("div", "suruklenen");
-    h.innerHTML = sanat(MALZEMELER[malzeme].ikon, 46);
-    this.surukleKatman.appendChild(h);
-    this.surukleHayalet = h;
-    this.kok.classList.add("surukleniyor");
-    this.surukleTasi(x, y);
+  startDrag(ingredient: IngredientId, x: number, y: number) {
+    if (this.dragGhost) return;
+    const h = hand("div", "suruklenen");
+    h.innerHTML = art(INGREDIENTS[ingredient].icon, 46);
+    this.dragLayer.appendChild(h);
+    this.dragGhost = h;
+    this.kok.classList.add("is-dragging");
+    this.moveDrag(x, y);
   }
 
-  private surukleTasi(x: number, y: number) {
-    const h = this.surukleHayalet;
+  private moveDrag(x: number, y: number) {
+    const h = this.dragGhost;
     if (!h) return;
     const kutu = this.kok.getBoundingClientRect();
     h.style.left = `${x - kutu.left}px`;
     h.style.top = `${y - kutu.top}px`;
 
     const altindaki = document.elementFromPoint(x, y);
-    const hedef = altindaki?.closest<HTMLElement>("[data-drop]") ?? null;
-    if (hedef !== this.surukleHedef) {
-      this.surukleHedef?.classList.remove("drop-uzerinde");
-      hedef?.classList.add("drop-uzerinde");
-      this.surukleHedef = hedef;
-      if (hedef) titresimSecim();
+    const target = altindaki?.closest<HTMLElement>("[data-drop]") ?? null;
+    if (target !== this.dropTarget) {
+      this.dropTarget?.classList.remove("drop-over");
+      target?.classList.add("drop-over");
+      this.dropTarget = target;
+      if (target) hapticSelect();
     }
   }
 
-  private surukleTemizle() {
-    this.surukleHayalet?.remove();
-    this.surukleHayalet = null;
-    this.surukleHedef?.classList.remove("drop-uzerinde");
-    this.surukleHedef = null;
-    this.kok.classList.remove("surukleniyor");
+  private clearDrag() {
+    this.dragGhost?.remove();
+    this.dragGhost = null;
+    this.dropTarget?.classList.remove("drop-over");
+    this.dropTarget = null;
+    this.kok.classList.remove("is-dragging");
   }
 
-  private surukleIptal() {
-    this.surukleTemizle();
+  private cancelDrag() {
+    this.clearDrag();
   }
 
-  private surukleBitir(x: number, y: number) {
+  private endDrag(x: number, y: number) {
     const altindaki = document.elementFromPoint(x, y);
-    const hedef = altindaki?.closest<HTMLElement>("[data-drop]") ?? null;
-    const kimlik = hedef?.dataset.drop as HedefId | undefined;
-    this.surukleTemizle();
-    if (kimlik) this.cb.hedefeTikla(kimlik);
+    const target = altindaki?.closest<HTMLElement>("[data-drop]") ?? null;
+    const kimlik = target?.dataset.drop as TargetId | undefined;
+    this.clearDrag();
+    if (kimlik) this.cb.onTarget(kimlik);
   }
 
-  ciz(s: OyunDurumu, g: ArayuzGirdi) {
-    this.benimOyuncu = g.net.rol === "kapali" ? 0 : g.net.benId;
-    this.sahne.guncelle(mevsimGun(s.gun), s.dekor);
-    this.rozetler.gun.innerHTML = `${art("ui_takvim", 18)}<span>${y(S.day)}</span><b>${s.day}</b>`;
-    this.rozetler.kalp.innerHTML = `${art("ui_kalp", 18)}<b>${s.hearts}</b>`;
-    const kalanMisafir = Math.max(0, s.gunMisafirHedefi - s.gelenMisafir + s.misafirler.length);
-    this.rozetler.misafir.innerHTML = `${art("ui_tabak", 18)}<b>${guestsLeft}</b>`;
-    this.rehberBtn.innerHTML = `${art(g.guideOn ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.guideOn ? S.guideOn : S.rehberKapali)}</span>`;
-    this.rehberBtn.classList.toggle("kapali", !g.rehberAcik);
-    this.sesBtn.innerHTML = sanat(g.sesAcik ? "ui_ses" : "ui_sessiz", 16);
-    this.sesBtn.classList.toggle("kapali", !g.sesAcik);
-    this.sesBtn.title = y(S.efektler);
-    this.muzikBtn.innerHTML = sanat(g.muzikAcik ? "ui_muzik" : "ui_muzik_kapali", 15);
-    this.muzikBtn.classList.toggle("kapali", !g.muzikAcik);
-    this.muzikBtn.title = y(S.muzik);
-    this.cikisBtn.title = y(S.kaydetCik);
+  render(s: GameState, g: ViewInput) {
+    this.myPlayer = g.net.role === "kapali" ? 0 : g.net.myPlayerId;
+    this.sahne.guncelle(seasonForDay(s.day), s.decor);
+    this.badges.day.innerHTML = `${art("ui_takvim", 18)}<span>${y(S.day)}</span><b>${s.day}</b>`;
+    this.badges.hearts.innerHTML = `${art("ui_kalp", 18)}<b>${s.hearts}</b>`;
+    const guestsLeft = Math.max(0, s.guestTarget - s.guestsArrived + s.guests.length);
+    this.badges.misafir.innerHTML = `${art("ui_tabak", 18)}<b>${guestsLeft}</b>`;
+    this.guideBtn.innerHTML = `${art(g.guideOn ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.guideOn ? S.guideOn : S.rehberKapali)}</span>`;
+    this.guideBtn.classList.toggle("off", !g.guideOn);
+    this.sfxBtn.innerHTML = art(g.sfxOn ? "ui_ses" : "ui_sessiz", 16);
+    this.sfxBtn.classList.toggle("off", !g.sfxOn);
+    this.sfxBtn.title = y(S.efektler);
+    this.musicBtn.innerHTML = art(g.musicOn ? "ui_muzik" : "ui_muzik_kapali", 15);
+    this.musicBtn.classList.toggle("off", !g.musicOn);
+    this.musicBtn.title = y(S.muzik);
+    this.quitBtn.title = y(S.kaydetCik);
     // Panel açıkken üst bardaki rozetler gizlenir: hem gereksiz hem çakışıyorlardı.
-    const panelAcik = s.faz !== "gun" || g.atolyeAcik || g.avatarAcik;
-    this.ustBar.classList.toggle("gizli", panelAcik);
+    const panelOpen = s.phase !== "gun" || g.workshopOpen || g.avatarOpen;
+    this.topBar.classList.toggle("hidden", panelOpen);
     // Köşedeki küme kadar yer ayır ki rozetler altına girmesin.
-    this.ustBar.style.paddingRight = `${this.topRight.offsetWidth + 26}px`;
-    for (const b of this.dilBtn.children) {
-      b.classList.toggle("aktif", (b as HTMLElement).dataset.dil === dilAktif());
+    this.topBar.style.paddingRight = `${this.topRight.offsetWidth + 26}px`;
+    for (const b of this.langSwitch.children) {
+      b.classList.toggle("active", (b as HTMLElement).dataset.dil === activeLang());
     }
 
-    this.cizSalon(s, g);
-    this.cizTezgah(s, g);
-    this.cizEller(s);
-    this.cizRehber(s, g);
-    this.kurGarsonlar(s);
-    this.cizPerde(s, g);
+    this.renderDining(s, g);
+    this.renderCounter(s, g);
+    this.renderHands(s);
+    this.renderGuide(s, g);
+    this.syncServers(s);
+    this.renderOverlay(s, g);
   }
 
   // ------------------------------------------------------------- salon
-  private cizSalon(s: OyunDurumu, g: ArayuzGirdi) {
-    const koltuklar: (Misafir | null)[] = Array.from({ length: s.koltukSayisi }, () => null);
-    for (const m of s.misafirler) if (m.koltuk < koltuklar.length) koltuklar[m.koltuk] = m;
+  private renderDining(s: GameState, g: ViewInput) {
+    const koltuklar: (Guest | null)[] = Array.from({ length: s.seatCount }, () => null);
+    for (const m of s.guests) if (m.seat < koltuklar.length) koltuklar[m.seat] = m;
 
     while (this.salon.children.length > koltuklar.length) this.salon.lastElementChild?.remove();
     while (this.salon.children.length < koltuklar.length) {
-      this.salon.appendChild(el("div", "koltuk bos"));
+      this.salon.appendChild(hand("div", "koltuk bos"));
     }
 
     koltuklar.forEach((m, i) => {
       const kap = this.salon.children[i] as HTMLElement;
-      kap.dataset.renk = String(i);
+      kap.dataset.color = String(i);
       if (!m) {
         if (kap.dataset.mid) {
-          this.koltukEl.delete(kap.dataset.mid);
+          this.seatEls.delete(kap.dataset.mid);
           kap.dataset.mid = "";
         }
         // dataset ile işaretle: "bos" sınıfı ilk oluşturmada zaten var olduğu için
         // sınıfa bakmak içeriğin hiç basılmamasına yol açıyordu.
-        if (kap.dataset.bosKuruldu !== "1") {
-          kap.dataset.bosKuruldu = "1";
-          kap.className = "koltuk bos";
+        if (kap.dataset.emptyBuilt !== "1") {
+          kap.dataset.emptyBuilt = "1";
+          kap.className = "seat empty";
           kap.innerHTML = `${art("ui_tabak", 30)}<span>${y(S.bosMasa)}</span>`;
         }
         return;
       }
       if (kap.dataset.mid !== m.id) {
         kap.dataset.mid = m.id;
-        kap.dataset.bosKuruldu = "";
+        kap.dataset.emptyBuilt = "";
         kap.innerHTML = "";
-        this.misafirIskeleti(kap, m);
-        this.koltukEl.set(m.id, kap);
+        this.buildGuestCard(kap, m);
+        this.seatEls.set(m.id, kap);
       }
-      this.misafirGuncelle(kap, m, g);
+      this.updateGuestCard(kap, m, g);
     });
   }
 
-  private misafirIskeleti(kap: HTMLElement, m: Misafir) {
-    kap.className = "koltuk dolu";
-    const k = KARAKTER_MAP[m.karakterId];
-    const balon = el("div", "balon");
+  private buildGuestCard(kap: HTMLElement, m: Guest) {
+    kap.className = "seat filled";
+    const k = CHARACTER_MAP[m.characterId];
+    const balon = hand("div", "balon");
     balon.style.display = "none";
-    const yuz = el("div", "yuz");
-    const ad = el("div", "ad");
+    const face = hand("div", "yuz");
+    const ad = hand("div", "ad");
     ad.textContent = k ? y(k.ad) : "";
-    const siparis = el("div", "siparis");
-    const sabir = el("div", "keyif");
-    const keyifEtiket = el("span", "keyif-etiket");
-    keyifEtiket.textContent = y(S.keyif);
-    const keyifOluk = el("div", "keyif-oluk");
-    keyifOluk.appendChild(el("i"));
-    sabir.append(keyifEtiket, keyifOluk);
-    const tepsi = el("div", "tepsi");
-    const btn = el("button", "servis-btn") as HTMLButtonElement;
+    const order = hand("div", "siparis");
+    const patience = hand("div", "keyif");
+    const moodLabel = hand("span", "keyif-etiket");
+    moodLabel.textContent = y(S.keyif);
+    const moodTrack = hand("div", "keyif-oluk");
+    moodTrack.appendChild(hand("i"));
+    patience.append(moodLabel, moodTrack);
+    const tray = hand("div", "tepsi");
+    const btn = hand("button", "servis-btn") as HTMLButtonElement;
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      this.cb.servisEt(m.id);
+      this.cb.onServe(m.id);
     });
-    kap.append(balon, yuz, ad, siparis, sabir, tepsi, btn);
+    kap.append(balon, face, ad, order, patience, tray, btn);
     kap.dataset.drop = `misafir:${m.id}`;
     kap.addEventListener("pointerdown", (e) => {
       e.preventDefault();
-      this.cb.hedefeTikla(`misafir:${m.id}`);
+      this.cb.onTarget(`misafir:${m.id}`);
     });
   }
 
-  private misafirGuncelle(kap: HTMLElement, m: Misafir, g: ArayuzGirdi) {
-    kap.classList.toggle("mutlu", m.durum === "mutlu");
-    kap.classList.toggle("gidiyor", m.durum === "gidiyor");
-    const secili = g.seciliHedef === `misafir:${m.id}`;
-    kap.classList.toggle("secili", secili);
-    if (secili) kap.style.setProperty("--secim-renk", g.seciliRenk);
-    const rehberBurada = g.rehberAcik && g.ipucu?.hedef === `misafir:${m.id}`;
-    kap.classList.toggle("rehber-hedef", !!rehberBurada && !g.ipucu?.servis);
+  private updateGuestCard(kap: HTMLElement, m: Guest, g: ViewInput) {
+    kap.classList.toggle("happy", m.state === "mutlu");
+    kap.classList.toggle("leaving", m.state === "gidiyor");
+    const secili = g.selectedTarget === `misafir:${m.id}`;
+    kap.classList.toggle("selected", secili);
+    if (secili) kap.style.setProperty("--secim-renk", g.selectionColor);
+    const rehberBurada = g.guideOn && g.hint?.target === `misafir:${m.id}`;
+    kap.classList.toggle("guide-target", !!rehberBurada && !g.hint?.served);
 
-    const [balon, yuz, , siparis, sabir, tepsi, btn] = Array.from(kap.children) as HTMLElement[];
-    const k = KARAKTER_MAP[m.karakterId];
+    const [balon, face, , order, patience, tray, btn] = Array.from(kap.children) as HTMLElement[];
+    const k = CHARACTER_MAP[m.characterId];
 
     if (balon) {
-      if (m.replik) {
-        const metin = y(m.replik);
-        if (balon.textContent !== metin) balon.textContent = metin;
+      if (m.line) {
+        const text = y(m.line);
+        if (balon.textContent !== text) balon.textContent = text;
         balon.style.display = "";
       } else balon.style.display = "none";
     }
 
-    const ruh = ruhHaliSanat(m);
-    if (yuz && yuz.dataset.ruh !== ruh) {
-      yuz.dataset.ruh = ruh;
-      yuz.innerHTML = `${art(k?.face ?? "kar_efe", 52)}<span class="ruh">${art(ruh, 22)}</span>`;
+    const ruh = moodArt(m);
+    if (face && face.dataset.ruh !== ruh) {
+      face.dataset.ruh = ruh;
+      face.innerHTML = `${art(k?.face ?? "kar_efe", 52)}<span class="mood-badge">${art(ruh, 22)}</span>`;
     }
 
-    const tepsiMalz = m.tepsi.map((t) => t.malzeme);
-    if (siparis) {
-      const durum = siparisDurumu(m.siparis, tepsiMalz);
-      const imza = m.siparis.join(",") + "|" + durum.join(",");
-      if (siparis.dataset.imza !== imza) {
-        siparis.dataset.imza = imza;
-        siparis.innerHTML = m.siparis
+    const trayItems = m.tray.map((t) => t.ingredient);
+    if (order) {
+      const state = orderProgress(m.order, trayItems);
+      const imza = m.order.join(",") + "|" + state.join(",");
+      if (order.dataset.imza !== imza) {
+        order.dataset.imza = imza;
+        order.innerHTML = m.order
           .map(
             (yid, i) =>
-              `<div class="cip${durum[i] ? " tamam" : ""}">${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>${state[i] ? art("ui_onay", 13) : ""}</div>`,
+              `<div class="chip${state[i] ? " tamam" : ""}">${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>${state[i] ? art("ui_onay", 13) : ""}</div>`,
           )
           .join("");
       }
     }
 
-    if (sabir) {
-      const bar = sabir.querySelector<HTMLElement>("i");
-      const r = Math.min(1, m.bekledi / (m.sabir * 2.4));
+    if (patience) {
+      const bar = patience.querySelector<HTMLElement>("i");
+      const r = Math.min(1, m.waited / (m.patience * 2.4));
       const keyif = 1 - r;
       if (bar) {
         bar.style.width = `${keyif * 100}%`;
         bar.style.background =
           keyif > 0.6 ? "var(--avokado)" : keyif > 0.25 ? "var(--tamago)" : "var(--zencefil)";
       }
-      sabir.classList.toggle("dusuk", keyif <= 0.25);
+      patience.classList.toggle("low", keyif <= 0.25);
     }
 
-    if (tepsi) {
-      while (tepsi.children.length > m.tepsi.length) tepsi.lastElementChild?.remove();
-      m.tepsi.forEach((p, i) => {
-        let d = tepsi.children[i] as HTMLElement | undefined;
+    if (tray) {
+      while (tray.children.length > m.tray.length) tray.lastElementChild?.remove();
+      m.tray.forEach((p, i) => {
+        let d = tray.children[i] as HTMLElement | undefined;
         if (!d) {
-          d = el("div", "parca");
-          tepsi.appendChild(d);
+          d = hand("div", "parca");
+          tray.appendChild(d);
         }
-        if (d.dataset.m !== p.malzeme) {
-          d.dataset.m = p.malzeme;
-          d.innerHTML = sanat(MALZEMELER[p.malzeme].ikon, 24);
+        if (d.dataset.m !== p.ingredient) {
+          d.dataset.m = p.ingredient;
+          d.innerHTML = art(INGREDIENTS[p.ingredient].icon, 24);
         }
-        const bekliyor = this.bekleyenParcalar.get(m.id)?.has(i) ?? false;
+        const bekliyor = this.pendingPieces.get(m.id)?.has(i) ?? false;
         d.className = `parca p${p.placedBy + 1}${bekliyor ? " bekliyor" : ""}`;
       });
-      tepsi.classList.toggle("bos", m.tepsi.length === 0);
-      tepsi.dataset.etiket = y(S.tepsi);
+      tray.classList.toggle("empty", m.tray.length === 0);
+      tray.dataset.etiket = y(S.tray);
     }
 
     if (btn instanceof HTMLButtonElement) {
-      const hazir = m.durum === "bekliyor" && servisHazir(m.siparis, tepsiMalz);
-      btn.disabled = m.durum !== "bekliyor" || m.tepsi.length === 0;
-      btn.classList.toggle("hazir", hazir);
-      btn.classList.toggle("rehber-hedef", !!(rehberBurada && g.ipucu?.servis));
-      const imza = m.durum === "mutlu" ? "mutlu" : hazir ? "hazir" : "bos";
-      if (btn.dataset.imza !== imza + y(S.servisEt)) {
-        btn.dataset.imza = imza + y(S.servisEt);
+      const hazir = m.state === "bekliyor" && readyToServe(m.order, trayItems);
+      btn.disabled = m.state !== "bekliyor" || m.tray.length === 0;
+      btn.classList.toggle("ready", hazir);
+      btn.classList.toggle("guide-target", !!(rehberBurada && g.hint?.served));
+      const imza = m.state === "mutlu" ? "mutlu" : hazir ? "hazir" : "bos";
+      if (btn.dataset.imza !== imza + y(S.onServe)) {
+        btn.dataset.imza = imza + y(S.onServe);
         btn.innerHTML =
           imza === "mutlu"
-            ? sanat("ui_kalp", 18)
+            ? art("ui_kalp", 18)
             : imza === "hazir"
               ? `<span>${y(S.onServe)}</span>${art("ui_onay", 15)}`
               : `<span>${y(S.onServe)}</span>`;
@@ -461,335 +461,335 @@ export class View {
 
   // ------------------------------------------------------------- tezgâh
   /** İstasyonlar günlere göre açıldığı için tezgâh gün değişince yeniden kurulur. */
-  private kurTezgah(gun: number, ekstra: IstasyonId[]) {
+  private buildStations(day: number, ekstra: StationId[]) {
     const imza = `${day}|${[...ekstra].sort().join(",")}`;
-    if (this.tezgahImza === imza) return;
-    this.tezgahImza = imza;
+    if (this.stationsKey === imza) return;
+    this.stationsKey = imza;
     this.tezgah.innerHTML = "";
-    this.istasyonEl.clear();
-    for (const ist of istasyonlarGun(gun, ekstra)) {
-      const d = el("div", ist.id === "mat" ? "istasyon mat" : "istasyon");
+    this.stationEls.clear();
+    for (const ist of stationsForDay(day, ekstra)) {
+      const d = hand("div", ist.id === "mat" ? "istasyon mat" : "istasyon");
       d.dataset.t = ist.id;
-      const ikon = el("div", "ikon");
-      ikon.innerHTML = sanat(ist.ikon, ist.id === "mat" ? 34 : 32);
-      const etiket = el("div", "etiket");
+      const icon = hand("div", "ikon");
+      icon.innerHTML = art(ist.icon, ist.id === "mat" ? 34 : 32);
+      const etiket = hand("div", "etiket");
       etiket.textContent = y(ist.ad);
-      d.append(ikon, etiket);
+      d.append(icon, etiket);
       if (ist.id === "mat") {
-        const slotlar = el("div", "mat-slotlar");
-        for (let i = 0; i < 3; i++) slotlar.appendChild(el("div", "mat-slot"));
+        const slotlar = hand("div", "mat-slotlar");
+        for (let i = 0; i < 3; i++) slotlar.appendChild(hand("div", "mat-slot"));
         d.appendChild(slotlar);
       }
-      const ilerleme = el("div", "ilerleme");
-      ilerleme.style.width = "0%";
-      d.appendChild(ilerleme);
+      const progress = hand("div", "ilerleme");
+      progress.style.width = "0%";
+      d.appendChild(progress);
       if (ist.id === "mat" || ist.id === "atik") d.dataset.drop = ist.id;
       d.addEventListener("pointerdown", (e) => {
         e.preventDefault();
-        this.cb.hedefeTikla(ist.id);
+        this.cb.onTarget(ist.id);
       });
-      this.istasyonEl.set(ist.id, d);
+      this.stationEls.set(ist.id, d);
       this.tezgah.appendChild(d);
     }
   }
 
-  private cizTezgah(s: OyunDurumu, g: ArayuzGirdi) {
-    this.kurTezgah(s.gun, s.ekstraIstasyon);
-    for (const ist of istasyonlarGun(s.gun, s.ekstraIstasyon)) {
-      const d = this.istasyonEl.get(ist.id);
+  private renderCounter(s: GameState, g: ViewInput) {
+    this.buildStations(s.day, s.extraStations);
+    for (const ist of stationsForDay(s.day, s.extraStations)) {
+      const d = this.stationEls.get(ist.id);
       if (!d) continue;
-      const secili = g.seciliHedef === ist.id;
-      d.classList.toggle("secili", secili);
-      if (secili) d.style.setProperty("--secim-renk", g.seciliRenk);
-      d.classList.toggle("rehber-hedef", g.rehberAcik && g.ipucu?.hedef === ist.id);
+      const secili = g.selectedTarget === ist.id;
+      d.classList.toggle("selected", secili);
+      if (secili) d.style.setProperty("--secim-renk", g.selectionColor);
+      d.classList.toggle("guide-target", g.guideOn && g.hint?.target === ist.id);
 
-      const bar = d.querySelector<HTMLElement>(".ilerleme");
+      const bar = d.querySelector<HTMLElement>(".progress");
       if (bar) {
-        const p = (s.ilerleme[ist.id] ?? 0) / ist.tap;
+        const p = (s.progress[ist.id] ?? 0) / ist.taps;
         bar.style.width = `${Math.min(1, p) * 100}%`;
       }
       if (ist.id === "mat") {
         const slotlar = d.querySelectorAll<HTMLElement>(".mat-slot");
-        const icerik = s.matSonuc ? [s.matSonuc] : s.matSlotlari;
+        const icerik = s.matResult ? [s.matResult] : s.matSlots;
         slotlar.forEach((sl, i) => {
           const m = icerik[i];
-          sl.classList.toggle("dolu", !!m);
+          sl.classList.toggle("filled", !!m);
           const anahtar = m ?? "";
           if (sl.dataset.m !== anahtar) {
             sl.dataset.m = anahtar;
-            sl.innerHTML = m ? sanat(MALZEMELER[m].ikon, 20) : "";
+            sl.innerHTML = m ? art(INGREDIENTS[m].icon, 20) : "";
           }
         });
       }
     }
   }
 
-  private cizEller(s: OyunDurumu) {
-    while (this.eller.children.length > s.oyuncular.length) this.eller.lastElementChild?.remove();
-    s.oyuncular.forEach((o, i) => {
+  private renderHands(s: GameState) {
+    while (this.eller.children.length > s.players.length) this.eller.lastElementChild?.remove();
+    s.players.forEach((o, i) => {
       let kart = this.eller.children[i] as HTMLElement | undefined;
       if (!kart) {
-        kart = el("div", "el-kart");
-        const kutu = el("div", "el-kutu");
-        const bilgi = el("div", "el-bilgi");
-        bilgi.append(el("div", "el-ad"), el("div", "el-icerik"), el("div", "el-tus"));
+        kart = hand("div", "el-kart");
+        const kutu = hand("div", "el-kutu");
+        const bilgi = hand("div", "el-bilgi");
+        bilgi.append(hand("div", "el-ad"), hand("div", "el-icerik"), hand("div", "el-tus"));
         kart.append(kutu, bilgi);
         this.eller.appendChild(kart);
       }
-      kart.style.setProperty("--renk", o.renk);
-      kart.classList.toggle("benim", o.id === this.benimOyuncu);
-      kart.classList.toggle("dolu-el", !!o.el);
+      kart.style.setProperty("--renk", o.color);
+      kart.classList.toggle("mine", o.id === this.myPlayer);
+      kart.classList.toggle("has-item", !!o.hand);
       if (!kart.dataset.baglandi) {
         kart.dataset.baglandi = "1";
         kart.addEventListener("pointerdown", (e) => {
-          const sahip = s.oyuncular[i];
-          if (!sahip?.el || sahip.id !== this.benimOyuncu) return;
+          const sahip = s.players[i];
+          if (!sahip?.hand || sahip.id !== this.myPlayer) return;
           e.preventDefault();
-          this.surukleBaslat(sahip.el, e.clientX, e.clientY);
+          this.startDrag(sahip.hand, e.clientX, e.clientY);
         });
       }
       const kutu = kart.children[0] as HTMLElement;
       const bilgi = kart.children[1] as HTMLElement;
-      const anahtar = o.el ?? "-";
+      const anahtar = o.hand ?? "-";
       if (kutu.dataset.m !== anahtar) {
         kutu.dataset.m = anahtar;
-        kutu.innerHTML = o.el ? sanat(MALZEMELER[o.el].ikon, 28) : `<span class="bos-el">·</span>`;
+        kutu.innerHTML = o.hand ? art(INGREDIENTS[o.hand].icon, 28) : `<span class="empty-hand">·</span>`;
       }
       (bilgi.children[0] as HTMLElement).textContent = o.ad;
-      (bilgi.children[1] as HTMLElement).textContent = o.el ? y(MALZEMELER[o.el].ad) : "";
+      (bilgi.children[1] as HTMLElement).textContent = o.hand ? y(INGREDIENTS[o.hand].ad) : "";
       (bilgi.children[2] as HTMLElement).textContent =
-        s.oyuncular.length > 1 && i > 0 ? "← → · space · shift" : "";
+        s.players.length > 1 && i > 0 ? "← → · space · shift" : "";
     });
   }
 
-  private cizRehber(s: OyunDurumu, g: ArayuzGirdi) {
-    if (s.faz !== "gun" || !g.rehberAcik || !g.ipucu) {
-      this.rehberBar.style.display = "none";
+  private renderGuide(s: GameState, g: ViewInput) {
+    if (s.phase !== "gun" || !g.guideOn || !g.hint) {
+      this.guideBar.style.display = "none";
       return;
     }
-    this.rehberBar.style.display = "";
-    const metin = g.ipucu.metin;
-    if (this.rehberBar.dataset.metin !== metin) {
-      this.rehberBar.dataset.metin = metin;
-      this.rehberBar.innerHTML = `${art("ui_parilti", 20)}<span>${text}</span>`;
-      this.rehberBar.classList.remove("yeni");
-      void this.rehberBar.offsetWidth;
-      this.rehberBar.classList.add("yeni");
+    this.guideBar.style.display = "";
+    const text = g.hint.text;
+    if (this.guideBar.dataset.text !== text) {
+      this.guideBar.dataset.text = text;
+      this.guideBar.innerHTML = `${art("ui_parilti", 20)}<span>${text}</span>`;
+      this.guideBar.classList.remove("fresh");
+      void this.guideBar.offsetWidth;
+      this.guideBar.classList.add("fresh");
     }
   }
 
   // ------------------------------------------------------------- perdeler
-  private cizPerde(s: OyunDurumu, g: ArayuzGirdi) {
+  private renderOverlay(s: GameState, g: ViewInput) {
     const imza = `${s.phase}:${s.day}:${s.players.length}:${s.coins}:${s.decor.length}:${g.workshopOpen ? "a" : "-"}:${g.avatarOpen ? "v" : "-"}:${g.quitOpen ? "c" : "-"}`;
-    if (g.cikisAcik) {
-      if (this.sonPerde !== imza) {
-        const oncedenAcikti = this.perdeKap.childElementCount > 0 || this.perdeGecisi;
-        this.perdeGecisi = false;
-        this.sonPerde = imza;
-        this.perdeKap.innerHTML = "";
-        const p = this.cikisPanosu(s);
-        if (oncedenAcikti) p.classList.add("animasyonsuz");
-        this.perdeKap.appendChild(p);
+    if (g.quitOpen) {
+      if (this.lastOverlay !== imza) {
+        const oncedenAcikti = this.overlayHost.childElementCount > 0 || this.overlaySwap;
+        this.overlaySwap = false;
+        this.lastOverlay = imza;
+        this.overlayHost.innerHTML = "";
+        const p = this.quitPanel(s);
+        if (oncedenAcikti) p.classList.add("no-anim");
+        this.overlayHost.appendChild(p);
       }
       return;
     }
-    if (g.avatarAcik) {
-      if (this.sonPerde !== imza) {
-        const oncedenAcikti = this.perdeKap.childElementCount > 0 || this.perdeGecisi;
-        this.perdeGecisi = false;
-        this.sonPerde = imza;
-        this.perdeKap.innerHTML = "";
-        const ben = s.oyuncular.find((o) => o.id === this.benimOyuncu) ?? s.oyuncular[0];
+    if (g.avatarOpen) {
+      if (this.lastOverlay !== imza) {
+        const oncedenAcikti = this.overlayHost.childElementCount > 0 || this.overlaySwap;
+        this.overlaySwap = false;
+        this.lastOverlay = imza;
+        this.overlayHost.innerHTML = "";
+        const ben = s.players.find((o) => o.id === this.myPlayer) ?? s.players[0];
         if (ben) {
-          const p = avatarPaneli(ben.avatar, {
-            kaydet: (a) => this.cb.avatarKaydet(a),
-            kapat: () => this.cb.avatarKapat(),
+          const p = avatarPanel(ben.avatar, {
+            kaydet: (a) => this.cb.saveAvatar(a),
+            kapat: () => this.cb.onCloseAvatar(),
           });
-          if (oncedenAcikti) p.classList.add("animasyonsuz");
-          this.perdeKap.appendChild(p);
+          if (oncedenAcikti) p.classList.add("no-anim");
+          this.overlayHost.appendChild(p);
         }
       }
       return;
     }
-    if (g.atolyeAcik) {
-      if (this.sonPerde !== imza) {
-        const oncedenAcikti = this.perdeKap.childElementCount > 0 || this.perdeGecisi;
-        this.perdeGecisi = false;
-        this.sonPerde = imza;
-        this.perdeKap.innerHTML = "";
-        const p = atolyePaneli(s.gun, s.ekstraIstasyon, {
-          kaydet: (t) => this.cb.tarifKaydet(t),
-          sil: (id) => this.cb.tarifSil(id),
-          kapat: () => this.cb.atolyeKapat(),
+    if (g.workshopOpen) {
+      if (this.lastOverlay !== imza) {
+        const oncedenAcikti = this.overlayHost.childElementCount > 0 || this.overlaySwap;
+        this.overlaySwap = false;
+        this.lastOverlay = imza;
+        this.overlayHost.innerHTML = "";
+        const p = workshopPanel(s.day, s.extraStations, {
+          kaydet: (t) => this.cb.onSaveRecipe(t),
+          sil: (id) => this.cb.onDeleteRecipe(id),
+          kapat: () => this.cb.onCloseWorkshop(),
         });
-        if (oncedenAcikti) p.classList.add("animasyonsuz");
-        this.perdeKap.appendChild(p);
+        if (oncedenAcikti) p.classList.add("no-anim");
+        this.overlayHost.appendChild(p);
       }
       return;
     }
-    if (s.faz === "gun") {
-      if (this.sonPerde !== "") {
-        this.perdeKap.innerHTML = "";
-        this.sonPerde = "";
+    if (s.phase === "gun") {
+      if (this.lastOverlay !== "") {
+        this.overlayHost.innerHTML = "";
+        this.lastOverlay = "";
       }
       return;
     }
-    if (this.sonPerde === imza) return;
+    if (this.lastOverlay === imza) return;
     // Zaten bir perde açıksa yenisi solarak gelmesin: dil değişiminde
     // bir kare boyunca arkadaki oyun ekranı görünüyordu.
-    const oncedenAcikti = this.perdeKap.childElementCount > 0 || this.perdeGecisi;
-    this.perdeGecisi = false;
-    this.sonPerde = imza;
-    this.perdeKap.innerHTML = "";
-    const yeni = s.faz === "menu" ? this.menuPanosu(s, g) : this.gunSonuPanosu(s);
-    if (oncedenAcikti) yeni.classList.add("animasyonsuz");
-    this.perdeKap.appendChild(yeni);
+    const oncedenAcikti = this.overlayHost.childElementCount > 0 || this.overlaySwap;
+    this.overlaySwap = false;
+    this.lastOverlay = imza;
+    this.overlayHost.innerHTML = "";
+    const yeni = s.phase === "menu" ? this.menuPanel(s, g) : this.dayEndPanel(s);
+    if (oncedenAcikti) yeni.classList.add("no-anim");
+    this.overlayHost.appendChild(yeni);
   }
 
-  private menuPanosu(s: OyunDurumu, g: ArayuzGirdi): HTMLElement {
-    const perde = el("div", "perde");
-    const pano = el("div", "pano dikey");
+  private menuPanel(s: GameState, g: ViewInput): HTMLElement {
+    const perde = hand("div", "perde");
+    const pano = hand("div", "pano dikey");
 
-    const h1 = el("h1");
-    h1.innerHTML = s.gun === 1 ? "Hey <span>Sushi</span>" : `${y(S.day)} <span>${s.day}</span>`;
-    const alt = el("p", "alt bitisik");
-    alt.textContent = y(s.gun === 1 ? S.girisAlt : S.gunAlt);
+    const h1 = hand("h1");
+    h1.innerHTML = s.day === 1 ? "Hey <span>Sushi</span>" : `${y(S.day)} <span>${s.day}</span>`;
+    const alt = hand("p", "alt bitisik");
+    alt.textContent = y(s.day === 1 ? S.girisAlt : S.gunAlt);
     pano.append(h1, alt);
 
-    if (s.gun === 1) {
-      const nasil = el("div", "nasil");
+    if (s.day === 1) {
+      const nasil = hand("div", "nasil");
       const adimlar: [string, string, string][] = [
         ["ist_pirinc", y(S.adim1Baslik), y(S.adim1)],
         ["ui_tabak", y(S.adim2Baslik), y(S.adim2)],
         ["ui_kalp", y(S.adim3Baslik), y(S.adim3)],
       ];
-      for (const [ikon, baslik, metin] of adimlar) {
-        const a = el("div", "nasil-adim");
-        a.innerHTML = `<div class="nasil-ikon">${art(icon, 34)}</div><div><b>${baslik}</b><p>${text}</p></div>`;
+      for (const [icon, baslik, text] of adimlar) {
+        const a = hand("div", "nasil-adim");
+        a.innerHTML = `<div class="howto-icon">${art(icon, 34)}</div><div><b>${baslik}</b><p>${text}</p></div>`;
         nasil.appendChild(a);
       }
       pano.appendChild(nasil);
 
-      const not = el("p", "alt kucuk");
-      not.innerHTML = y(S.kaybetmekYok);
-      pano.appendChild(not);
+      const note = hand("p", "alt kucuk");
+      note.innerHTML = y(S.kaybetmekYok);
+      pano.appendChild(note);
     }
 
-    const menu = el("div", "menu-satiri");
-    for (const yid of menuGun(s.gun)) {
-      const c = el("div", "cip");
+    const menu = hand("div", "menu-satiri");
+    for (const yid of menuForDay(s.day)) {
+      const c = hand("div", "cip");
       c.innerHTML = `${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>`;
       menu.appendChild(c);
     }
     pano.appendChild(menu);
 
     // Çevrimdışı mod seçimi — online odadayken anlamsız, gizleniyor.
-    if (OZELLIK.coopYerel && g.net.rol === "kapali") {
-      const mod = el("div", "mod-secim");
-      mod.appendChild(etiketli("Kaç kişi?"));
-      const kutu = el("div", "segment");
-      const tek = el("button", `segment-dugme${s.players.length === 1 ? " aktif" : ""}`) as HTMLButtonElement;
+    if (FEATURES.coopYerel && g.net.role === "kapali") {
+      const mod = hand("div", "mod-secim");
+      mod.appendChild(sectionLabel("Kaç kişi?"));
+      const kutu = hand("div", "segment");
+      const tek = hand("button", `segment-dugme${s.players.length === 1 ? " aktif" : ""}`) as HTMLButtonElement;
       tek.textContent = "Tek kişi";
-      tek.onclick = () => this.cb.oyuncuSayisiDegistir(1);
-      const cift = el("button", `segment-dugme${s.players.length === 2 ? " aktif" : ""}`) as HTMLButtonElement;
+      tek.onclick = () => this.cb.onSetPlayerCount(1);
+      const cift = hand("button", `segment-dugme${s.players.length === 2 ? " aktif" : ""}`) as HTMLButtonElement;
       cift.textContent = "İki kişi · aynı ekran";
-      cift.onclick = () => this.cb.oyuncuSayisiDegistir(2);
+      cift.onclick = () => this.cb.onSetPlayerCount(2);
       kutu.append(tek, cift);
       mod.appendChild(kutu);
       pano.appendChild(mod);
     }
 
-    if (OZELLIK.coopOnline) pano.appendChild(this.odaBolumu(g));
+    if (FEATURES.coopOnline) pano.appendChild(this.roomSection(g));
 
-    const yanSira = el("div", "pano-eylemler");
-    const garsonBtn = el("button", "btn ikincil") as HTMLButtonElement;
-    garsonBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
-    garsonBtn.onclick = () => this.cb.avatarAc();
-    const altSira = el("div", "pano-eylemler");
-    const atolye = el("button", "btn ikincil") as HTMLButtonElement;
+    const sideRow = hand("div", "pano-eylemler");
+    const serverBtn = hand("button", "btn ikincil") as HTMLButtonElement;
+    serverBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
+    serverBtn.onclick = () => this.cb.onOpenAvatar();
+    const actionRow = hand("div", "pano-eylemler");
+    const atolye = hand("button", "btn ikincil") as HTMLButtonElement;
     atolye.innerHTML = `${art("ui_parilti", 16)}<span>${y(S.tarifAtolyesi)}</span>`;
-    atolye.onclick = () => this.cb.atolyeAc();
+    atolye.onclick = () => this.cb.onOpenWorkshop();
 
-    const basla = el("button", "btn") as HTMLButtonElement;
-    if (g.net.rol === "misafir") {
-      basla.className = "btn bekliyor";
+    const basla = hand("button", "btn") as HTMLButtonElement;
+    if (g.net.role === "misafir") {
+      basla.className = "btn pending";
       basla.innerHTML = "<span>Ev sahibi başlatacak…</span>";
       basla.disabled = true;
     } else {
       basla.innerHTML = `<span>${y(s.day === 1 ? S.tezgahiAc : S.guneBasla)}</span>${art("ui_fener", 20)}`;
-      basla.onclick = () => this.cb.gunBasla();
+      basla.onclick = () => this.cb.onStartDay();
     }
-    yanSira.appendChild(garsonBtn);
-    altSira.append(atolye, basla);
-    pano.append(yanSira, altSira);
+    sideRow.appendChild(serverBtn);
+    actionRow.append(atolye, basla);
+    pano.append(sideRow, actionRow);
 
     perde.appendChild(pano);
     return perde;
   }
 
-  private gunSonuPanosu(s: OyunDurumu): HTMLElement {
-    const perde = el("div", "perde");
-    const pano = el("div", "pano dikey");
+  private dayEndPanel(s: GameState): HTMLElement {
+    const perde = hand("div", "perde");
+    const pano = hand("div", "pano dikey");
 
-    const h2 = el("h2");
+    const h2 = hand("h2");
     h2.innerHTML = `${art("ui_ay", 26)}<span>${format(S.gunKapandi, { day: s.day })}</span>`;
-    const alt = el("p", "alt bitisik");
+    const alt = hand("p", "alt bitisik");
     alt.textContent = y(S.gunSonuAlt);
 
-    const satirlar = el("div", "satirlar");
+    const satirlar = hand("div", "satirlar");
     const ekle = (etiket: string, deger: string, vurgu = false) => {
-      const r = el("div", vurgu ? "satir vurgu" : "satir");
+      const r = hand("div", vurgu ? "satir vurgu" : "satir");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
-    ekle(y(S.servisEdilen), String(s.istatistik.servis));
-    ekle(y(S.kusursuz), String(s.istatistik.mukemmel));
-    if (s.oyuncular.length > 1) ekle(y(S.birlikteHazir), String(s.istatistik.beraber), true);
-    if (s.istatistik.kacan > 0) ekle(y(S.vazgecen), String(s.istatistik.kacan));
+    ekle(y(S.servisEdilen), String(s.stats.served));
+    ekle(y(S.kusursuz), String(s.stats.perfect));
+    if (s.players.length > 1) ekle(y(S.birlikteHazir), String(s.stats.together), true);
+    if (s.stats.leftEarly > 0) ekle(y(S.vazgecen), String(s.stats.leftEarly));
     ekle(y(S.bugunKalp), `${art("ui_kalp", 16)} ${s.dayHearts}`, true);
     ekle(y(S.toplam), `${art("ui_kalp", 16)} ${s.hearts}`);
 
-    const eylemler = el("div", "pano-eylemler tek");
-    const btn = el("button", "btn") as HTMLButtonElement;
+    const eylemler = hand("div", "pano-eylemler tek");
+    const btn = hand("button", "btn") as HTMLButtonElement;
     btn.innerHTML = `<span>${y(S.yarinaGec)}</span>${art("ui_ok", 18)}`;
-    btn.onclick = () => this.cb.sonrakiGun();
+    btn.onclick = () => this.cb.onNextDay();
     eylemler.appendChild(btn);
 
-    pano.append(h2, alt, satirlar, this.dukkan(s), eylemler);
+    pano.append(h2, alt, satirlar, this.shopSection(s), eylemler);
     perde.appendChild(pano);
     return perde;
   }
 
   /** Kaydet ve çık onayı — puanı da gösterir. */
-  private cikisPanosu(s: OyunDurumu): HTMLElement {
-    const perde = el("div", "perde");
-    const pano = el("div", "pano dikey");
+  private quitPanel(s: GameState): HTMLElement {
+    const perde = hand("div", "perde");
+    const pano = hand("div", "pano dikey");
 
-    const h2 = el("h2");
+    const h2 = hand("h2");
     h2.innerHTML = `${art("ui_cikis", 24)}<span>${y(S.cikisBaslik)}</span>`;
-    const alt = el("p", "alt bitisik");
+    const alt = hand("p", "alt bitisik");
     alt.textContent = y(S.cikisAlt);
 
-    const satirlar = el("div", "satirlar");
+    const satirlar = hand("div", "satirlar");
     const ekle = (etiket: string, deger: string, vurgu = false) => {
-      const r = el("div", vurgu ? "satir vurgu" : "satir");
+      const r = hand("div", vurgu ? "satir vurgu" : "satir");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
-    ekle(y(S.gun), String(s.gun));
+    ekle(y(S.day), String(s.day));
     ekle(y(S.toplamKalp), `${art("ui_kalp", 16)} ${s.hearts}`, true);
     ekle(y(S.jetonlar), `${art("ui_jeton", 16)} ${s.coins}`);
-    if (s.dekor.length) ekle(y(S.dukkanEsyasi), String(s.dekor.length));
-    const ozelSayisi = ozelTarifSayisi();
-    if (ozelSayisi) ekle(y(S.ozelTarifler), String(ozelSayisi));
+    if (s.decor.length) ekle(y(S.dukkanEsyasi), String(s.decor.length));
+    const customCount = customRecipeCount();
+    if (customCount) ekle(y(S.ozelTarifler), String(customCount));
 
-    const eylemler = el("div", "pano-eylemler");
-    const vazgec = el("button", "btn ikincil") as HTMLButtonElement;
+    const eylemler = hand("div", "pano-eylemler");
+    const vazgec = hand("button", "btn ikincil") as HTMLButtonElement;
     vazgec.textContent = y(S.vazgec);
-    vazgec.onclick = () => this.cb.cikisKapat();
-    const cik = el("button", "btn") as HTMLButtonElement;
+    vazgec.onclick = () => this.cb.onCloseQuit();
+    const cik = hand("button", "btn") as HTMLButtonElement;
     cik.innerHTML = `<span>${y(S.cikisOnay)}</span>${art("ui_cikis", 17)}`;
-    cik.onclick = () => this.cb.cikisOnayla();
+    cik.onclick = () => this.cb.onConfirmQuit();
     eylemler.append(vazgec, cik);
 
     pano.append(h2, alt, satirlar, eylemler);
@@ -798,58 +798,58 @@ export class View {
   }
 
   /** Menüdeki online oda bölümü. */
-  private odaBolumu(g: ArayuzGirdi): HTMLElement {
-    const kap = el("div", "oda-bolum");
+  private roomSection(g: ViewInput): HTMLElement {
+    const kap = hand("div", "oda-bolum");
     const n = g.net;
 
-    if (n.rol === "kapali") {
-      kap.appendChild(etiketli("Arkadaşınla oyna"));
-      const sira = el("div", "oda-sira");
+    if (n.role === "kapali") {
+      kap.appendChild(sectionLabel("Arkadaşınla oyna"));
+      const sira = hand("div", "oda-sira");
 
-      const kur = el("button", "btn ikincil") as HTMLButtonElement;
-      kur.textContent = n.baglaniyor ? "Bağlanıyor…" : "Oda Kur";
-      kur.disabled = n.baglaniyor;
-      kur.onclick = () => this.cb.odaKur();
+      const create = hand("button", "btn ikincil") as HTMLButtonElement;
+      create.textContent = n.connecting ? "Bağlanıyor…" : "Oda Kur";
+      create.disabled = n.connecting;
+      create.onclick = () => this.cb.onCreateRoom();
 
-      const ayirac = el("span", "oda-ayirac");
+      const ayirac = hand("span", "oda-ayirac");
       ayirac.textContent = "ya da";
 
-      const grup = el("div", "oda-katil-grup");
-      const giris = el("input", "oda-kod") as HTMLInputElement;
+      const grup = hand("div", "oda-katil-grup");
+      const giris = hand("input", "oda-kod") as HTMLInputElement;
       giris.placeholder = "KOD";
       giris.maxLength = 4;
       giris.oninput = () => {
         giris.value = giris.value.toUpperCase().replace(/[^A-Z0-9]/g, "");
-        katil.disabled = giris.value.length !== 4;
+        join.disabled = giris.value.length !== 4;
       };
-      const katil = el("button", "btn ikincil") as HTMLButtonElement;
-      katil.textContent = "Katıl";
-      katil.disabled = true;
-      katil.onclick = () => this.cb.odaKatil(giris.value);
+      const join = hand("button", "btn ikincil") as HTMLButtonElement;
+      join.textContent = "Katıl";
+      join.disabled = true;
+      join.onclick = () => this.cb.onJoinRoom(giris.value);
       giris.onkeydown = (e) => {
-        if (e.key === "Enter" && giris.value.length === 4) this.cb.odaKatil(giris.value);
+        if (e.key === "Enter" && giris.value.length === 4) this.cb.onJoinRoom(giris.value);
       };
-      grup.append(giris, katil);
+      grup.append(giris, join);
 
-      sira.append(kur, ayirac, grup);
+      sira.append(create, ayirac, grup);
       kap.appendChild(sira);
 
       if (n.uyari) {
-        const u = el("p", "alt kucuk oda-uyari");
+        const u = hand("p", "alt kucuk oda-uyari");
         u.textContent = n.uyari;
         kap.appendChild(u);
       }
       return kap;
     }
 
-    const kutu = el("div", "oda-kutu");
-    const solTaraf = el("div");
-    solTaraf.innerHTML =
-      `<div class="oda-etiket">${n.role === "host" ? "Oda kodun" : "Odadasın"}</div>` +
-      `<div class="oda-kod-buyuk">${n.code}</div>`;
-    const sagTaraf = el("div", "oda-sag");
-    const adlar = n.rol === "host" ? ["Sen (ev sahibi)", ...n.uyeler] : ["Sen", "ev sahibi"];
-    sagTaraf.innerHTML = `<div class="oda-oyuncular">${adlar.map((a) => `<span class="oda-rozet">${a}</span>`).join("")}</div>`;
+    const kutu = hand("div", "oda-kutu");
+    const leftSide = hand("div");
+    leftSide.innerHTML =
+      `<div class="room-label">${n.role === "host" ? "Oda kodun" : "Odadasın"}</div>` +
+      `<div class="room-code-big">${n.code}</div>`;
+    const rightSide = hand("div", "oda-sag");
+    const adlar = n.role === "host" ? ["Sen (ev sahibi)", ...n.members] : ["Sen", "ev sahibi"];
+    rightSide.innerHTML = `<div class="room-players">${adlar.map((a) => `<span class="room-chip">${a}</span>`).join("")}</div>`;
     const leave = hand("button", "btn ikincil ufak") as HTMLButtonElement;
     leave.textContent = "Ayrıl";
     leave.onclick = () => this.cb.onLeaveRoom();
@@ -870,24 +870,24 @@ export class View {
   private shopSection(s: GameState): HTMLElement {
     const kap = hand("div", "dukkan");
     const baslik = hand("div", "dukkan-baslik");
-    baslik.innerHTML = `<b>${y(S.shopSection)}</b><span class="jeton">${art("ui_jeton", 16)}${s.coins}</span>`;
+    baslik.innerHTML = `<b>${y(S.shopSection)}</b><span class="coin">${art("ui_jeton", 16)}${s.coins}</span>`;
     kap.appendChild(baslik);
 
-    const not = el("p", "alt kucuk");
-    not.textContent = y(S.dukkanNot);
-    kap.appendChild(not);
+    const note = hand("p", "alt kucuk");
+    note.textContent = y(S.dukkanNot);
+    kap.appendChild(note);
 
-    const izgara = el("div", "dukkan-izgara");
-    for (const d of DEKORLAR) {
-      const sahip = s.dekor.includes(d.id);
-      const alinabilir = !sahip && s.jeton >= d.fiyat;
-      const kart = el("button", `decor-kart${sahip ? " sahip" : alinabilir ? "" : " pahali"}`) as HTMLButtonElement;
+    const izgara = hand("div", "dukkan-izgara");
+    for (const d of DECOR_ITEMS) {
+      const sahip = s.decor.includes(d.id);
+      const alinabilir = !sahip && s.coins >= d.price;
+      const kart = hand("button", `decor-kart${sahip ? " sahip" : alinabilir ? "" : " pahali"}`) as HTMLButtonElement;
       kart.disabled = sahip || !alinabilir;
       kart.innerHTML =
-        `<div class="dekor-gorsel">${art(d.icon, 40)}</div>` +
+        `<div class="decor-art">${art(d.icon, 40)}</div>` +
         `<b>${y(d.ad)}</b>` +
         `<small>${y(d.description)}</small>` +
-        `<span class="fiyat">${sahip ? y(S.alindi) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
+        `<span class="price">${sahip ? y(S.alindi) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
       kart.onclick = () => this.cb.onBuyDecor(d.id);
       izgara.appendChild(kart);
     }
@@ -931,87 +931,87 @@ export class View {
   }
 
   // ------------------------------------------------------------- garson
-  private kurGarsonlar(s: OyunDurumu) {
-    const mevcut = new Set(s.oyuncular.map((o) => o.id));
-    for (const [id, e] of this.garsonlar) {
+  private syncServers(s: GameState) {
+    const mevcut = new Set(s.players.map((o) => o.id));
+    for (const [id, e] of this.servers) {
       if (!mevcut.has(id)) {
         e.remove();
-        this.garsonlar.delete(id);
-        this.garsonEv.delete(id);
+        this.servers.delete(id);
+        this.serverHome.delete(id);
       }
     }
     const kok = this.kok.getBoundingClientRect();
     // Ev konumu tezgâh panelinin hemen ÜSTÜ: panel garsonun üstünü örtmesin.
-    const sarma = this.tezgahSarma.getBoundingClientRect();
-    const n = s.oyuncular.length;
+    const sarma = this.counterWrap.getBoundingClientRect();
+    const n = s.players.length;
 
-    s.oyuncular.forEach((o, i) => {
-      let e = this.garsonlar.get(o.id);
+    s.players.forEach((o, i) => {
+      let e = this.servers.get(o.id);
       if (!e) {
-        e = el("div", "garson");
+        e = hand("div", "garson");
         e.innerHTML =
-          `<div class="garson-tasidigi"></div>` +
-          `<div class="garson-govde"></div>` +
-          `<div class="garson-ad"></div>`;
+          `<div class="server-carry"></div>` +
+          `<div class="server-body"></div>` +
+          `<div class="server-name"></div>`;
         this.garsonKatman.appendChild(e);
-        this.garsonlar.set(o.id, e);
+        this.servers.set(o.id, e);
       }
-      e.style.setProperty("--renk", o.renk);
+      e.style.setProperty("--renk", o.color);
 
       // Avatar yalnızca değiştiğinde yeniden çizilir.
       const imza = JSON.stringify(o.avatar);
       if (e.dataset.avatar !== imza) {
         e.dataset.avatar = imza;
-        const govde = e.querySelector<HTMLElement>(".garson-govde");
-        if (govde) govde.innerHTML = garsonSvg(o.avatar, 80);
-        const adEl = e.querySelector<HTMLElement>(".garson-ad");
+        const govde = e.querySelector<HTMLElement>(".server-body");
+        if (govde) govde.innerHTML = serverSvg(o.avatar, 80);
+        const adEl = e.querySelector<HTMLElement>(".server-name");
         if (adEl) adEl.textContent = o.avatar.ad;
       }
 
       const evX = kok.width / 2 + (i - (n - 1) / 2) * 96;
       const evY = sarma.top - kok.top - 4;
-      this.garsonEv.set(o.id, { x: evX, y: evY });
-      const odakBitis = this.garsonOdak.get(o.id) ?? 0;
-      if (odakBitis && performance.now() > odakBitis) this.garsonOdak.delete(o.id);
+      this.serverHome.set(o.id, { x: evX, y: evY });
+      const odakBitis = this.serverFocus.get(o.id) ?? 0;
+      if (odakBitis && performance.now() > odakBitis) this.serverFocus.delete(o.id);
       // İstasyonda çalışıyorken ya da servise gitmişken konumu ezme.
-      if (!this.garsonMesgul.has(o.id) && !this.garsonOdak.has(o.id)) {
-        this.konumla(e, evX, evY, 0.4);
+      if (!this.serverBusy.has(o.id) && !this.serverFocus.has(o.id)) {
+        this.placeAt(e, evX, evY, 0.4);
       }
 
       // elindeki malzeme garsonun tepsisinde görünsün
-      const tasidigi = e.firstElementChild as HTMLElement;
-      const anahtar = o.el ?? "-";
-      if (tasidigi.dataset.m !== anahtar) {
-        tasidigi.dataset.m = anahtar;
-        tasidigi.innerHTML = o.el ? sanat(MALZEMELER[o.el].ikon, 26) : "";
-        tasidigi.classList.toggle("dolu", !!o.el);
+      const carrying = e.firstElementChild as HTMLElement;
+      const anahtar = o.hand ?? "-";
+      if (carrying.dataset.m !== anahtar) {
+        carrying.dataset.m = anahtar;
+        carrying.innerHTML = o.hand ? art(INGREDIENTS[o.hand].icon, 26) : "";
+        carrying.classList.toggle("filled", !!o.hand);
       }
     });
   }
 
-  private konumla(e: HTMLElement, x: number, y: number, sure: number) {
+  private placeAt(e: HTMLElement, x: number, y: number, elapsed: number) {
     e.style.transitionDuration = `${elapsed}s`;
     e.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
   }
 
   /** Garsonu bir istasyonun önüne kaydırır (çalışırken orada durur). */
-  garsonIstasyonda(oyuncu: PlayerId, istasyon: HedefId) {
-    if (this.garsonMesgul.has(oyuncu)) return;
-    const e = this.garsonlar.get(oyuncu);
-    const hedef = this.istasyonEl.get(istasyon);
-    const ev = this.garsonEv.get(oyuncu);
-    if (!e || !hedef || !ev) return;
+  serverToStation(oyuncu: PlayerId, istasyon: TargetId) {
+    if (this.serverBusy.has(oyuncu)) return;
+    const e = this.servers.get(oyuncu);
+    const target = this.stationEls.get(istasyon);
+    const ev = this.serverHome.get(oyuncu);
+    if (!e || !target || !ev) return;
     const kok = this.kok.getBoundingClientRect();
-    const r = hedef.getBoundingClientRect();
+    const r = target.getBoundingClientRect();
     const x = r.left - kok.left + r.width / 2;
-    const sure = this.yuruyusSuresi(e, x, ev.y);
-    this.garsonOdak.set(oyuncu, performance.now() + 1500);
-    this.konumla(e, x, ev.y, sure);
-    e.classList.add("yuruyor");
-    window.setTimeout(() => e.classList.remove("yuruyor"), sure * 1000 + 80);
+    const elapsed = this.walkDuration(e, x, ev.y);
+    this.serverFocus.set(oyuncu, performance.now() + 1500);
+    this.placeAt(e, x, ev.y, elapsed);
+    e.classList.add("walking");
+    window.setTimeout(() => e.classList.remove("walking"), elapsed * 1000 + 80);
   }
 
-  private yuruyusSuresi(e: HTMLElement, x: number, y: number): number {
+  private walkDuration(e: HTMLElement, x: number, y: number): number {
     const eski = e.style.transform.match(/translate\(([-\d.]+)px, ([-\d.]+)px\)/);
     const ex = eski ? Number(eski[1]) : x;
     const ey = eski ? Number(eski[2]) : y;
@@ -1023,15 +1023,15 @@ export class View {
    * Garson malzemeyi masaya götürür. Tepsi parçası, garson masaya varana
    * kadar görünmez — böylece servis "ışınlanma" değil, gerçek bir yürüyüş olur.
    */
-  garsonTeslimat(oyuncu: PlayerId, misafirId: string, parcaIndex: number, malzeme: MalzemeId) {
-    const e = this.garsonlar.get(oyuncu);
-    const kart = this.koltukEl.get(misafirId);
-    const ev = this.garsonEv.get(oyuncu);
+  serverDeliver(oyuncu: PlayerId, guestId: string, parcaIndex: number, ingredient: IngredientId) {
+    const e = this.servers.get(oyuncu);
+    const kart = this.seatEls.get(guestId);
+    const ev = this.serverHome.get(oyuncu);
     if (!e || !kart || !ev) return;
 
-    const kume = this.bekleyenParcalar.get(misafirId) ?? new Set<number>();
+    const kume = this.pendingPieces.get(guestId) ?? new Set<number>();
     kume.add(parcaIndex);
-    this.bekleyenParcalar.set(misafirId, kume);
+    this.pendingPieces.set(guestId, kume);
 
     const kok = this.kok.getBoundingClientRect();
     const r = kart.getBoundingClientRect();
@@ -1039,44 +1039,44 @@ export class View {
     const x = r.left - kok.left + r.width / 2;
     const y = r.bottom - kok.top + (e.offsetHeight || 80) + 8;
 
-    this.garsonMesgul.add(oyuncu);
-    this.garsonOdak.delete(oyuncu);
-    const gidis = this.yuruyusSuresi(e, x, y);
-    this.konumla(e, x, y, gidis);
-    e.classList.add("yuruyor");
+    this.serverBusy.add(oyuncu);
+    this.serverFocus.delete(oyuncu);
+    const farewell = this.walkDuration(e, x, y);
+    this.placeAt(e, x, y, farewell);
+    e.classList.add("walking");
 
     window.setTimeout(() => {
-      e.classList.remove("yuruyor");
+      e.classList.remove("walking");
       // masaya varıldı: parça görünür olur, tepsi zıplar
       kume.delete(parcaIndex);
-      if (kume.size === 0) this.bekleyenParcalar.delete(misafirId);
+      if (kume.size === 0) this.pendingPieces.delete(guestId);
       // Bir sonraki çizimi beklemeden doğrudan göster: çizim döngüsü
       // (sekme gizliyken) durmuş olabilir.
-      kart.querySelectorAll<HTMLElement>(".tepsi .parca")[parcaIndex]?.classList.remove("bekliyor");
-      const tepsi = kart.querySelector<HTMLElement>(".tepsi");
-      if (tepsi) {
-        tepsi.classList.remove("kondu");
-        void tepsi.offsetWidth;
-        tepsi.classList.add("kondu");
+      kart.querySelectorAll<HTMLElement>(".tray .piece")[parcaIndex]?.classList.remove("pending");
+      const tray = kart.querySelector<HTMLElement>(".tray");
+      if (tray) {
+        tray.classList.remove("landed");
+        void tray.offsetWidth;
+        tray.classList.add("landed");
       }
-      this.parlama(x, y - 26, malzeme);
+      this.sparkle(x, y - 26, ingredient);
 
       window.setTimeout(() => {
-        const evYeri = this.garsonEv.get(oyuncu) ?? ev;
-        this.konumla(e, evYeri.x, evYeri.y, this.yuruyusSuresi(e, evYeri.x, evYeri.y));
-        e.classList.add("yuruyor");
+        const evYeri = this.serverHome.get(oyuncu) ?? ev;
+        this.placeAt(e, evYeri.x, evYeri.y, this.walkDuration(e, evYeri.x, evYeri.y));
+        e.classList.add("walking");
         window.setTimeout(() => {
-          e.classList.remove("yuruyor");
-          this.garsonMesgul.delete(oyuncu);
+          e.classList.remove("walking");
+          this.serverBusy.delete(oyuncu);
         }, 700);
       }, 220);
-    }, gidis * 1000);
+    }, farewell * 1000);
   }
 
   /** Teslim anında küçük bir ışıltı. */
-  private parlama(x: number, y: number, malzeme: MalzemeId) {
-    const d = el("div", "teslim-parlama");
-    d.innerHTML = sanat(MALZEMELER[malzeme].ikon, 26);
+  private sparkle(x: number, y: number, ingredient: IngredientId) {
+    const d = hand("div", "teslim-parlama");
+    d.innerHTML = art(INGREDIENTS[ingredient].icon, 26);
     d.style.left = `${x}px`;
     d.style.top = `${y}px`;
     this.kok.appendChild(d);
@@ -1084,26 +1084,26 @@ export class View {
   }
 
   /** Malzemenin kaynaktan tepsiye/mata uçuşu. */
-  malzemeUcusu(malzeme: MalzemeId, hedefAnahtar: HedefId) {
+  flyIngredient(ingredient: IngredientId, hedefAnahtar: TargetId) {
     const hedefEl =
       hedefAnahtar === "mat"
-        ? this.istasyonEl.get("mat")
-        : this.koltukEl.get(hedefAnahtar.replace("misafir:", ""))?.querySelector<HTMLElement>(".tepsi");
+        ? this.stationEls.get("mat")
+        : this.seatEls.get(hedefAnahtar.replace("misafir:", ""))?.querySelector<HTMLElement>(".tray");
     if (!hedefEl) return;
 
     const kok = this.kok.getBoundingClientRect();
-    const hedef = hedefEl.getBoundingClientRect();
-    const bx = this.sonPointer.x || hedef.left + hedef.width / 2;
-    const by = this.sonPointer.y || hedef.top;
+    const target = hedefEl.getBoundingClientRect();
+    const bx = this.lastPointer.x || target.left + target.width / 2;
+    const by = this.lastPointer.y || target.top;
 
-    const g = el("div", "malzeme-ucus");
-    g.innerHTML = sanat(MALZEMELER[malzeme].ikon, 34);
+    const g = hand("div", "malzeme-ucus");
+    g.innerHTML = art(INGREDIENTS[ingredient].icon, 34);
     g.style.left = `${bx - kok.left}px`;
     g.style.top = `${by - kok.top}px`;
     this.kok.appendChild(g);
 
-    const dx = hedef.left + hedef.width / 2 - bx;
-    const dy = hedef.top + hedef.height / 2 - by;
+    const dx = target.left + target.width / 2 - bx;
+    const dy = target.top + target.height / 2 - by;
     const animasyon = g.animate(
       [
         { transform: "translate(-50%, -50%) scale(1.2) rotate(-10deg)", opacity: 1 },
@@ -1120,26 +1120,26 @@ export class View {
       { duration: 430, easing: "cubic-bezier(.35,.9,.35,1)" },
     );
     animasyon.onfinish = () => g.remove();
-    hedefEl.classList.remove("kondu");
+    hedefEl.classList.remove("landed");
     void hedefEl.offsetWidth;
-    hedefEl.classList.add("kondu");
+    hedefEl.classList.add("landed");
   }
 
   /** Üretim tamamlandığında istasyonda küçük bir halka. */
-  patlama(hedef: HedefId) {
-    const d = this.istasyonEl.get(hedef);
+  burstAt(target: TargetId) {
+    const d = this.stationEls.get(target);
     if (!d) return;
-    const halka = el("div", "patlama");
+    const halka = hand("div", "patlama");
     d.appendChild(halka);
     setTimeout(() => halka.remove(), 520);
   }
 
   /** OTA güncellemesi indirildiğinde alttan çıkan şerit. */
-  guncellemeSor(not: { en: string; tr: string } | undefined, secim: { simdi(): void; sonra(): void }) {
+  askForUpdate(note: { en: string; tr: string } | undefined, secim: { simdi(): void; sonra(): void }) {
     this.kok.querySelector(".guncelleme-serit")?.remove();
-    const d = el("div", "guncelleme-serit");
-    const metin = el("div", "guncelleme-metin");
-    metin.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
+    const d = hand("div", "guncelleme-serit");
+    const text = hand("div", "guncelleme-metin");
+    text.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
     const sonra = hand("button", "btn ikincil ufak") as HTMLButtonElement;
     sonra.textContent = y(S.guncelleSonra);
     sonra.onclick = () => {
@@ -1170,9 +1170,9 @@ export class View {
       ? this.seatEls.get(target.slice(8))
       : this.stationEls.get(target);
     if (!d) return;
-    d.classList.remove("calisti");
+    d.classList.remove("pulse");
     void d.offsetWidth;
-    d.classList.add("calisti");
+    d.classList.add("pulse");
   }
 }
 
@@ -1183,29 +1183,29 @@ export function targetList(s: GameState): TargetId[] {
   return liste;
 }
 
-export function hedefAdi(h: HedefId, s: OyunDurumu): string {
+export function targetName(h: TargetId, s: GameState): string {
   if (h.startsWith("misafir:")) {
-    const m = s.misafirler.find((x) => x.id === h.slice(8));
-    const k = m ? KARAKTER_MAP[m.karakterId] : undefined;
+    const m = s.guests.find((x) => x.id === h.slice(8));
+    const k = m ? CHARACTER_MAP[m.characterId] : undefined;
     return k ? y(k.ad) : "";
   }
-  const ib = ISTASYON_MAP[h as keyof typeof ISTASYON_MAP];
+  const ib = STATION_MAP[h as keyof typeof STATION_MAP];
   return ib ? y(ib.ad) : h;
 }
 
 /** Menüdeki oyuncu yapımı tarif sayısı. */
-function ozelTarifSayisi(): number {
+function customRecipeCount(): number {
   return Object.values(YEMEK_KAYDI_HAM).filter((v) => v.ozel).length;
 }
 
-function etiketli(metin: string): HTMLElement {
+function sectionLabel(text: string): HTMLElement {
   const d = document.createElement("div");
-  d.className = "bolum-etiket";
-  d.textContent = metin;
+  d.className = "section-label";
+  d.textContent = text;
   return d;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, sinif = ""): HTMLElementTagNameMap[K] {
+function hand<K extends keyof HTMLElementTagNameMap>(tag: K, sinif = ""): HTMLElementTagNameMap[K] {
   const d = document.createElement(tag);
   if (sinif) d.className = sinif;
   return d;

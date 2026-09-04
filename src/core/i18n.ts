@@ -7,7 +7,7 @@
  * senkron tutma derdi olmaz.
  */
 
-import { storageGet, storageSet } from "./depo";
+import { storageGet, storageSet } from "./storage";
 export type LangCode = "en" | "tr";
 
 export interface Localized {
@@ -70,16 +70,16 @@ export function format(text: Localized | string, degerler: Record<string, string
 // ---------------------------------------------------------------- arayüz metinleri
 export const S = {
   // üst bar
-  gun: m("Day", "Gün"),
-  rehberAcik: m("Guide on", "Rehber açık"),
+  day: m("Day", "Gün"),
+  guideOn: m("Guide on", "Rehber açık"),
   rehberKapali: m("Guide off", "Rehber kapalı"),
-  sesAcik: m("Sound on", "Ses açık"),
+  sfxOn: m("Sound on", "Ses açık"),
   sesKapali: m("Sound off", "Ses kapalı"),
 
   // salon
   bosMasa: m("empty table", "boş masa"),
-  tepsi: m("tray", "tepsi"),
-  servisEt: m("Serve", "Servis Et"),
+  tray: m("tray", "tepsi"),
+  onServe: m("Serve", "Servis Et"),
   siparisEksik: m("The order isn't complete yet — they'll wait.", "Sipariş henüz tamam değil — misafir bekliyor."),
   birlikte: m("together!", "birlikte!"),
 
@@ -113,7 +113,7 @@ export const S = {
   guneBasla: m("Start the Day", "Güne Başla"),
   tarifAtolyesi: m("Recipe Workshop", "Tarif Atölyesi"),
   garsonun: m("Your Server", "Garsonun"),
-  dilBolum: m("Language", "Dil"),
+  langSection: m("Language", "Dil"),
 
   // gün sonu
   gunKapandi: m("Day {gun} is over", "Gün {gun} kapandı"),
@@ -130,7 +130,7 @@ export const S = {
   yarinaGec: m("On to Tomorrow", "Yarına Geç"),
 
   // dükkân
-  dukkan: m("Shop", "Dükkân"),
+  shopSection: m("Shop", "Dükkân"),
   dukkanNot: m(
     "Every warm little thing makes guests a bit more patient.",
     "Dükkânı sıcaklaştıran her eşya misafirleri biraz daha sabırlı yapar.",
@@ -143,9 +143,9 @@ export const S = {
     "Design your own sushi. Saved recipes join the menu and guests start ordering them.",
     "Kendi suşini tasarla. Kaydettiğin tarif menüye girer ve misafirler sipariş etmeye başlar.",
   ),
-  taban: m("Base", "Taban"),
+  base: m("Base", "Taban"),
   icMalzeme: m("Filling (up to {n})", "İç malzeme (en fazla {n})"),
-  garnitur: m("Garnish (up to {n})", "Garnitür (en fazla {n})"),
+  garnish: m("Garnish (up to {n})", "Garnitür (en fazla {n})"),
   isimVeHikaye: m("Name and note", "İsim ve hikâye"),
   tarifAdiIpucu: m("Recipe name — e.g. Moonlight Nigiri", "Tarifin adı — örn. Ay Işığı Nigiri"),
   kisaNot: m("A short note (optional)", "Kısa bir not (isteğe bağlı)"),
@@ -177,7 +177,7 @@ export const S = {
   karakter: m("Character", "Karakter"),
   kadin: m("Woman", "Kadın"),
   erkek: m("Man", "Erkek"),
-  ten: m("Skin", "Ten"),
+  skin: m("Skin", "Ten"),
   sacBolum: m("Hair", "Saç"),
   sacRengi: m("Hair colour", "Saç rengi"),
   kiyafetRengi: m("Outfit colour", "Kıyafet rengi"),
@@ -220,7 +220,7 @@ export const S = {
   hataMatBos: m("The mat is empty — add nori, rice and a filling", "Mat boş — nori, pirinç ve bir iç malzeme koy"),
   hataTepsiDolu: m("The tray is full", "Tepsi dolu"),
   hataTepsiBos: m("The tray is empty", "Tepsi boş"),
-  muzikAcik: m("Sound on", "Ses açık"),
+  musicOn: m("Sound on", "Ses açık"),
   muzikKapali: m("Sound off", "Ses kapalı"),
   muzik: m("Music", "Müzik"),
   efektler: m("Sound effects", "Ses efektleri"),

@@ -1,4 +1,4 @@
-import { m, type Localized } from "./dil";
+import { m, type Localized } from "./i18n";
 import type { StationId, IngredientId, DishId } from "./types";
 
 export interface Ingredient {

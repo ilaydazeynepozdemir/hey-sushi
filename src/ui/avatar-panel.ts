@@ -10,7 +10,7 @@ import {
   type Avatar,
 } from "../core/avatar";
 import { serverHeadSvg, serverSvg } from "./art";
-import { S, y } from "../core/dil";
+import { S, y } from "../core/i18n";
 
 export interface AvatarCallbacks {
   kaydet(a: Avatar): void;
@@ -25,143 +25,143 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
   const baslik = hand("h2");
   baslik.innerHTML = `<span>${y(S.avatarBaslik)}</span>`;
-  const alt = el("p", "alt");
+  const alt = hand("p", "alt");
   alt.textContent = y(S.avatarAlt);
   pano.append(baslik, alt);
 
-  const onizleme = el("div", "avatar-onizleme");
+  const onizleme = hand("div", "avatar-onizleme");
   pano.appendChild(onizleme);
 
   // --- ad
   pano.appendChild(bolum(y(S.kullaniciAdi)));
-  const adGiris = el("input", "atolye-giris") as HTMLInputElement;
-  adGiris.placeholder = y(S.adIpucu);
-  adGiris.maxLength = 14;
-  adGiris.autocomplete = "off";
-  adGiris.value = a.ad;
-  adGiris.oninput = () => {
-    a.ad = adGiris.value;
-    ciz();
+  const nameInput = hand("input", "atolye-giris") as HTMLInputElement;
+  nameInput.placeholder = y(S.adIpucu);
+  nameInput.maxLength = 14;
+  nameInput.autocomplete = "off";
+  nameInput.value = a.ad;
+  nameInput.oninput = () => {
+    a.ad = nameInput.value;
+    render();
   };
-  pano.appendChild(adGiris);
+  pano.appendChild(nameInput);
 
   // --- tip
   pano.appendChild(bolum(y(S.karakter)));
-  const tipKutu = el("div", "segment");
-  const tipler: [Avatar["tip"], string][] = [
+  const kindBox = hand("div", "segment");
+  const tipler: [Avatar["kind"], string][] = [
     ["kadin", y(S.kadin)],
     ["erkek", y(S.erkek)],
   ];
   for (const [id, ad] of tipler) {
-    const b = el("button", "segment-dugme") as HTMLButtonElement;
-    b.dataset.tip = id;
+    const b = hand("button", "segment-dugme") as HTMLButtonElement;
+    b.dataset.kind = id;
     b.textContent = ad;
     b.onclick = () => {
-      a.tip = id;
-      ciz();
+      a.kind = id;
+      render();
     };
-    tipKutu.appendChild(b);
+    kindBox.appendChild(b);
   }
-  pano.appendChild(tipKutu);
+  pano.appendChild(kindBox);
 
   // --- ten
-  pano.appendChild(bolum(y(S.ten)));
-  const tenSira = renkSirasi(TENLER, () => a.ten, (i) => {
-    a.ten = i;
-    ciz();
+  pano.appendChild(bolum(y(S.skin)));
+  const skinRow = colorRow(SKIN_TONES, () => a.skin, (i) => {
+    a.skin = i;
+    render();
   });
-  pano.appendChild(tenSira);
+  pano.appendChild(skinRow);
 
   // --- saç stili (her biri kendi çizimiyle)
   pano.appendChild(bolum(y(S.sacBolum)));
-  const sacSira = el("div", "avatar-izgara");
-  SACLAR.forEach((stil, i) => {
-    const b = el("button", "avatar-secim") as HTMLButtonElement;
+  const hairRow = hand("div", "avatar-izgara");
+  HAIR_STYLES.forEach((stil, i) => {
+    const b = hand("button", "avatar-secim") as HTMLButtonElement;
     b.dataset.i = String(i);
     b.title = y(stil.ad);
-    b.appendChild(el("div", "avatar-mini"));
-    const etiket = el("span");
+    b.appendChild(hand("div", "avatar-mini"));
+    const etiket = hand("span");
     etiket.textContent = y(stil.ad);
     b.appendChild(etiket);
     b.onclick = () => {
-      a.sac = i;
-      ciz();
+      a.hair = i;
+      render();
     };
-    sacSira.appendChild(b);
+    hairRow.appendChild(b);
   });
-  pano.appendChild(sacSira);
+  pano.appendChild(hairRow);
 
   // --- saç rengi
   pano.appendChild(bolum(y(S.sacRengi)));
   pano.appendChild(
-    renkSirasi(SAC_RENKLERI, () => a.sacRenk, (i) => {
-      a.sacRenk = i;
-      ciz();
+    colorRow(HAIR_COLORS, () => a.hairColor, (i) => {
+      a.hairColor = i;
+      render();
     }),
   );
 
   // --- kıyafet rengi
   pano.appendChild(bolum(y(S.kiyafetRengi)));
   pano.appendChild(
-    renkSirasi(UNIFORMALAR, () => a.uniforma, (i) => {
-      a.uniforma = i;
-      ciz();
+    colorRow(OUTFIT_COLORS, () => a.outfit, (i) => {
+      a.outfit = i;
+      render();
     }),
   );
 
   // --- önlük rengi
   pano.appendChild(bolum(y(S.onlukRengi)));
   pano.appendChild(
-    renkSirasi(ONLUKLER, () => a.onluk, (i) => {
-      a.onluk = i;
-      ciz();
+    colorRow(APRON_COLORS, () => a.apron, (i) => {
+      a.apron = i;
+      render();
     }),
   );
 
   // --- saç aksesuarı (hepsi çizim önizlemeli)
   pano.appendChild(bolum(y(S.sacAksesuari)));
-  const sacAksSira = el("div", "avatar-izgara");
-  for (const aks of SAC_AKSESUARLARI) {
-    const b = el("button", "avatar-secim") as HTMLButtonElement;
+  const hairAccRow = hand("div", "avatar-izgara");
+  for (const aks of HAIR_ACCESSORIES) {
+    const b = hand("button", "avatar-secim") as HTMLButtonElement;
     b.dataset.saks = aks.id;
     b.title = y(aks.ad);
-    b.appendChild(el("div", "avatar-mini"));
-    const etiket = el("span");
+    b.appendChild(hand("div", "avatar-mini"));
+    const etiket = hand("span");
     etiket.textContent = y(aks.ad);
     b.appendChild(etiket);
     b.onclick = () => {
-      a.sacAksesuar = aks.id;
-      ciz();
+      a.hairAccessory = aks.id;
+      render();
     };
-    sacAksSira.appendChild(b);
+    hairAccRow.appendChild(b);
   }
-  pano.appendChild(sacAksSira);
+  pano.appendChild(hairAccRow);
 
   // --- yüz aksesuarı
   pano.appendChild(bolum(y(S.yuzAksesuari)));
-  const yuzAksSira = el("div", "avatar-izgara");
-  for (const aks of YUZ_AKSESUARLARI) {
-    const b = el("button", "avatar-secim") as HTMLButtonElement;
+  const faceAccRow = hand("div", "avatar-izgara");
+  for (const aks of FACE_ACCESSORIES) {
+    const b = hand("button", "avatar-secim") as HTMLButtonElement;
     b.dataset.yaks = aks.id;
     b.title = y(aks.ad);
-    b.appendChild(el("div", "avatar-mini"));
-    const etiket = el("span");
+    b.appendChild(hand("div", "avatar-mini"));
+    const etiket = hand("span");
     etiket.textContent = y(aks.ad);
     b.appendChild(etiket);
     b.onclick = () => {
-      a.yuzAksesuar = aks.id;
-      ciz();
+      a.faceAccessory = aks.id;
+      render();
     };
-    yuzAksSira.appendChild(b);
+    faceAccRow.appendChild(b);
   }
-  pano.appendChild(yuzAksSira);
+  pano.appendChild(faceAccRow);
 
   // --- eylemler
-  const sira = el("div", "btn-sira");
-  const kapat = el("button", "btn ikincil") as HTMLButtonElement;
+  const sira = hand("div", "btn-sira");
+  const kapat = hand("button", "btn ikincil") as HTMLButtonElement;
   kapat.textContent = y(S.vazgec);
   kapat.onclick = () => cb.kapat();
-  const kaydet = el("button", "btn") as HTMLButtonElement;
+  const kaydet = hand("button", "btn") as HTMLButtonElement;
   kaydet.textContent = y(S.kaydet);
   kaydet.onclick = () => cb.kaydet({ ...a, ad: a.ad.trim() || "Chef" });
   sira.append(kapat, kaydet);
@@ -169,70 +169,70 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
   perde.appendChild(pano);
 
-  function ciz() {
+  function render() {
     onizleme.innerHTML =
-      `<div class="avatar-buyuk">${serverSvg(a, 132)}</div>` +
-      `<div class="avatar-ad-etiket">${(a.ad.trim() || "Chef").replace(/[<>&]/g, "")}</div>`;
+      `<div class="avatar-large">${serverSvg(a, 132)}</div>` +
+      `<div class="avatar-name-tag">${(a.ad.trim() || "Chef").replace(/[<>&]/g, "")}</div>`;
 
-    for (const b of tipKutu.children) {
-      b.classList.toggle("aktif", (b as HTMLElement).dataset.tip === a.tip);
+    for (const b of kindBox.children) {
+      b.classList.toggle("active", (b as HTMLElement).dataset.kind === a.kind);
     }
-    isaretle(tenSira, a.ten);
+    markActive(skinRow, a.skin);
 
     // saç seçenekleri: her biri güncel avatarla ama kendi saçıyla çizilir
-    Array.from(sacSira.children).forEach((b, i) => {
+    Array.from(hairRow.children).forEach((b, i) => {
       const kutu = b.querySelector(".avatar-mini");
-      if (kutu) kutu.innerHTML = garsonKafaSvg({ ...a, sac: i }, 62);
-      b.classList.toggle("aktif", i === a.sac);
+      if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, hair: i }, 62);
+      b.classList.toggle("active", i === a.hair);
     });
-    Array.from(sacAksSira.children).forEach((b) => {
-      const id = (b as HTMLElement).dataset.saks as Avatar["sacAksesuar"];
+    Array.from(hairAccRow.children).forEach((b) => {
+      const id = (b as HTMLElement).dataset.saks as Avatar["hairAccessory"];
       const kutu = b.querySelector(".avatar-mini");
-      if (kutu) kutu.innerHTML = garsonKafaSvg({ ...a, sacAksesuar: id }, 62);
-      b.classList.toggle("aktif", id === a.sacAksesuar);
+      if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, hairAccessory: id }, 62);
+      b.classList.toggle("active", id === a.hairAccessory);
     });
-    Array.from(yuzAksSira.children).forEach((b) => {
-      const id = (b as HTMLElement).dataset.yaks as Avatar["yuzAksesuar"];
+    Array.from(faceAccRow.children).forEach((b) => {
+      const id = (b as HTMLElement).dataset.yaks as Avatar["faceAccessory"];
       const kutu = b.querySelector(".avatar-mini");
-      if (kutu) kutu.innerHTML = garsonKafaSvg({ ...a, yuzAksesuar: id }, 62);
-      b.classList.toggle("aktif", id === a.yuzAksesuar);
+      if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, faceAccessory: id }, 62);
+      b.classList.toggle("active", id === a.faceAccessory);
     });
 
-    const renkSiralari = pano.querySelectorAll<HTMLElement>(".renk-sira");
-    isaretle(renkSiralari[1], a.sacRenk);
-    isaretle(renkSiralari[2], a.uniforma);
-    isaretle(renkSiralari[3], a.onluk);
+    const colorRows = pano.querySelectorAll<HTMLElement>(".color-row");
+    markActive(colorRows[1], a.hairColor);
+    markActive(colorRows[2], a.outfit);
+    markActive(colorRows[3], a.apron);
   }
 
-  ciz();
+  render();
   return perde;
 }
 
-function renkSirasi(renkler: string[], secili: () => number, sec: (i: number) => void): HTMLElement {
-  const sira = el("div", "renk-sira");
-  renkler.forEach((renk, i) => {
-    const b = el("button", "renk-nokta") as HTMLButtonElement;
-    b.style.background = renk;
+function colorRow(renkler: string[], secili: () => number, sec: (i: number) => void): HTMLElement {
+  const sira = hand("div", "renk-sira");
+  renkler.forEach((color, i) => {
+    const b = hand("button", "renk-nokta") as HTMLButtonElement;
+    b.style.background = color;
     b.onclick = () => sec(i);
     sira.appendChild(b);
   });
-  queueMicrotask(() => isaretle(sira, secili()));
+  queueMicrotask(() => markActive(sira, secili()));
   return sira;
 }
 
-function isaretle(sira: HTMLElement | undefined, index: number) {
+function markActive(sira: HTMLElement | undefined, index: number) {
   if (!sira) return;
-  Array.from(sira.children).forEach((b, i) => b.classList.toggle("aktif", i === index));
+  Array.from(sira.children).forEach((b, i) => b.classList.toggle("active", i === index));
 }
 
-function bolum(metin: string): HTMLElement {
+function bolum(text: string): HTMLElement {
   const d = document.createElement("div");
-  d.className = "atolye-bolum";
-  d.textContent = metin;
+  d.className = "workshop-section";
+  d.textContent = text;
   return d;
 }
 
-function el<K extends keyof HTMLElementTagNameMap>(tag: K, sinif = ""): HTMLElementTagNameMap[K] {
+function hand<K extends keyof HTMLElementTagNameMap>(tag: K, sinif = ""): HTMLElementTagNameMap[K] {
   const d = document.createElement(tag);
   if (sinif) d.className = sinif;
   return d;

@@ -69,7 +69,7 @@ const nigiriArt = (ust: string, ustKoyu: string) => `
   <circle cx="30" cy="35" r=".9" fill="#fff" opacity=".7"/>`;
 
 /** maki: üstten görünüm rulo */
-const maki = (ic: string, icKoyu: string) => `
+const makiArt = (filling: string, icKoyu: string) => `
   <circle cx="24" cy="24" r="16" fill="${R.noriKoyu}"/>
   <circle cx="24" cy="23.2" r="16" fill="${R.nori}"/>
   <circle cx="24" cy="23.2" r="12.6" fill="${R.pirincGolge}"/>
@@ -81,13 +81,13 @@ const maki = (ic: string, icKoyu: string) => `
   <circle cx="20" cy="29" r="1" fill="${R.pirincGolge}"/>`;
 
 /** kesim istasyonu: tahta + üstünde dilimler */
-const tahta = (ic: string) => `
+const boardArt = (filling: string) => `
   <rect x="4" y="29" width="40" height="10" rx="5" fill="${R.ahsapKoyu}"/>
   <rect x="4" y="27.5" width="40" height="9" rx="4.5" fill="${R.ahsap}"/>
   <rect x="7" y="29.5" width="34" height="2" rx="1" fill="${R.ahsapAcik}" opacity=".7"/>
-  ${ic}`;
+  ${filling}`;
 
-const CIZIM: Record<string, string> = {
+const ART: Record<string, string> = {
   bos: `<circle cx="24" cy="24" r="3" fill="${R.murekkep}" opacity=".25"/>`,
 
   // ---------------------------------------------------------- malzemeler
@@ -140,15 +140,15 @@ const CIZIM: Record<string, string> = {
     <rect x="20" y="15" width="8" height="18" fill="${R.nori}" opacity=".85"/>
     <path d="M13 18.4c2.4-1 5-1.2 7.4-.7" stroke="#fff" stroke-opacity=".6" stroke-width="1.6" stroke-linecap="round" fill="none"/>`,
 
-  maki_somon: maki(R.somon, R.somonKoyu),
-  maki_avokado: maki(R.avokadoOrta, R.avokado),
+  maki_somon: makiArt(R.somon, R.somonKoyu),
+  maki_avokado: makiArt(R.avokadoOrta, R.avokado),
 
   // ---------------------------------------------------------- yemekler
-  yemek_nigiri_somon: nigiri(R.somon, R.somonKoyu),
-  yemek_nigiri_ton: nigiri(R.ton, R.tonKoyu),
-  yemek_nigiri_tamago: nigiri(R.tamago, R.tamagoKoyu),
-  yemek_maki_somon: maki(R.somon, R.somonKoyu),
-  yemek_maki_avokado: maki(R.avokadoOrta, R.avokado),
+  yemek_nigiri_somon: nigiriArt(R.somon, R.somonKoyu),
+  yemek_nigiri_ton: nigiriArt(R.tone, R.tonKoyu),
+  yemek_nigiri_tamago: nigiriArt(R.tamago, R.tamagoKoyu),
+  yemek_maki_somon: makiArt(R.somon, R.somonKoyu),
+  yemek_maki_avokado: makiArt(R.avokadoOrta, R.avokado),
 
   // ---------------------------------------------------------- istasyonlar
   ist_pirinc: `
@@ -159,26 +159,26 @@ const CIZIM: Record<string, string> = {
     <path d="M7.5 24.6h33c0 8.2-6.4 13.4-16.5 13.4S7.5 32.8 7.5 24.6z" fill="${R.seramik}"/>
     <path d="M13 30c1.6 3.4 5.2 5.4 9 5.6" stroke="${R.seramikGolge}" stroke-width="2" stroke-linecap="round" fill="none"/>`,
 
-  ist_kesim_somon: tahta(`
+  ist_kesim_somon: boardArt(`
     <path d="M12 24.4c0-4.6 5.4-9.4 12-9.4 3.4 0 5.4 1.4 5.4 3.6 0 4.6-5.4 9.4-12 9.4-3.4 0-5.4-1.4-5.4-3.6z" fill="${R.somon}"/>
     <path d="M15 24.6c2.6-3 5.8-5.6 9.2-7M17 27.4c2.6-3 5.8-5.6 9.2-7" stroke="${R.somonCizgi}" stroke-width="1.7" stroke-linecap="round" fill="none"/>
     <path d="M30 26l9-11.5" stroke="${R.ahsapKoyu}" stroke-width="3.4" stroke-linecap="round"/>
     <path d="M30.5 25.2l7.6-9.8" stroke="#DCE3EA" stroke-width="2.2" stroke-linecap="round"/>`),
 
-  ist_kesim_ton: tahta(`
+  ist_kesim_ton: boardArt(`
     <path d="M12 24.4c0-4.6 5.4-9.4 12-9.4 3.4 0 5.4 1.4 5.4 3.6 0 4.6-5.4 9.4-12 9.4-3.4 0-5.4-1.4-5.4-3.6z" fill="${R.tone}"/>
     <path d="M15 24.6c2.6-3 5.8-5.6 9.2-7M17 27.4c2.6-3 5.8-5.6 9.2-7" stroke="${R.tonCizgi}" stroke-width="1.7" stroke-linecap="round" fill="none"/>
     <path d="M30 26l9-11.5" stroke="${R.ahsapKoyu}" stroke-width="3.4" stroke-linecap="round"/>
     <path d="M30.5 25.2l7.6-9.8" stroke="#DCE3EA" stroke-width="2.2" stroke-linecap="round"/>`),
 
-  ist_kesim_avokado: tahta(`
+  ist_kesim_avokado: boardArt(`
     <ellipse cx="19" cy="20" rx="8.4" ry="10.4" fill="${R.avokadoOrta}"/>
     <ellipse cx="19" cy="20" rx="6.4" ry="8.4" fill="${R.avokadoIc}"/>
     <circle cx="19" cy="21.4" r="3.6" fill="${R.cekirdek}"/>
     <path d="M30 26l9-11.5" stroke="${R.ahsapKoyu}" stroke-width="3.4" stroke-linecap="round"/>
     <path d="M30.5 25.2l7.6-9.8" stroke="#DCE3EA" stroke-width="2.2" stroke-linecap="round"/>`),
 
-  ist_kesim_tamago: tahta(`
+  ist_kesim_tamago: boardArt(`
     <rect x="11" y="14" width="21" height="13" rx="4" fill="${R.tamago}"/>
     <path d="M14 18.6h15M14 22.6h15" stroke="${R.tamagoKoyu}" stroke-width="1.5" stroke-linecap="round"/>
     <rect x="19" y="14" width="5.5" height="13" fill="${R.nori}" opacity=".85"/>
@@ -311,8 +311,8 @@ const CIZIM: Record<string, string> = {
     <ellipse cx="34.5" cy="29" rx="2.4" ry="1.6" fill="${R.pembe}" opacity=".7"/>
     <path d="M24 18.6c0-2.4 1.8-4.2 4-4.2-.4 2.6-1.8 4-4 4.2z" fill="${R.avokadoOrta}"/>`,
 
-  maki_ton: maki(R.ton, R.tonKoyu),
-  maki_tamago: maki(R.tamago, R.tamagoKoyu),
+  maki_ton: makiArt(R.tone, R.tonKoyu),
+  maki_tamago: makiArt(R.tamago, R.tamagoKoyu),
 
   ist_miso: `
     <path d="M8 21h32l-3 15.6A7 7 0 0 1 30 42H18a7 7 0 0 1-7-5.4z" fill="${R.ahsapKoyu}"/>
@@ -370,8 +370,8 @@ const CIZIM: Record<string, string> = {
     <circle cx="32.6" cy="19.4" r="3.8" fill="#F3894F"/><circle cx="31.5" cy="18.3" r="1.2" fill="#FFC79A"/>
     <circle cx="22" cy="21.6" r="3.6" fill="#FF9A5C"/><circle cx="21" cy="20.6" r="1.1" fill="#FFD6B0"/>`,
 
-  yemek_maki_ton: maki(R.ton, R.tonKoyu),
-  yemek_maki_tamago: maki(R.tamago, R.tamagoKoyu),
+  yemek_maki_ton: makiArt(R.tone, R.tonKoyu),
+  yemek_maki_tamago: makiArt(R.tamago, R.tamagoKoyu),
 
 
   // ---------------------------------------------------------- zengin malzemeler
@@ -427,18 +427,18 @@ const CIZIM: Record<string, string> = {
     <circle cx="29" cy="30" r="1.5" fill="#FFE9C4"/><circle cx="16.6" cy="19.6" r="1.4" fill="#FFF0D6"/>
     <circle cx="10.5" cy="34" r="1.6" fill="${R.tempura}"/><circle cx="38" cy="33" r="1.3" fill="${R.tempura}"/>`,
 
-  maki_salatalik: maki(R.salatalik, R.salatalikKoyu),
-  maki_mango: maki(R.mango, R.mangoKoyu),
-  maki_karides: maki(R.karides, R.karidesKoyu),
-  maki_krem: maki(R.krem, R.kremKoyu),
-  maki_tempura: maki(R.tempura, R.tempuraKoyu),
+  maki_salatalik: makiArt(R.salatalik, R.salatalikKoyu),
+  maki_mango: makiArt(R.mango, R.mangoKoyu),
+  maki_karides: makiArt(R.karides, R.karidesKoyu),
+  maki_krem: makiArt(R.krem, R.kremKoyu),
+  maki_tempura: makiArt(R.tempura, R.tempuraKoyu),
 
-  yemek_nigiri_karides: nigiri(R.karides, R.karidesKoyu),
-  yemek_nigiri_unagi: nigiri(R.unagi, R.unagiKoyu),
-  yemek_maki_salatalik: maki(R.salatalik, R.salatalikKoyu),
-  yemek_maki_mango: maki(R.mango, R.mangoKoyu),
-  yemek_maki_krem: maki(R.krem, R.kremKoyu),
-  yemek_maki_tempura: maki(R.tempura, R.tempuraKoyu),
+  yemek_nigiri_karides: nigiriArt(R.karides, R.karidesKoyu),
+  yemek_nigiri_unagi: nigiriArt(R.unagi, R.unagiKoyu),
+  yemek_maki_salatalik: makiArt(R.salatalik, R.salatalikKoyu),
+  yemek_maki_mango: makiArt(R.mango, R.mangoKoyu),
+  yemek_maki_krem: makiArt(R.krem, R.kremKoyu),
+  yemek_maki_tempura: makiArt(R.tempura, R.tempuraKoyu),
 
   ikram: `
     <path d="M15 16h18l-1.6 4.4H16.6z" fill="#CFE3EC"/>
@@ -733,17 +733,17 @@ const CIZIM: Record<string, string> = {
     <path d="M31 18l11 12M42 18L31 30" stroke="currentColor" stroke-width="3.4" stroke-linecap="round"/>`,
 };
 
-export type SanatId = keyof typeof CIZIM | string;
+export type ArtId = keyof typeof ART | string;
 
 /** Atölyede üretilen tarif görsellerini kayda ekler. */
-export function sanatEkle(id: string, icerik: string) {
-  CIZIM[id] = icerik;
+export function addArt(id: string, icerik: string) {
+  ART[id] = icerik;
 }
 
 /** Malzemenin "üst kısım" rengi — özel tarif görseli buradan üretilir. */
-export const MALZEME_RENK: Record<string, [string, string]> = {
+export const INGREDIENT_COLORS: Record<string, [string, string]> = {
   dilim_somon: [R.somon, R.somonKoyu],
-  dilim_ton: [R.ton, R.tonKoyu],
+  dilim_ton: [R.tone, R.tonKoyu],
   dilim_avokado: [R.avokadoOrta, R.avokado],
   dilim_tamago: [R.tamago, R.tamagoKoyu],
   ikura: ["#FF9A5C", "#E8783F"],
@@ -760,7 +760,7 @@ export const MALZEME_RENK: Record<string, [string, string]> = {
   krem_peynir: [R.krem, R.kremKoyu],
   tempura: [R.tempura, R.tempuraKoyu],
   maki_somon: [R.somon, R.somonKoyu],
-  maki_ton: [R.ton, R.tonKoyu],
+  maki_ton: [R.tone, R.tonKoyu],
   maki_avokado: [R.avokadoOrta, R.avokado],
   maki_tamago: [R.tamago, R.tamagoKoyu],
   maki_salatalik: [R.salatalik, R.salatalikKoyu],
@@ -771,7 +771,7 @@ export const MALZEME_RENK: Record<string, [string, string]> = {
 };
 
 /** Garnitür motifleri — merkezi (0,0) olacak şekilde çizilir, sonra yuvaya taşınır. */
-const GARNITUR_MOTIF: Record<string, string> = {
+const GARNISH_MOTIF: Record<string, string> = {
   susam: `<circle cx="-5" cy="0.4" r="1.6" fill="#FFF6E4"/><circle cx="0" cy="-1.6" r="1.6" fill="#F3E4C6"/><circle cx="5" cy="0.6" r="1.6" fill="#FFF6E4"/>`,
   siyah_susam: `<ellipse cx="-4.6" cy="0.4" rx="1.7" ry="1.3" fill="#5C4A50"/><ellipse cx="0.4" cy="-1.6" rx="1.7" ry="1.3" fill="#6D5B60"/><ellipse cx="5" cy="0.8" rx="1.7" ry="1.3" fill="#5C4A50"/>`,
   yesil_sogan: `<path d="M-6.5 1.4c3-2.4 6-2.6 9 0" stroke="${R.avokado}" stroke-width="2.1" stroke-linecap="round" fill="none"/><path d="M-4 -2c2.6-1.6 5.4-1.6 7.6.4" stroke="${R.avokadoOrta}" stroke-width="2" stroke-linecap="round" fill="none"/>`,
@@ -786,7 +786,7 @@ const GARNITUR_MOTIF: Record<string, string> = {
  * hem aralık hem ölçek küçülüyor, böylece hiçbiri diğerinin üstüne binmiyor
  * ve hepsi tabağın içinde kalıyor.
  */
-function garniturYerlesimi(adet: number, y: number): { x: number; y: number; olcek: number }[] {
+function garnishLayout(adet: number, y: number): { x: number; y: number; olcek: number }[] {
   const aralik = adet <= 1 ? 0 : adet === 2 ? 15 : adet === 3 ? 11.5 : 9.4;
   const olcek = adet <= 2 ? 1 : adet === 3 ? 0.78 : 0.66;
   return Array.from({ length: adet }, (_, i) => ({
@@ -796,13 +796,13 @@ function garniturYerlesimi(adet: number, y: number): { x: number; y: number; olc
   }));
 }
 
-export const GARNITUR_EN_FAZLA = 4;
-export const IC_EN_FAZLA = 4;
+export const MAX_GARNISHES = 4;
+export const MAX_FILLINGS = 4;
 
 /** Özel tarif çizimi: taban + iç renkler + garnitürler.
  *  İç malzemeler yan yana değil, gerçek bir suşi gibi ÜST ÜSTE katmanlanır. */
-export function ozelTarifCizim(
-  taban: "nigiriArt" | "makiArt" | "gunkan",
+export function customRecipeArt(
+  base: "nigiri" | "maki" | "gunkan",
   renkler: [string, string][],
   garniturler: string[],
 ): string {
@@ -810,7 +810,7 @@ export function ozelTarifCizim(
   let govde: string;
   let garniturY: number;
 
-  if (taban === "nigiriArt") {
+  if (base === "nigiri") {
     // Pirinç yastığı en altta, malzemeler üstüne tek tek istifleniyor.
     govde = `
       <ellipse cx="24" cy="35" rx="15.5" ry="7" fill="${R.pirincGolge}"/>
@@ -819,7 +819,7 @@ export function ozelTarifCizim(
       <circle cx="29.5" cy="36" r=".9" fill="${R.pirincGolge}"/>`;
 
     const kat = 4.6;
-    katmanlar.forEach(([renk, koyu], i) => {
+    katmanlar.forEach(([color, koyu], i) => {
       const y = 29.5 - i * kat;
       const genislik = 30 - i * 1.8;
       const x = 24 - genislik / 2;
@@ -831,10 +831,10 @@ export function ozelTarifCizim(
       </g>`;
     });
     garniturY = Math.max(7, 29.5 - (katmanlar.length - 1) * kat - 3.4);
-  } else if (taban === "makiArt") {
+  } else if (base === "maki") {
     // Kesitte iç içe halkalar: her malzeme bir katman.
     const merkez = katmanlar
-      .map(([renk], i) => {
+      .map(([color], i) => {
         const r = (6.6 * (katmanlar.length - i)) / katmanlar.length;
         return `<circle cx="24" cy="22.6" r="${r.toFixed(2)}" fill="${color}"/>`;
       })
@@ -853,7 +853,7 @@ export function ozelTarifCizim(
     // Nori kayığı; dolgu katmanları kayığın içinden yukarı doğru yığılıyor.
     let dolgu = "";
     const kat = 3.9;
-    katmanlar.forEach(([renk, koyu], i) => {
+    katmanlar.forEach(([color, koyu], i) => {
       const cy = 18.4 - i * kat;
       const rx = 11.6 - i * 1.3;
       dolgu += `<ellipse cx="24" cy="${(cy + 0.7).toFixed(1)}" rx="${rx.toFixed(1)}" ry="4.2" fill="${koyu}"/>
@@ -868,13 +868,13 @@ export function ozelTarifCizim(
     garniturY = Math.max(7, 18.4 - (katmanlar.length - 1) * kat - 3.6);
   }
 
-  const secilen = garniturler.slice(0, GARNITUR_EN_FAZLA).filter((g) => GARNITUR_MOTIF[g]);
-  const yerler = garniturYerlesimi(secilen.length, garniturY);
+  const secilen = garniturler.slice(0, MAX_GARNISHES).filter((g) => GARNISH_MOTIF[g]);
+  const yerler = garnishLayout(secilen.length, garniturY);
   const susler = secilen
     .map((g, i) => {
-      const yer = yerler[i];
-      if (!yer) return "";
-      return `<g transform="translate(${spot.x.toFixed(2)} ${spot.y.toFixed(1)}) scale(${spot.olcek})">${GARNITUR_MOTIF[g]}</g>`;
+      const spot = yerler[i];
+      if (!spot) return "";
+      return `<g transform="translate(${spot.x.toFixed(2)} ${spot.y.toFixed(1)}) scale(${spot.olcek})">${GARNISH_MOTIF[g]}</g>`;
     })
     .join("");
 
@@ -882,24 +882,24 @@ export function ozelTarifCizim(
 }
 
 /** SVG markup döndürür (innerHTML için). */
-export function sanat(id: SanatId, boyut = 28): string {
-  const ic = CIZIM[id] ?? CIZIM.bos;
+export function art(id: ArtId, boyut = 28): string {
+  const filling = ART[id] ?? ART.bos;
   // Ortak yumuşak dış hat: kendi stroke'u olan şekiller etkilenmez, sadece
   // düz dolgular hafif bir kontur kazanır — pastel zeminde "sticker" hissi verir.
   return (
     `<svg class="sv" viewBox="0 0 48 48" width="${boyut}" height="${boyut}" aria-hidden="true" focusable="false">` +
-    `<g stroke="#6B565C" stroke-opacity="0.13" stroke-width="0.75" stroke-linejoin="round">${ic}</g>` +
+    `<g stroke="#6B565C" stroke-opacity="0.13" stroke-width="0.75" stroke-linejoin="round">${filling}</g>` +
     `</svg>`
   );
 }
 
-export function sanatVarMi(id: string): boolean {
-  return id in CIZIM;
+export function hasArt(id: string): boolean {
+  return id in ART;
 }
 
 
 // ================================================================= garson avatarı
-const SAC_ARKA: Record<string, (sc: string) => string> = {
+const HAIR_BACK: Record<string, (sc: string) => string> = {
   topuz: () => "",
   ikiz_topuz: () => "",
   uzun: (sc) => `<path d="M11 14c0-8 5.6-12.6 13-12.6S37 6 37 14v16c0 2-1.4 3-3.4 3H14.4c-2 0-3.4-1-3.4-3z" fill="${sc}"/>`,
@@ -908,7 +908,7 @@ const SAC_ARKA: Record<string, (sc: string) => string> = {
   dagitik: () => "",
 };
 
-const SAC_ON: Record<string, (sc: string) => string> = {
+const HAIR_FRONT: Record<string, (sc: string) => string> = {
   topuz: (sc) =>
     `<circle cx="24" cy="4.2" r="4.4" fill="${sc}"/>` +
     `<path d="M15.4 12.6c0-5.6 3.7-8.8 8.6-8.8s8.6 3.2 8.6 8.8c-1.8-3.4-4.9-4.8-8.6-4.8s-6.8 1.4-8.6 4.8z" fill="${sc}"/>`,
@@ -926,7 +926,7 @@ const SAC_ON: Record<string, (sc: string) => string> = {
     `<path d="M15 13.8c0-6.2 4-9.8 9-9.8s9 3.6 9 9.8c-1.4-2.6-3.2-4-5.2-4.4l1.6-3-3.6 2.6-1.8-3.4-1.4 3.6-3.4-2.4 1.4 3c-2.4.4-4.4 1.6-5.6 4z" fill="${sc}"/>`,
 };
 
-const SAC_AKSESUAR_CIZIM: Record<SacAksesuarId, string> = {
+const HAIR_ACCESSORY_ART: Record<HairAccessoryId, string> = {
   yok: "",
   chopstick: `
     <g transform="rotate(-26 24 4.2)">
@@ -970,7 +970,7 @@ const SAC_AKSESUAR_CIZIM: Record<SacAksesuarId, string> = {
     </g>`,
 };
 
-const YUZ_AKSESUAR_CIZIM: Record<YuzAksesuarId, string> = {
+const FACE_ACCESSORY_ART: Record<FaceAccessoryId, string> = {
   yok: "",
   gozluk: `
     <rect x="16.2" y="11.6" width="7.4" height="5.4" rx="1.6" fill="#FFFDF7" fill-opacity=".3" stroke="#6D5B60" stroke-width="1.1"/>
@@ -990,13 +990,13 @@ const YUZ_AKSESUAR_CIZIM: Record<YuzAksesuarId, string> = {
 };
 
 /** Oyuncunun garson avatarını çizer. */
-export function garsonCizim(a: Avatar): string {
-  const ten = TENLER[a.ten] ?? TENLER[1]!;
-  const sc = SAC_RENKLERI[a.sacRenk] ?? SAC_RENKLERI[0]!;
-  const uni = UNIFORMALAR[a.uniforma] ?? UNIFORMALAR[0]!;
-  const onlukRenk = ONLUKLER[a.onluk] ?? ONLUKLER[0]!;
-  const sacId = SACLAR[a.sac]?.id ?? "topuz";
-  const kadin = a.tip === "kadin";
+export function serverArt(a: Avatar): string {
+  const skin = SKIN_TONES[a.skin] ?? SKIN_TONES[1]!;
+  const sc = HAIR_COLORS[a.hairColor] ?? HAIR_COLORS[0]!;
+  const uni = OUTFIT_COLORS[a.outfit] ?? OUTFIT_COLORS[0]!;
+  const onlukRenk = APRON_COLORS[a.apron] ?? APRON_COLORS[0]!;
+  const sacId = HAIR_STYLES[a.hair]?.id ?? "topuz";
+  const kadin = a.kind === "kadin";
 
   // Silüetler bilerek belirgin farklı: kadın dar omuz + kloş etek,
   // erkek geniş omuz + düz pantolon (bacak ayrımıyla).
@@ -1012,12 +1012,12 @@ export function garsonCizim(a: Avatar): string {
        <circle cx="14.1" cy="36.8" r="2.7" fill="${skin}"/>
        <circle cx="33.9" cy="36.8" r="2.7" fill="${skin}"/>`;
 
-  const onluk = kadin
+  const apron = kadin
     ? `<path d="M20 26.2h8l2.6 14.8H17.4z" fill="${onlukRenk}"/>`
     : `<path d="M19.4 26.2h9.2l.7 14.8H18.7z" fill="${onlukRenk}"/>`;
 
   // Yüz: kadın oval, erkek daha köşeli çene.
-  const bas = kadin
+  const bass = kadin
     ? `<circle cx="24" cy="14" r="8.4" fill="${skin}"/>`
     : `<path d="M15.4 12.2c0-4.9 3.7-8.2 8.6-8.2s8.6 3.3 8.6 8.2v3.2c0 4.6-3.7 7.6-8.6 7.6s-8.6-3-8.6-7.6z" fill="${skin}"/>`;
 
@@ -1041,16 +1041,16 @@ export function garsonCizim(a: Avatar): string {
 
   return `
     <ellipse cx="24" cy="45" rx="${kadin ? 10 : 11}" ry="2.4" fill="#6B565C" opacity=".13"/>
-    ${SAC_ARKA[sacId]?.(sc) ?? ""}
+    ${HAIR_BACK[sacId]?.(sc) ?? ""}
     ${govde}
     ${kollar}
-    ${onluk}
+    ${apron}
     <path d="M20.4 24.4h7.2l-1 2.6h-5.2z" fill="${onlukRenk}"/>
     <rect x="21.6" y="20.2" width="4.8" height="4.4" rx="1.6" fill="${skin}"/>
-    ${bas}
+    ${bass}
     <ellipse cx="15.7" cy="15" rx="1.5" ry="2" fill="${skin}"/>
     <ellipse cx="32.3" cy="15" rx="1.5" ry="2" fill="${skin}"/>
-    ${SAC_ON[sacId]?.(sc) ?? ""}
+    ${HAIR_FRONT[sacId]?.(sc) ?? ""}
     ${kaslar}
     ${gozler}
     <circle cx="20.1" cy="14.1" r=".7" fill="#fff" opacity=".9"/>
@@ -1058,24 +1058,24 @@ export function garsonCizim(a: Avatar): string {
     ${agiz}
     <ellipse cx="17.8" cy="17.4" rx="2" ry="1.3" fill="#FFB3C2" opacity="${kadin ? ".55" : ".38"}"/>
     <ellipse cx="30.2" cy="17.4" rx="2" ry="1.3" fill="#FFB3C2" opacity="${kadin ? ".55" : ".38"}"/>
-    ${YUZ_AKSESUAR_CIZIM[a.yuzAksesuar] ?? ""}
-    ${SAC_AKSESUAR_CIZIM[a.sacAksesuar] ?? ""}`;
+    ${FACE_ACCESSORY_ART[a.faceAccessory] ?? ""}
+    ${HAIR_ACCESSORY_ART[a.hairAccessory] ?? ""}`;
 }
 
 /** Seçim butonları için baş çerçevesi — gövde kırpılmadan sadece kafa görünür. */
-export function garsonKafaSvg(a: Avatar, boyut = 54): string {
+export function serverHeadSvg(a: Avatar, boyut = 54): string {
   return (
-    `<svg class="sv sv-kirp" viewBox="7 -2 34 28" width="${boyut}" height="${(boyut * 28) / 34}" aria-hidden="true">` +
-    `<g stroke="#6B565C" stroke-opacity="0.11" stroke-width="0.7" stroke-linejoin="round">${garsonCizim(a)}</g>` +
+    `<svg class="sv sv-clip" viewBox="7 -2 34 28" width="${boyut}" height="${(boyut * 28) / 34}" aria-hidden="true">` +
+    `<g stroke="#6B565C" stroke-opacity="0.11" stroke-width="0.7" stroke-linejoin="round">${serverArt(a)}</g>` +
     `</svg>`
   );
 }
 
 /** Panelde küçük önizleme için sarmalayıcı. */
-export function garsonSvg(a: Avatar, boyut = 72): string {
+export function serverSvg(a: Avatar, boyut = 72): string {
   return (
     `<svg class="sv" viewBox="0 0 48 48" width="${boyut}" height="${boyut}" aria-hidden="true">` +
-    `<g stroke="#6B565C" stroke-opacity="0.11" stroke-width="0.7" stroke-linejoin="round">${garsonCizim(a)}</g>` +
+    `<g stroke="#6B565C" stroke-opacity="0.11" stroke-width="0.7" stroke-linejoin="round">${serverArt(a)}</g>` +
     `</svg>`
   );
 }

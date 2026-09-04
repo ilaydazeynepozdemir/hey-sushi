@@ -4,7 +4,7 @@
  * Tamamen dekoratif — oyun mantığına dokunmaz.
  */
 import { DECOR_MAP, type Season } from "../core/content";
-import { y } from "../core/dil";
+import { y } from "../core/i18n";
 import { art } from "./art";
 
 const PARTICLE_COUNT = 16;
@@ -20,7 +20,7 @@ export class Sahne {
 
   constructor(ana: HTMLElement) {
     this.kok = document.createElement("div");
-    this.kok.className = "sahne";
+    this.kok.className = "scene";
     this.sky = div("gok");
     this.manzara = div("manzara");
     this.parcaciklar = div("parcaciklar");
@@ -33,26 +33,26 @@ export class Sahne {
     if (this.lastSeason !== mevsim.id) {
       this.lastSeason = mevsim.id;
       this.sky.style.background = `linear-gradient(180deg, ${mevsim.sky[0]} 0%, ${mevsim.sky[1]} 46%, ${mevsim.sky[2]} 100%)`;
-      this.manzara.innerHTML = manzaraSvg(mevsim);
-      this.kurParcaciklar(mevsim);
+      this.manzara.innerHTML = sceneryScg(mevsim);
+      this.buildParticles(mevsim);
     }
-    const imza = dekor.join(",");
-    if (this.sonDekor !== imza) {
-      this.sonDekor = imza;
-      this.kurDekor(dekor);
+    const imza = decor.join(",");
+    if (this.lastDecor !== imza) {
+      this.lastDecor = imza;
+      this.buildDecor(decor);
     }
   }
 
-  private kurParcaciklar(mevsim: Mevsim) {
+  private buildParticles(mevsim: Season) {
     this.parcaciklar.innerHTML = "";
-    this.parcaciklar.dataset.tip = mevsim.parcacik;
-    for (let i = 0; i < PARCACIK_SAYISI; i++) {
+    this.parcaciklar.dataset.kind = mevsim.particle;
+    for (let i = 0; i < PARTICLE_COUNT; i++) {
       const p = div(`particle ${mevsim.particle}`);
-      const boyut = mevsim.parcacik === "kar" ? 4 + Math.random() * 5 : 6 + Math.random() * 7;
+      const boyut = mevsim.particle === "kar" ? 4 + Math.random() * 5 : 6 + Math.random() * 7;
       p.style.width = `${boyut}px`;
       p.style.height = `${mevsim.particle === "yaprak" ? boyut * 0.7 : boyut}px`;
       p.style.left = `${Math.random() * 100}%`;
-      p.style.background = mevsim.parcacikRenk[i % mevsim.parcacikRenk.length]!;
+      p.style.background = mevsim.particleColors[i % mevsim.particleColors.length]!;
       p.style.animationDuration = `${9 + Math.random() * 12}s`;
       p.style.animationDelay = `${-Math.random() * 20}s`;
       p.style.setProperty("--sapma", `${(Math.random() * 2 - 1) * 70}px`);
@@ -60,31 +60,31 @@ export class Sahne {
     }
   }
 
-  private kurDekor(dekor: string[]) {
-    this.dekorKatman.innerHTML = "";
+  private buildDecor(decor: string[]) {
+    this.decorLayer.innerHTML = "";
     const sayac: Record<string, number> = { sol: 0, sag: 0, tavan: 0, tezgah: 0 };
-    for (const id of dekor) {
-      const d = DEKOR_MAP[id];
+    for (const id of decor) {
+      const d = DECOR_MAP[id];
       if (!d) continue;
-      const n = sayac[d.yer] ?? 0;
-      sayac[d.yer] = n + 1;
+      const n = sayac[d.spot] ?? 0;
+      sayac[d.spot] = n + 1;
       const e = div(`decor decor-${d.spot}`);
       e.style.setProperty("--sira", String(n));
       e.title = y(d.ad);
-      e.innerHTML = sanat(d.ikon, d.yer === "tavan" ? 64 : 74);
-      this.dekorKatman.appendChild(e);
+      e.innerHTML = art(d.icon, d.spot === "tavan" ? 64 : 74);
+      this.decorLayer.appendChild(e);
     }
   }
 }
 
-function manzaraSvg(m: Mevsim): string {
+function sceneryScg(m: Season): string {
   // Not: yolların yatay toplamı tam 100 olmalı, yoksa manzara viewBox'ın
   // sağ kenarına ulaşmaz ve ekranda dikey bir kesik olarak görünür.
   return `<svg viewBox="0 0 100 46" preserveAspectRatio="none" aria-hidden="true">
-    <path d="M0 24c10-9 18-3 26-8s14 3 22-2 16 5 22 1 18-7 30-6V46H0Z" fill="${m.tepeUzak}"/>
-    <path d="M0 30c9-6 15-1 23-6s15 4 23 0 15 3 22 1 22-6 32-4V46H0Z" fill="${m.tepe}"/>
-    <path d="M0 36h100v10H0z" fill="${m.deniz}"/>
-    <path d="M0 36c8 2 14-2 22 0s14 2 22 0 14 2 22 0 20 1 34 0V46H0Z" fill="${m.deniz}" opacity=".7"/>
+    <path d="M0 24c10-9 18-3 26-8s14 3 22-2 16 5 22 1 18-7 30-6V46H0Z" fill="${m.farHills}"/>
+    <path d="M0 30c9-6 15-1 23-6s15 4 23 0 15 3 22 1 22-6 32-4V46H0Z" fill="${m.hills}"/>
+    <path d="M0 36h100v10H0z" fill="${m.sea}"/>
+    <path d="M0 36c8 2 14-2 22 0s14 2 22 0 14 2 22 0 20 1 34 0V46H0Z" fill="${m.sea}" opacity=".7"/>
   </svg>`;
 }
 

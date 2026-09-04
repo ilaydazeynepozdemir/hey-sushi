@@ -4,8 +4,8 @@
  * durum yayınıyla birlikte diğer oyunculara da otomatik ulaşır.
  */
 
-import { storageGet, storageSet } from "./depo";
-import { m, type Localized } from "./dil";
+import { storageGet, storageSet } from "./storage";
+import { m, type Localized } from "./i18n";
 
 export type AvatarKind = "kadin" | "erkek";
 
@@ -91,59 +91,59 @@ const DEPO = "tsuki.avatar";
 export function defaultAvatar(sira = 0): Avatar {
   return {
     ad: sira === 0 ? "Chef" : `Server ${sira + 1}`,
-    tip: "kadin",
-    ten: 1,
-    sac: 0,
-    sacRenk: 0,
-    uniforma: sira % UNIFORMALAR.length,
-    onluk: 0,
-    sacAksesuar: "chopstick",
-    yuzAksesuar: "yok",
+    kind: "kadin",
+    skin: 1,
+    hair: 0,
+    hairColor: 0,
+    outfit: sira % OUTFIT_COLORS.length,
+    apron: 0,
+    hairAccessory: "chopstick",
+    faceAccessory: "yok",
   };
 }
 
-function duzelt(a: Partial<Avatar> & { aksesuar?: string }, sira = 0): Avatar {
-  const v = varsayilanAvatar(sira);
+function normalize(a: Partial<Avatar> & { aksesuar?: string }, sira = 0): Avatar {
+  const v = defaultAvatar(sira);
   // Eski kayıtlarda tek bir "aksesuar" alanı vardı; doğru slota taşı.
   const eski = a.aksesuar;
-  const eskiSac = eski && eski !== "gozluk" ? (eski as SacAksesuarId) : undefined;
-  const eskiYuz = eski === "gozluk" ? ("gozluk" as YuzAksesuarId) : undefined;
+  const eskiSac = eski && eski !== "gozluk" ? (eski as HairAccessoryId) : undefined;
+  const eskiYuz = eski === "gozluk" ? ("gozluk" as FaceAccessoryId) : undefined;
 
   // Eski kayıt taşınıyorsa boş kalan slot "yok" olmalı; varsayılan takı eklenmemeli.
   const eskiVar = typeof eski === "string";
-  const sacAks = a.sacAksesuar ?? eskiSac ?? (eskiVar ? "yok" : undefined);
-  const yuzAks = a.yuzAksesuar ?? eskiYuz ?? (eskiVar ? "yok" : undefined);
+  const sacAks = a.hairAccessory ?? eskiSac ?? (eskiVar ? "yok" : undefined);
+  const yuzAks = a.faceAccessory ?? eskiYuz ?? (eskiVar ? "yok" : undefined);
 
   return {
     ad: (typeof a.ad === "string" && a.ad.trim().slice(0, 14)) || v.ad,
-    tip: a.tip === "erkek" ? "erkek" : "kadin",
-    ten: sinirla(a.ten, TENLER.length, v.ten),
-    sac: sinirla(a.sac, SACLAR.length, v.sac),
-    sacRenk: sinirla(a.sacRenk, SAC_RENKLERI.length, v.sacRenk),
-    uniforma: sinirla(a.uniforma, UNIFORMALAR.length, v.uniforma),
-    onluk: sinirla(a.onluk, ONLUKLER.length, v.onluk),
-    sacAksesuar: SAC_AKSESUARLARI.some((x) => x.id === sacAks) ? sacAks! : v.sacAksesuar,
-    yuzAksesuar: YUZ_AKSESUARLARI.some((x) => x.id === yuzAks) ? yuzAks! : v.yuzAksesuar,
+    kind: a.kind === "erkek" ? "erkek" : "kadin",
+    skin: clampIndex(a.skin, SKIN_TONES.length, v.skin),
+    hair: clampIndex(a.hair, HAIR_STYLES.length, v.hair),
+    hairColor: clampIndex(a.hairColor, HAIR_COLORS.length, v.hairColor),
+    outfit: clampIndex(a.outfit, OUTFIT_COLORS.length, v.outfit),
+    apron: clampIndex(a.apron, APRON_COLORS.length, v.apron),
+    hairAccessory: HAIR_ACCESSORIES.some((x) => x.id === sacAks) ? sacAks! : v.hairAccessory,
+    faceAccessory: FACE_ACCESSORIES.some((x) => x.id === yuzAks) ? yuzAks! : v.faceAccessory,
   };
 }
 
-function sinirla(deger: unknown, uzunluk: number, varsayilan: number): number {
+function clampIndex(deger: unknown, uzunluk: number, varsayilan: number): number {
   return typeof deger === "number" && deger >= 0 && deger < uzunluk ? Math.floor(deger) : varsayilan;
 }
 
-export function avatarYukle(): Avatar {
+export function loadAvatar(): Avatar {
   try {
-    const ham = depoOku(DEPO);
-    if (!ham) return varsayilanAvatar();
-    return duzelt(JSON.parse(ham) as Partial<Avatar>);
+    const ham = storageGet(DEPO);
+    if (!ham) return defaultAvatar();
+    return normalize(JSON.parse(ham) as Partial<Avatar>);
   } catch {
-    return varsayilanAvatar();
+    return defaultAvatar();
   }
 }
 
-export function avatarKaydet(a: Avatar) {
+export function saveAvatar(a: Avatar) {
   try {
-    depoYaz(DEPO, JSON.stringify(a));
+    storageSet(DEPO, JSON.stringify(a));
   } catch {
     /* özel sekmede yazamayabiliriz */
   }

@@ -1,5 +1,5 @@
 import type { Avatar } from "./avatar";
-import type { Localized } from "./dil";
+import type { Localized } from "./i18n";
 
 /**
  * Oyunun saf çekirdeği. Burada DOM, tarayıcı ya da render kodu YOK.
@@ -68,93 +68,93 @@ export type StationId =
 /** Etkileşim hedefi: bir istasyon ya da bir misafirin tepsisi. */
 export type TargetId = StationId | `misafir:${string}`;
 
-export interface Oyuncu {
+export interface Player {
   id: PlayerId;
   ad: string;
-  renk: string;
+  color: string;
   /** Kişiselleştirilmiş garson görünümü (online oyunda durumla birlikte yayılır). */
   avatar: Avatar;
-  el: MalzemeId | null;
+  hand: IngredientId | null;
   /** Bu gün içinde kaç işe dokundu — gün sonu özeti için. */
-  katki: number;
+  contributions: number;
 }
 
-export interface TepsiParcasi {
-  malzeme: MalzemeId;
-  koyan: PlayerId;
+export interface TrayItem {
+  ingredient: IngredientId;
+  placedBy: PlayerId;
 }
 
-export type MisafirDurum = "bekliyor" | "mutlu" | "gidiyor";
+export type GuestStatus = "bekliyor" | "mutlu" | "gidiyor";
 
-export interface Misafir {
+export interface Guest {
   id: string;
-  karakterId: string;
-  koltuk: number;
-  siparis: YemekId[];
-  tepsi: TepsiParcasi[];
-  bekledi: number;
-  sabir: number;
-  durum: MisafirDurum;
+  characterId: string;
+  seat: number;
+  order: DishId[];
+  tray: TrayItem[];
+  waited: number;
+  patience: number;
+  state: GuestStatus;
   /** Servis sonrası / gidişte gösterilen replik. */
-  replik: Yerel | null;
-  replikSure: number;
+  line: Localized | null;
+  lineTimer: number;
 }
 
-export type OyunFaz = "menu" | "gun" | "gun_sonu";
+export type GamePhase = "menu" | "gun" | "gun_sonu";
 
-export interface OyunDurumu {
-  faz: OyunFaz;
-  gun: number;
-  kalp: number;
-  gunKalp: number;
-  jeton: number;
-  sure: number;
-  oyuncular: Oyuncu[];
-  misafirler: Misafir[];
-  koltukSayisi: number;
+export interface GameState {
+  phase: GamePhase;
+  day: number;
+  hearts: number;
+  dayHearts: number;
+  coins: number;
+  elapsed: number;
+  players: Player[];
+  guests: Guest[];
+  seatCount: number;
   /** İstasyon ilerlemeleri (0..1 değil, tap sayısı). Paylaşımlı: iki oyuncu aynı anda hızlandırır. */
-  ilerleme: Partial<Record<IstasyonId, number>>;
-  matSlotlari: MalzemeId[];
-  matSonuc: MalzemeId | null;
-  gelenMisafir: number;
-  gunMisafirHedefi: number;
-  spawnSayaci: number;
+  progress: Partial<Record<StationId, number>>;
+  matSlots: IngredientId[];
+  matResult: IngredientId | null;
+  guestsArrived: number;
+  guestTarget: number;
+  spawnTimer: number;
   seed: number;
   /** Satın alınmış dükkân eşyaları (bkz. content.ts DEKORLAR). */
-  dekor: string[];
+  decor: string[];
   /** Atölyede tasarlanan tarifler yüzünden erken açılan istasyonlar. */
-  ekstraIstasyon: IstasyonId[];
+  extraStations: StationId[];
   /** Servis botunun bir sonraki ikramına kalan saniye. */
-  botSayaci: number;
+  botTimer: number;
   /** Gün istatistikleri */
-  istatistik: {
-    servis: number;
-    mukemmel: number;
-    beraber: number;
-    kacan: number;
+  stats: {
+    served: number;
+    perfect: number;
+    together: number;
+    leftEarly: number;
   };
 }
 
-export type OyunOlayi =
-  | { tip: "tik"; hedef: HedefId }
-  | { tip: "uretildi"; malzeme: MalzemeId; oyuncu: PlayerId }
-  | { tip: "birakildi"; oyuncu: PlayerId }
-  | { tip: "tepsiye_kondu"; misafirId: string; malzeme: MalzemeId; oyuncu: PlayerId }
-  | { tip: "tepsiden_alindi"; misafirId: string; malzeme: MalzemeId; oyuncu: PlayerId }
-  | { tip: "mata_kondu"; malzeme: MalzemeId; oyuncu: PlayerId }
-  | { tip: "ikram"; misafirId: string; oyuncu: PlayerId; bot: boolean }
-  | { tip: "servis"; guzel: boolean; kalp: number; beraber: boolean; misafirId: string }
-  | { tip: "eksik"; misafirId: string }
-  | { tip: "misafir_geldi"; misafirId: string }
-  | { tip: "misafir_gitti"; misafirId: string }
-  | { tip: "gun_bitti" }
-  | { tip: "dekor_alindi"; id: string }
-  | { tip: "hata"; mesaj: Yerel; oyuncu: PlayerId };
+export type GameEvent =
+  | { kind: "tick"; target: TargetId }
+  | { kind: "uretildi"; ingredient: IngredientId; oyuncu: PlayerId }
+  | { kind: "birakildi"; oyuncu: PlayerId }
+  | { kind: "tepsiye_kondu"; guestId: string; ingredient: IngredientId; oyuncu: PlayerId }
+  | { kind: "tepsiden_alindi"; guestId: string; ingredient: IngredientId; oyuncu: PlayerId }
+  | { kind: "mata_kondu"; ingredient: IngredientId; oyuncu: PlayerId }
+  | { kind: "ikram"; guestId: string; oyuncu: PlayerId; bot: boolean }
+  | { kind: "servis"; guzel: boolean; hearts: number; together: boolean; guestId: string }
+  | { kind: "eksik"; guestId: string }
+  | { kind: "misafir_geldi"; guestId: string }
+  | { kind: "misafir_gitti"; guestId: string }
+  | { kind: "gun_bitti" }
+  | { kind: "dekor_alindi"; id: string }
+  | { kind: "hata"; onMessage: Localized; oyuncu: PlayerId };
 
-export type Aksiyon =
-  | { tip: "etkilesim"; oyuncu: PlayerId; hedef: HedefId }
-  | { tip: "servis"; oyuncu: PlayerId; misafirId: string }
-  | { tip: "tik"; dt: number }
-  | { tip: "gun_basla" }
-  | { tip: "sonraki_gun" }
-  | { tip: "dekor_al"; id: string };
+export type Action =
+  | { kind: "etkilesim"; oyuncu: PlayerId; target: TargetId }
+  | { kind: "servis"; oyuncu: PlayerId; guestId: string }
+  | { kind: "tick"; dt: number }
+  | { kind: "gun_basla" }
+  | { kind: "sonraki_gun" }
+  | { kind: "dekor_al"; id: string };

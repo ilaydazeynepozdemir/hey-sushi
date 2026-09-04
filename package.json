@@ -4,21 +4,21 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "dev": "vite --host",
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "relay": "node server/relay.mjs",
-    "dev:all": "node server/relay.mjs & vite",
+    "dev:all": "node server/relay.mjs & vite --host",
     "ota": "node scripts/ota.mjs",
     "mobil": "npm run build && npx cap sync",
-    "surum": "node scripts/version.mjs",
     "android:release": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
-    "ekran": "node scripts/screenshots.mjs",
     "android": "npm run build && npx cap sync android && npx cap run android",
     "android:live": "npx cap run android --livereload --external",
     "ios": "npm run build && npx cap sync ios && npx cap run ios",
     "dev:ag": "vite --host",
-    "build:web": "PAGES=1 vite build"
+    "build:web": "PAGES=1 vite build",
+    "screenshots": "node scripts/screenshots.mjs",
+    "version": "node scripts/version.mjs"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",
