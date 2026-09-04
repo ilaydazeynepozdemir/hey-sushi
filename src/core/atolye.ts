@@ -3,22 +3,22 @@
  * Şimdilik tamamen çevrimdışı (localStorage). Global menü oylaması bunun
  * üstüne, aynı veri şekliyle eklenecek (bkz. ROADMAP.md).
  */
-import { depoOku, depoYaz } from "./depo";
+import { storageGet, storageSet } from "./depo";
 import {
-  MAKI_TARIFLERI,
-  MALZEMELER,
-  YEMEKLER,
-  istasyonlarGun,
-  malzemeIstasyonlari,
-  yemekKaydet,
-  yemekSil,
+  MAKI_RECIPES,
+  INGREDIENTS,
+  DISHES,
+  stationsForDay,
+  stationsForIngredient,
+  registerDish,
+  unregisterDish,
 } from "./content";
-import { m, y, type Yerel } from "./dil";
-import { MALZEME_RENK, ozelTarifCizim, sanatEkle } from "../ui/art";
-import type { IstasyonId, MalzemeId } from "./types";
+import { m, y, type Localized } from "./dil";
+import { INGREDIENT_COLORS, customRecipeArt, addArt } from "../ui/art";
+import type { StationId, IngredientId } from "./types";
 
-export type TabanId = "nigiri" | "maki" | "gunkan";
-export type GarniturId =
+export type BaseId = "nigiri" | "maki" | "gunkan";
+export type GarnishId =
   | "susam"
   | "siyah_susam"
   | "yesil_sogan"
@@ -27,97 +27,97 @@ export type GarniturId =
   | "limon"
   | "nori_serit";
 
-export interface Taban {
-  id: TabanId;
-  ad: Yerel;
-  aciklama: Yerel;
-  kalp: number;
+export interface Base {
+  id: BaseId;
+  ad: Localized;
+  description: Localized;
+  hearts: number;
   /** İç malzeme dışındaki sabit gereksinimler. */
-  temel: MalzemeId[];
+  basics: IngredientId[];
   /** Bu tabanda kullanılabilecek iç malzemeler. */
-  izinli: MalzemeId[];
+  allowed: IngredientId[];
 }
 
-export const TABANLAR: Taban[] = [
+export const BASES: Base[] = [
   {
     id: "nigiri",
     ad: m("Nigiri", "Nigiri"),
-    aciklama: m("A rice pillow with a topping.", "Pirinç yastığı, üstünde iç malzeme."),
-    kalp: 3,
-    temel: ["pirinc"],
-    izinli: ["dilim_somon", "dilim_ton", "dilim_avokado", "dilim_tamago", "dilim_karides", "dilim_yilanbaligi", "dilim_mango", "dilim_salatalik", "krem_peynir", "tempura", "ikura", "tofu"],
+    description: m("A rice pillow with a topping.", "Pirinç yastığı, üstünde iç malzeme."),
+    hearts: 3,
+    basics: ["pirinc"],
+    allowed: ["dilim_somon", "dilim_ton", "dilim_avokado", "dilim_tamago", "dilim_karides", "dilim_yilanbaligi", "dilim_mango", "dilim_salatalik", "krem_peynir", "tempura", "ikura", "tofu"],
   },
   {
     id: "maki",
     ad: m("Maki", "Maki"),
-    aciklama: m("Rolled on the mat. Needs maki rolled beforehand.", "Sarma matında rulo. Matta sarılmış maki ister."),
-    kalp: 6,
-    temel: [],
-    izinli: ["maki_somon", "maki_ton", "maki_avokado", "maki_tamago", "maki_salatalik", "maki_mango", "maki_karides", "maki_krem", "maki_tempura"],
+    description: m("Rolled on the mat. Needs maki rolled beforehand.", "Sarma matında rulo. Matta sarılmış maki ister."),
+    hearts: 6,
+    basics: [],
+    allowed: ["maki_somon", "maki_ton", "maki_avokado", "maki_tamago", "maki_salatalik", "maki_mango", "maki_karides", "maki_krem", "maki_tempura"],
   },
   {
     id: "gunkan",
     ad: m("Gunkan", "Gunkan"),
-    aciklama: m("A nori boat, filled up.", "Nori kayığı, içi dolu."),
-    kalp: 6,
-    temel: ["pirinc", "nori"],
-    izinli: ["ikura", "dilim_somon", "dilim_ton", "dilim_avokado", "dilim_karides", "dilim_mango", "krem_peynir", "tempura", "tofu"],
+    description: m("A nori boat, filled up.", "Nori kayığı, içi dolu."),
+    hearts: 6,
+    basics: ["pirinc", "nori"],
+    allowed: ["ikura", "dilim_somon", "dilim_ton", "dilim_avokado", "dilim_karides", "dilim_mango", "krem_peynir", "tempura", "tofu"],
   },
 ];
 
-export const TABAN_MAP: Record<TabanId, Taban> = Object.fromEntries(
-  TABANLAR.map((t) => [t.id, t]),
-) as Record<TabanId, Taban>;
+export const BASE_MAP: Record<BaseId, Base> = Object.fromEntries(
+  BASES.map((t) => [t.id, t]),
+) as Record<BaseId, Base>;
 
-export const GARNITURLER: { id: GarniturId; ad: Yerel; kalp: number }[] = [
-  { id: "susam", ad: m("Sesame", "Susam"), kalp: 1 },
-  { id: "siyah_susam", ad: m("Black sesame", "Siyah susam"), kalp: 1 },
-  { id: "yesil_sogan", ad: m("Spring onion", "Yeşil soğan"), kalp: 1 },
-  { id: "wasabi", ad: m("Wasabi", "Wasabi"), kalp: 1 },
-  { id: "limon", ad: m("Lemon", "Limon"), kalp: 1 },
-  { id: "nori_serit", ad: m("Nori strip", "Nori şeridi"), kalp: 2 },
-  { id: "ikura", ad: m("Ikura beads", "İkura taneleri"), kalp: 2 },
+export const GARNISHES: { id: GarnishId; ad: Localized; hearts: number }[] = [
+  { id: "susam", ad: m("Sesame", "Susam"), hearts: 1 },
+  { id: "siyah_susam", ad: m("Black sesame", "Siyah susam"), hearts: 1 },
+  { id: "yesil_sogan", ad: m("Spring onion", "Yeşil soğan"), hearts: 1 },
+  { id: "wasabi", ad: m("Wasabi", "Wasabi"), hearts: 1 },
+  { id: "limon", ad: m("Lemon", "Limon"), hearts: 1 },
+  { id: "nori_serit", ad: m("Nori strip", "Nori şeridi"), hearts: 2 },
+  { id: "ikura", ad: m("Ikura beads", "İkura taneleri"), hearts: 2 },
 ];
 
 /** Görselde dört garnitür yuvası var; seçim onunla sınırlı. */
-export const GARNITUR_LIMIT = 4;
+export const GARNISH_LIMIT = 4;
 /** Bir tarifte en fazla dört iç malzeme. */
-export const IC_LIMIT = 4;
+export const FILLING_LIMIT = 4;
 
-export interface OzelTarif {
+export interface CustomRecipe {
   id: string;
   ad: string;
-  hikaye: string;
-  taban: TabanId;
-  ic: MalzemeId[];
-  garnitur: GarniturId[];
+  story: string;
+  base: BaseId;
+  filling: IngredientId[];
+  garnish: GarnishId[];
   /** Kaçıncı günde tasarlandı — menüye o günden itibaren girer. */
-  gun: number;
+  day: number;
 }
 
 const DEPO = "tsuki.tarifler";
 
-export function tarifKalp(t: Pick<OzelTarif, "taban" | "ic" | "garnitur">): number {
-  const taban = TABAN_MAP[t.taban];
-  const garnitur = t.garnitur.reduce(
-    (toplam, id) => toplam + (GARNITURLER.find((g) => g.id === id)?.kalp ?? 0),
+export function recipeHearts(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">): number {
+  const base = BASE_MAP[t.base];
+  const garnish = t.garnish.reduce(
+    (toplam, id) => toplam + (GARNISHES.find((g) => g.id === id)?.hearts ?? 0),
     0,
   );
-  return taban.kalp + Math.max(0, t.ic.length - 1) * 2 + garnitur;
+  return base.hearts + Math.max(0, t.filling.length - 1) * 2 + garnish;
 }
 
-export function tarifGerek(t: Pick<OzelTarif, "taban" | "ic">): MalzemeId[] {
-  return [...TABAN_MAP[t.taban].temel, ...t.ic];
+export function recipeNeeds(t: Pick<CustomRecipe, "taban" | "ic">): IngredientId[] {
+  return [...BASE_MAP[t.base].basics, ...t.filling];
 }
 
-export function tarifCizim(t: Pick<OzelTarif, "taban" | "ic" | "garnitur">): string {
-  const renkler = t.ic.map((m) => MALZEME_RENK[m] ?? MALZEME_RENK.dilim_somon!) as [string, string][];
-  return ozelTarifCizim(t.taban, renkler, t.garnitur);
+export function recipeArt(t: Pick<CustomRecipe, "taban" | "ic" | "garnitur">): string {
+  const renkler = t.filling.map((m) => INGREDIENT_COLORS[m] ?? INGREDIENT_COLORS.dilim_somon!) as [string, string][];
+  return customRecipeArt(t.base, renkler, t.garnish);
 }
 
 /** Tarifi menüye ve sanat kaydına yazar. */
-export function tarifiUygula(t: OzelTarif) {
-  const cizimId = `ozel_${t.id}`;
+export function applyRecipe(t: CustomRecipe) {
+  const artId = `ozel_${t.id}`;
   sanatEkle(cizimId, tarifCizim(t));
   yemekKaydet(t.id, {
     ad: m(t.ad, t.ad),

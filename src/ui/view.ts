@@ -1,128 +1,128 @@
 import {
-  YEMEKLER as YEMEK_KAYDI_HAM,
-  DEKORLAR,
-  ISTASYON_MAP,
-  KARAKTER_MAP,
-  MALZEMELER,
-  istasyonlarGun,
-  mevsimGun,
-  yemek,
+  DISHES as YEMEK_KAYDI_HAM,
+  DECOR_ITEMS,
+  STATION_MAP,
+  CHARACTER_MAP,
+  INGREDIENTS,
+  stationsForDay,
+  seasonForDay,
+  dish,
 } from "../core/content";
-import { menuGun, ruhHaliSanat, servisHazir, siparisDurumu } from "../core/game";
-import type { Ipucu } from "../core/ipucu";
-import type { HedefId, IstasyonId, MalzemeId, Misafir, OyunDurumu, PlayerId } from "../core/types";
-import { garsonSvg, sanat } from "./art";
-import { varsayilanAvatar } from "../core/avatar";
-import { S, bicim, dilAktif, dilAyarla, y, type DilKodu } from "../core/dil";
-import { OZELLIK } from "../core/ozellikler";
+import { menuForDay, moodArt, readyToServe, orderProgress } from "../core/game";
+import type { Hint } from "../core/ipucu";
+import type { TargetId, StationId, IngredientId, Guest, GameState, PlayerId } from "../core/types";
+import { serverSvg, art } from "./art";
+import { defaultAvatar } from "../core/avatar";
+import { S, format, activeLang, setLang, y, type LangCode } from "../core/dil";
+import { FEATURES } from "../core/ozellikler";
 import { Sahne } from "./sahne";
-import { titresimSecim } from "../core/titresim";
-import { atolyePaneli } from "./atolye-panel";
-import { avatarPaneli } from "./avatar-panel";
+import { hapticSelect } from "../core/titresim";
+import { workshopPanel } from "./atolye-panel";
+import { avatarPanel } from "./avatar-panel";
 import type { Avatar } from "../core/avatar";
-import type { OzelTarif } from "../core/atolye";
-import type { NetRol } from "../net/oda";
+import type { CustomRecipe } from "../core/atolye";
+import type { NetRole } from "../net/oda";
 
-const PASTEL_BLOB = ["#ffd7c9", "#d8eed3", "#cbe7e2", "#fff0cf", "#d5cbe9"];
+const PASTEL_BLOBS = ["#ffd7c9", "#d8eed3", "#cbe7e2", "#fff0cf", "#d5cbe9"];
 
-export interface ArayuzGirdi {
-  seciliHedef: HedefId | null;
-  seciliRenk: string;
-  sesAcik: boolean;
-  muzikAcik: boolean;
-  ipucu: Ipucu | null;
-  rehberAcik: boolean;
-  atolyeAcik: boolean;
-  avatarAcik: boolean;
-  cikisAcik: boolean;
+export interface ViewInput {
+  selectedTarget: TargetId | null;
+  selectionColor: string;
+  sfxOn: boolean;
+  musicOn: boolean;
+  hint: Hint | null;
+  guideOn: boolean;
+  workshopOpen: boolean;
+  avatarOpen: boolean;
+  quitOpen: boolean;
   net: NetGirdi;
 }
 
 export interface NetGirdi {
-  rol: NetRol;
-  kod: string;
-  baglaniyor: boolean;
-  uyeler: string[];
+  role: NetRole;
+  code: string;
+  connecting: boolean;
+  members: string[];
   uyari: string;
-  benId: number;
+  myPlayerId: number;
 }
 
-export interface ArayuzOlaylari {
-  hedefeTikla(hedef: HedefId): void;
-  dekorAl(id: string): void;
-  atolyeAc(): void;
-  atolyeKapat(): void;
-  tarifKaydet(t: Omit<OzelTarif, "id">): void;
-  tarifSil(id: string): void;
-  avatarAc(): void;
-  avatarKapat(): void;
-  avatarKaydet(a: Avatar): void;
-  dilDegis(d: DilKodu): void;
-  sesDegis(): void;
-  muzikDegis(): void;
-  cikisAc(): void;
-  cikisKapat(): void;
-  cikisOnayla(): void;
-  odaKur(): void;
-  odaKatil(kod: string): void;
-  odaAyril(): void;
-  servisEt(misafirId: string): void;
-  gunBasla(): void;
-  sonrakiGun(): void;
-  oyuncuSayisiDegistir(n: number): void;
-  rehberDegis(): void;
+export interface ViewCallbacks {
+  onTarget(target: TargetId): void;
+  onBuyDecor(id: string): void;
+  onOpenWorkshop(): void;
+  onCloseWorkshop(): void;
+  onSaveRecipe(t: Omit<CustomRecipe, "id">): void;
+  onDeleteRecipe(id: string): void;
+  onOpenAvatar(): void;
+  onCloseAvatar(): void;
+  saveAvatar(a: Avatar): void;
+  onChangeLang(d: LangCode): void;
+  onToggleSfx(): void;
+  onToggleMusic(): void;
+  onOpenQuit(): void;
+  onCloseQuit(): void;
+  onConfirmQuit(): void;
+  onCreateRoom(): void;
+  onJoinRoom(code: string): void;
+  onLeaveRoom(): void;
+  onServe(guestId: string): void;
+  onStartDay(): void;
+  onNextDay(): void;
+  onSetPlayerCount(n: number): void;
+  onToggleGuide(): void;
 }
 
-export class Arayuz {
+export class View {
   private kok: HTMLElement;
   private salon!: HTMLElement;
   private tezgah!: HTMLElement;
-  private tezgahSarma!: HTMLElement;
+  private counterWrap!: HTMLElement;
   private eller!: HTMLElement;
-  private rehberBar!: HTMLElement;
-  private rehberBtn!: HTMLButtonElement;
-  private dilBtn!: HTMLElement;
-  private sesBtn!: HTMLButtonElement;
-  private muzikBtn!: HTMLButtonElement;
-  private cikisBtn!: HTMLButtonElement;
-  private ustSag!: HTMLElement;
-  private ustBar!: HTMLElement;
-  private rozetler!: { gun: HTMLElement; kalp: HTMLElement; misafir: HTMLElement };
-  private perdeKap!: HTMLElement;
-  private istasyonEl = new Map<string, HTMLElement>();
-  private koltukEl = new Map<string, HTMLElement>();
-  private sonPerde = "";
+  private guideBar!: HTMLElement;
+  private guideBtn!: HTMLButtonElement;
+  private langSwitch!: HTMLElement;
+  private sfxBtn!: HTMLButtonElement;
+  private musicBtn!: HTMLButtonElement;
+  private quitBtn!: HTMLButtonElement;
+  private topRight!: HTMLElement;
+  private topBar!: HTMLElement;
+  private badges!: { day: HTMLElement; hearts: HTMLElement; misafir: HTMLElement };
+  private overlayHost!: HTMLElement;
+  private stationEls = new Map<string, HTMLElement>();
+  private seatEls = new Map<string, HTMLElement>();
+  private lastOverlay = "";
   /** Arayüz baştan kurulurken açık bir panel var mıydı? (dil değişiminde solma olmasın) */
-  private perdeGecisi = false;
-  private tezgahImza = "";
+  private overlaySwap = false;
+  private stationsKey = "";
   private sahne!: Sahne;
-  private surukleKatman!: HTMLElement;
-  private surukleHayalet: HTMLElement | null = null;
-  private surukleHedef: HTMLElement | null = null;
-  private pointerBasili = false;
-  private sonPointer = { x: 0, y: 0 };
-  private benimOyuncu = 0;
+  private dragLayer!: HTMLElement;
+  private dragGhost: HTMLElement | null = null;
+  private dropTarget: HTMLElement | null = null;
+  private pointerDown = false;
+  private lastPointer = { x: 0, y: 0 };
+  private myPlayer = 0;
   private garsonKatman!: HTMLElement;
-  private garsonlar = new Map<PlayerId, HTMLElement>();
-  private garsonEv = new Map<PlayerId, { x: number; y: number }>();
-  private garsonMesgul = new Set<PlayerId>();
+  private servers = new Map<PlayerId, HTMLElement>();
+  private serverHome = new Map<PlayerId, { x: number; y: number }>();
+  private serverBusy = new Set<PlayerId>();
   /** Garsonun geçici olarak durduğu yer (çalıştığı istasyon) — süresi dolunca eve döner. */
-  private garsonOdak = new Map<PlayerId, number>();
+  private serverFocus = new Map<PlayerId, number>();
   /** Garson masaya varana kadar gizlenecek tepsi parçaları. */
-  private bekleyenParcalar = new Map<string, Set<number>>();
+  private pendingPieces = new Map<string, Set<number>>();
 
-  constructor(kok: HTMLElement, private cb: ArayuzOlaylari) {
+  constructor(kok: HTMLElement, private cb: ViewCallbacks) {
     this.kok = kok;
-    this.iskelet();
+    this.buildSkeleton();
   }
 
-  private iskelet() {
+  private buildSkeleton() {
     this.kok.innerHTML = "";
     this.sahne = new Sahne(this.kok);
 
-    const fenerler = el("div", "fenerler");
+    const fenerler = hand("div", "fenerler");
     ([[8, 12], [72, 6], [30, 68], [88, 52], [52, 26]] as const).forEach(([x, y], i) => {
-      const f = el("div", "fener");
+      const f = hand("div", "fener");
       f.style.left = `${x}%`;
       f.style.top = `${y}%`;
       f.style.background = PASTEL_BLOB[i % PASTEL_BLOB.length]!;
@@ -133,7 +133,7 @@ export class Arayuz {
 
     const ust = el("div", "ust");
     const marka = el("div", "marka");
-    marka.innerHTML = `${sanat("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
+    marka.innerHTML = `${art("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
     const gun = el("div", "rozet");
     const kalp = el("div", "rozet kalp");
     const misafir = el("div", "rozet misafir-rozet");
@@ -271,11 +271,11 @@ export class Arayuz {
   ciz(s: OyunDurumu, g: ArayuzGirdi) {
     this.benimOyuncu = g.net.rol === "kapali" ? 0 : g.net.benId;
     this.sahne.guncelle(mevsimGun(s.gun), s.dekor);
-    this.rozetler.gun.innerHTML = `${sanat("ui_takvim", 18)}<span>${y(S.gun)}</span><b>${s.gun}</b>`;
-    this.rozetler.kalp.innerHTML = `${sanat("ui_kalp", 18)}<b>${s.kalp}</b>`;
+    this.rozetler.gun.innerHTML = `${art("ui_takvim", 18)}<span>${y(S.day)}</span><b>${s.day}</b>`;
+    this.rozetler.kalp.innerHTML = `${art("ui_kalp", 18)}<b>${s.hearts}</b>`;
     const kalanMisafir = Math.max(0, s.gunMisafirHedefi - s.gelenMisafir + s.misafirler.length);
-    this.rozetler.misafir.innerHTML = `${sanat("ui_tabak", 18)}<b>${kalanMisafir}</b>`;
-    this.rehberBtn.innerHTML = `${sanat(g.rehberAcik ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.rehberAcik ? S.rehberAcik : S.rehberKapali)}</span>`;
+    this.rozetler.misafir.innerHTML = `${art("ui_tabak", 18)}<b>${guestsLeft}</b>`;
+    this.rehberBtn.innerHTML = `${art(g.guideOn ? "ui_parilti" : "ui_onay", 16)}<span>${y(g.guideOn ? S.guideOn : S.rehberKapali)}</span>`;
     this.rehberBtn.classList.toggle("kapali", !g.rehberAcik);
     this.sesBtn.innerHTML = sanat(g.sesAcik ? "ui_ses" : "ui_sessiz", 16);
     this.sesBtn.classList.toggle("kapali", !g.sesAcik);
@@ -288,7 +288,7 @@ export class Arayuz {
     const panelAcik = s.faz !== "gun" || g.atolyeAcik || g.avatarAcik;
     this.ustBar.classList.toggle("gizli", panelAcik);
     // Köşedeki küme kadar yer ayır ki rozetler altına girmesin.
-    this.ustBar.style.paddingRight = `${this.ustSag.offsetWidth + 26}px`;
+    this.ustBar.style.paddingRight = `${this.topRight.offsetWidth + 26}px`;
     for (const b of this.dilBtn.children) {
       b.classList.toggle("aktif", (b as HTMLElement).dataset.dil === dilAktif());
     }
@@ -324,7 +324,7 @@ export class Arayuz {
         if (kap.dataset.bosKuruldu !== "1") {
           kap.dataset.bosKuruldu = "1";
           kap.className = "koltuk bos";
-          kap.innerHTML = `${sanat("ui_tabak", 30)}<span>${y(S.bosMasa)}</span>`;
+          kap.innerHTML = `${art("ui_tabak", 30)}<span>${y(S.bosMasa)}</span>`;
         }
         return;
       }
@@ -392,7 +392,7 @@ export class Arayuz {
     const ruh = ruhHaliSanat(m);
     if (yuz && yuz.dataset.ruh !== ruh) {
       yuz.dataset.ruh = ruh;
-      yuz.innerHTML = `${sanat(k?.yuz ?? "kar_efe", 52)}<span class="ruh">${sanat(ruh, 22)}</span>`;
+      yuz.innerHTML = `${art(k?.face ?? "kar_efe", 52)}<span class="ruh">${art(ruh, 22)}</span>`;
     }
 
     const tepsiMalz = m.tepsi.map((t) => t.malzeme);
@@ -404,7 +404,7 @@ export class Arayuz {
         siparis.innerHTML = m.siparis
           .map(
             (yid, i) =>
-              `<div class="cip${durum[i] ? " tamam" : ""}">${sanat(yemek(yid).ikon, 20)}<span>${y(yemek(yid).ad)}</span>${durum[i] ? sanat("ui_onay", 13) : ""}</div>`,
+              `<div class="cip${durum[i] ? " tamam" : ""}">${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>${state[i] ? art("ui_onay", 13) : ""}</div>`,
           )
           .join("");
       }
@@ -435,7 +435,7 @@ export class Arayuz {
           d.innerHTML = sanat(MALZEMELER[p.malzeme].ikon, 24);
         }
         const bekliyor = this.bekleyenParcalar.get(m.id)?.has(i) ?? false;
-        d.className = `parca p${p.koyan + 1}${bekliyor ? " bekliyor" : ""}`;
+        d.className = `parca p${p.placedBy + 1}${bekliyor ? " bekliyor" : ""}`;
       });
       tepsi.classList.toggle("bos", m.tepsi.length === 0);
       tepsi.dataset.etiket = y(S.tepsi);
@@ -453,8 +453,8 @@ export class Arayuz {
           imza === "mutlu"
             ? sanat("ui_kalp", 18)
             : imza === "hazir"
-              ? `<span>${y(S.servisEt)}</span>${sanat("ui_onay", 15)}`
-              : `<span>${y(S.servisEt)}</span>`;
+              ? `<span>${y(S.onServe)}</span>${art("ui_onay", 15)}`
+              : `<span>${y(S.onServe)}</span>`;
       }
     }
   }
@@ -462,7 +462,7 @@ export class Arayuz {
   // ------------------------------------------------------------- tezgâh
   /** İstasyonlar günlere göre açıldığı için tezgâh gün değişince yeniden kurulur. */
   private kurTezgah(gun: number, ekstra: IstasyonId[]) {
-    const imza = `${gun}|${[...ekstra].sort().join(",")}`;
+    const imza = `${day}|${[...ekstra].sort().join(",")}`;
     if (this.tezgahImza === imza) return;
     this.tezgahImza = imza;
     this.tezgah.innerHTML = "";
@@ -571,7 +571,7 @@ export class Arayuz {
     const metin = g.ipucu.metin;
     if (this.rehberBar.dataset.metin !== metin) {
       this.rehberBar.dataset.metin = metin;
-      this.rehberBar.innerHTML = `${sanat("ui_parilti", 20)}<span>${metin}</span>`;
+      this.rehberBar.innerHTML = `${art("ui_parilti", 20)}<span>${text}</span>`;
       this.rehberBar.classList.remove("yeni");
       void this.rehberBar.offsetWidth;
       this.rehberBar.classList.add("yeni");
@@ -580,7 +580,7 @@ export class Arayuz {
 
   // ------------------------------------------------------------- perdeler
   private cizPerde(s: OyunDurumu, g: ArayuzGirdi) {
-    const imza = `${s.faz}:${s.gun}:${s.oyuncular.length}:${s.jeton}:${s.dekor.length}:${g.atolyeAcik ? "a" : "-"}:${g.avatarAcik ? "v" : "-"}:${g.cikisAcik ? "c" : "-"}`;
+    const imza = `${s.phase}:${s.day}:${s.players.length}:${s.coins}:${s.decor.length}:${g.workshopOpen ? "a" : "-"}:${g.avatarOpen ? "v" : "-"}:${g.quitOpen ? "c" : "-"}`;
     if (g.cikisAcik) {
       if (this.sonPerde !== imza) {
         const oncedenAcikti = this.perdeKap.childElementCount > 0 || this.perdeGecisi;
@@ -651,7 +651,7 @@ export class Arayuz {
     const pano = el("div", "pano dikey");
 
     const h1 = el("h1");
-    h1.innerHTML = s.gun === 1 ? "Hey <span>Sushi</span>" : `${y(S.gun)} <span>${s.gun}</span>`;
+    h1.innerHTML = s.gun === 1 ? "Hey <span>Sushi</span>" : `${y(S.day)} <span>${s.day}</span>`;
     const alt = el("p", "alt bitisik");
     alt.textContent = y(s.gun === 1 ? S.girisAlt : S.gunAlt);
     pano.append(h1, alt);
@@ -665,7 +665,7 @@ export class Arayuz {
       ];
       for (const [ikon, baslik, metin] of adimlar) {
         const a = el("div", "nasil-adim");
-        a.innerHTML = `<div class="nasil-ikon">${sanat(ikon, 34)}</div><div><b>${baslik}</b><p>${metin}</p></div>`;
+        a.innerHTML = `<div class="nasil-ikon">${art(icon, 34)}</div><div><b>${baslik}</b><p>${text}</p></div>`;
         nasil.appendChild(a);
       }
       pano.appendChild(nasil);
@@ -678,7 +678,7 @@ export class Arayuz {
     const menu = el("div", "menu-satiri");
     for (const yid of menuGun(s.gun)) {
       const c = el("div", "cip");
-      c.innerHTML = `${sanat(yemek(yid).ikon, 20)}<span>${y(yemek(yid).ad)}</span>`;
+      c.innerHTML = `${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>`;
       menu.appendChild(c);
     }
     pano.appendChild(menu);
@@ -688,10 +688,10 @@ export class Arayuz {
       const mod = el("div", "mod-secim");
       mod.appendChild(etiketli("Kaç kişi?"));
       const kutu = el("div", "segment");
-      const tek = el("button", `segment-dugme${s.oyuncular.length === 1 ? " aktif" : ""}`) as HTMLButtonElement;
+      const tek = el("button", `segment-dugme${s.players.length === 1 ? " aktif" : ""}`) as HTMLButtonElement;
       tek.textContent = "Tek kişi";
       tek.onclick = () => this.cb.oyuncuSayisiDegistir(1);
-      const cift = el("button", `segment-dugme${s.oyuncular.length === 2 ? " aktif" : ""}`) as HTMLButtonElement;
+      const cift = el("button", `segment-dugme${s.players.length === 2 ? " aktif" : ""}`) as HTMLButtonElement;
       cift.textContent = "İki kişi · aynı ekran";
       cift.onclick = () => this.cb.oyuncuSayisiDegistir(2);
       kutu.append(tek, cift);
@@ -703,11 +703,11 @@ export class Arayuz {
 
     const yanSira = el("div", "pano-eylemler");
     const garsonBtn = el("button", "btn ikincil") as HTMLButtonElement;
-    garsonBtn.innerHTML = `${garsonSvg(s.oyuncular[0]?.avatar ?? varsayilanAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
+    garsonBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
     garsonBtn.onclick = () => this.cb.avatarAc();
     const altSira = el("div", "pano-eylemler");
     const atolye = el("button", "btn ikincil") as HTMLButtonElement;
-    atolye.innerHTML = `${sanat("ui_parilti", 16)}<span>${y(S.tarifAtolyesi)}</span>`;
+    atolye.innerHTML = `${art("ui_parilti", 16)}<span>${y(S.tarifAtolyesi)}</span>`;
     atolye.onclick = () => this.cb.atolyeAc();
 
     const basla = el("button", "btn") as HTMLButtonElement;
@@ -716,7 +716,7 @@ export class Arayuz {
       basla.innerHTML = "<span>Ev sahibi başlatacak…</span>";
       basla.disabled = true;
     } else {
-      basla.innerHTML = `<span>${y(s.gun === 1 ? S.tezgahiAc : S.guneBasla)}</span>${sanat("ui_fener", 20)}`;
+      basla.innerHTML = `<span>${y(s.day === 1 ? S.tezgahiAc : S.guneBasla)}</span>${art("ui_fener", 20)}`;
       basla.onclick = () => this.cb.gunBasla();
     }
     yanSira.appendChild(garsonBtn);
@@ -732,7 +732,7 @@ export class Arayuz {
     const pano = el("div", "pano dikey");
 
     const h2 = el("h2");
-    h2.innerHTML = `${sanat("ui_ay", 26)}<span>${bicim(S.gunKapandi, { gun: s.gun })}</span>`;
+    h2.innerHTML = `${art("ui_ay", 26)}<span>${format(S.gunKapandi, { day: s.day })}</span>`;
     const alt = el("p", "alt bitisik");
     alt.textContent = y(S.gunSonuAlt);
 
@@ -746,12 +746,12 @@ export class Arayuz {
     ekle(y(S.kusursuz), String(s.istatistik.mukemmel));
     if (s.oyuncular.length > 1) ekle(y(S.birlikteHazir), String(s.istatistik.beraber), true);
     if (s.istatistik.kacan > 0) ekle(y(S.vazgecen), String(s.istatistik.kacan));
-    ekle(y(S.bugunKalp), `${sanat("ui_kalp", 16)} ${s.gunKalp}`, true);
-    ekle(y(S.toplam), `${sanat("ui_kalp", 16)} ${s.kalp}`);
+    ekle(y(S.bugunKalp), `${art("ui_kalp", 16)} ${s.dayHearts}`, true);
+    ekle(y(S.toplam), `${art("ui_kalp", 16)} ${s.hearts}`);
 
     const eylemler = el("div", "pano-eylemler tek");
     const btn = el("button", "btn") as HTMLButtonElement;
-    btn.innerHTML = `<span>${y(S.yarinaGec)}</span>${sanat("ui_ok", 18)}`;
+    btn.innerHTML = `<span>${y(S.yarinaGec)}</span>${art("ui_ok", 18)}`;
     btn.onclick = () => this.cb.sonrakiGun();
     eylemler.appendChild(btn);
 
@@ -766,7 +766,7 @@ export class Arayuz {
     const pano = el("div", "pano dikey");
 
     const h2 = el("h2");
-    h2.innerHTML = `${sanat("ui_cikis", 24)}<span>${y(S.cikisBaslik)}</span>`;
+    h2.innerHTML = `${art("ui_cikis", 24)}<span>${y(S.cikisBaslik)}</span>`;
     const alt = el("p", "alt bitisik");
     alt.textContent = y(S.cikisAlt);
 
@@ -777,8 +777,8 @@ export class Arayuz {
       satirlar.appendChild(r);
     };
     ekle(y(S.gun), String(s.gun));
-    ekle(y(S.toplamKalp), `${sanat("ui_kalp", 16)} ${s.kalp}`, true);
-    ekle(y(S.jetonlar), `${sanat("ui_jeton", 16)} ${s.jeton}`);
+    ekle(y(S.toplamKalp), `${art("ui_kalp", 16)} ${s.hearts}`, true);
+    ekle(y(S.jetonlar), `${art("ui_jeton", 16)} ${s.coins}`);
     if (s.dekor.length) ekle(y(S.dukkanEsyasi), String(s.dekor.length));
     const ozelSayisi = ozelTarifSayisi();
     if (ozelSayisi) ekle(y(S.ozelTarifler), String(ozelSayisi));
@@ -788,7 +788,7 @@ export class Arayuz {
     vazgec.textContent = y(S.vazgec);
     vazgec.onclick = () => this.cb.cikisKapat();
     const cik = el("button", "btn") as HTMLButtonElement;
-    cik.innerHTML = `<span>${y(S.cikisOnay)}</span>${sanat("ui_cikis", 17)}`;
+    cik.innerHTML = `<span>${y(S.cikisOnay)}</span>${art("ui_cikis", 17)}`;
     cik.onclick = () => this.cb.cikisOnayla();
     eylemler.append(vazgec, cik);
 
@@ -845,32 +845,32 @@ export class Arayuz {
     const kutu = el("div", "oda-kutu");
     const solTaraf = el("div");
     solTaraf.innerHTML =
-      `<div class="oda-etiket">${n.rol === "host" ? "Oda kodun" : "Odadasın"}</div>` +
-      `<div class="oda-kod-buyuk">${n.kod}</div>`;
+      `<div class="oda-etiket">${n.role === "host" ? "Oda kodun" : "Odadasın"}</div>` +
+      `<div class="oda-kod-buyuk">${n.code}</div>`;
     const sagTaraf = el("div", "oda-sag");
     const adlar = n.rol === "host" ? ["Sen (ev sahibi)", ...n.uyeler] : ["Sen", "ev sahibi"];
     sagTaraf.innerHTML = `<div class="oda-oyuncular">${adlar.map((a) => `<span class="oda-rozet">${a}</span>`).join("")}</div>`;
-    const ayril = el("button", "btn ikincil ufak") as HTMLButtonElement;
-    ayril.textContent = "Ayrıl";
-    ayril.onclick = () => this.cb.odaAyril();
-    sagTaraf.appendChild(ayril);
-    kutu.append(solTaraf, sagTaraf);
+    const leave = hand("button", "btn ikincil ufak") as HTMLButtonElement;
+    leave.textContent = "Ayrıl";
+    leave.onclick = () => this.cb.onLeaveRoom();
+    rightSide.appendChild(leave);
+    kutu.append(leftSide, rightSide);
 
-    const ipucu = el("p", "alt kucuk");
-    ipucu.textContent =
-      n.rol === "host"
+    const hint = hand("p", "alt kucuk");
+    hint.textContent =
+      n.role === "host"
         ? "Kodu arkadaşına ver. Aynı tepsiye ikiniz de malzeme koyarsanız birlikte bonusu kazanırsınız."
         : "Ev sahibi günü başlattığında tezgâh açılır.";
 
-    kap.append(kutu, ipucu);
+    kap.append(kutu, hint);
     return kap;
   }
 
   /** Gün sonu dükkânı: jetonla dekor al, misafirler daha sabırlı olsun. */
-  private dukkan(s: OyunDurumu): HTMLElement {
-    const kap = el("div", "dukkan");
-    const baslik = el("div", "dukkan-baslik");
-    baslik.innerHTML = `<b>${y(S.dukkan)}</b><span class="jeton">${sanat("ui_jeton", 16)}${s.jeton}</span>`;
+  private shopSection(s: GameState): HTMLElement {
+    const kap = hand("div", "dukkan");
+    const baslik = hand("div", "dukkan-baslik");
+    baslik.innerHTML = `<b>${y(S.shopSection)}</b><span class="jeton">${art("ui_jeton", 16)}${s.coins}</span>`;
     kap.appendChild(baslik);
 
     const not = el("p", "alt kucuk");
@@ -881,14 +881,14 @@ export class Arayuz {
     for (const d of DEKORLAR) {
       const sahip = s.dekor.includes(d.id);
       const alinabilir = !sahip && s.jeton >= d.fiyat;
-      const kart = el("button", `dekor-kart${sahip ? " sahip" : alinabilir ? "" : " pahali"}`) as HTMLButtonElement;
+      const kart = el("button", `decor-kart${sahip ? " sahip" : alinabilir ? "" : " pahali"}`) as HTMLButtonElement;
       kart.disabled = sahip || !alinabilir;
       kart.innerHTML =
-        `<div class="dekor-gorsel">${sanat(d.ikon, 40)}</div>` +
+        `<div class="dekor-gorsel">${art(d.icon, 40)}</div>` +
         `<b>${y(d.ad)}</b>` +
-        `<small>${y(d.aciklama)}</small>` +
-        `<span class="fiyat">${sahip ? y(S.alindi) : `${sanat("ui_jeton", 13)}${d.fiyat}`}</span>`;
-      kart.onclick = () => this.cb.dekorAl(d.id);
+        `<small>${y(d.description)}</small>` +
+        `<span class="fiyat">${sahip ? y(S.alindi) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
+      kart.onclick = () => this.cb.onBuyDecor(d.id);
       izgara.appendChild(kart);
     }
     kap.appendChild(izgara);
@@ -896,34 +896,34 @@ export class Arayuz {
   }
 
   /** Dil değişimi gibi köklü değişikliklerde tüm arayüzü baştan kurar. */
-  yenidenKur() {
+  rebuild() {
     // Kurulumdan önce panel açıksa yenisi solarak gelmemeli.
-    this.perdeGecisi = this.perdeKap?.childElementCount > 0;
-    this.istasyonEl.clear();
-    this.koltukEl.clear();
-    this.garsonlar.clear();
-    this.garsonEv.clear();
-    this.garsonMesgul.clear();
-    this.garsonOdak.clear();
-    this.bekleyenParcalar.clear();
-    this.tezgahImza = "";
-    this.sonPerde = "";
-    this.iskelet();
+    this.overlaySwap = this.overlayHost?.childElementCount > 0;
+    this.stationEls.clear();
+    this.seatEls.clear();
+    this.servers.clear();
+    this.serverHome.clear();
+    this.serverBusy.clear();
+    this.serverFocus.clear();
+    this.pendingPieces.clear();
+    this.stationsKey = "";
+    this.lastOverlay = "";
+    this.buildSkeleton();
   }
 
   /** Perdeyi bir sonraki çizimde yeniden kurmaya zorlar. */
-  perdeYenile() {
-    this.sonPerde = "__yenile__";
+  invalidateOverlay() {
+    this.lastOverlay = "__yenile__";
   }
 
   // ------------------------------------------------------------- geri bildirim
-  ucur(misafirId: string, yazi: string, ikon = "ui_kalp") {
-    const kap = this.koltukEl.get(misafirId);
+  floatText(guestId: string, yazi: string, icon = "ui_kalp") {
+    const kap = this.seatEls.get(guestId);
     if (!kap) return;
     const kutu = kap.getBoundingClientRect();
     const kok = this.kok.getBoundingClientRect();
-    const d = el("div", "ucus");
-    d.innerHTML = `<span>${yazi}</span>${sanat(ikon, 22)}`;
+    const d = hand("div", "ucus");
+    d.innerHTML = `<span>${yazi}</span>${art(icon, 22)}`;
     d.style.left = `${kutu.left - kok.left + kutu.width / 2}px`;
     d.style.top = `${kutu.top - kok.top + 10}px`;
     this.kok.appendChild(d);
@@ -990,7 +990,7 @@ export class Arayuz {
   }
 
   private konumla(e: HTMLElement, x: number, y: number, sure: number) {
-    e.style.transitionDuration = `${sure}s`;
+    e.style.transitionDuration = `${elapsed}s`;
     e.style.transform = `translate(${x}px, ${y}px) translate(-50%, -100%)`;
   }
 
@@ -1139,36 +1139,36 @@ export class Arayuz {
     this.kok.querySelector(".guncelleme-serit")?.remove();
     const d = el("div", "guncelleme-serit");
     const metin = el("div", "guncelleme-metin");
-    metin.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${not ? `<span>${y(not)}</span>` : ""}`;
-    const sonra = el("button", "btn ikincil ufak") as HTMLButtonElement;
+    metin.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
+    const sonra = hand("button", "btn ikincil ufak") as HTMLButtonElement;
     sonra.textContent = y(S.guncelleSonra);
     sonra.onclick = () => {
       d.remove();
       secim.sonra();
     };
-    const simdi = el("button", "btn ufak") as HTMLButtonElement;
+    const simdi = hand("button", "btn ufak") as HTMLButtonElement;
     simdi.textContent = y(S.guncelleSimdi);
     simdi.onclick = () => {
       simdi.disabled = true;
       simdi.textContent = y(S.guncelleniyor);
       secim.simdi();
     };
-    d.append(metin, sonra, simdi);
+    d.append(text, sonra, simdi);
     this.kok.appendChild(d);
   }
 
-  uyar(mesaj: string | { en: string; tr: string }) {
+  toast(onMessage: string | { en: string; tr: string }) {
     this.kok.querySelector(".uyari")?.remove();
-    const d = el("div", "uyari");
-    d.textContent = y(mesaj);
+    const d = hand("div", "uyari");
+    d.textContent = y(onMessage);
     this.kok.appendChild(d);
     setTimeout(() => d.remove(), 1500);
   }
 
-  carp(hedef: HedefId) {
-    const d = hedef.startsWith("misafir:")
-      ? this.koltukEl.get(hedef.slice(8))
-      : this.istasyonEl.get(hedef);
+  bump(target: TargetId) {
+    const d = target.startsWith("misafir:")
+      ? this.seatEls.get(target.slice(8))
+      : this.stationEls.get(target);
     if (!d) return;
     d.classList.remove("calisti");
     void d.offsetWidth;
@@ -1176,10 +1176,10 @@ export class Arayuz {
   }
 }
 
-export function hedefListesi(s: OyunDurumu): HedefId[] {
-  const liste: HedefId[] = istasyonlarGun(s.gun, s.ekstraIstasyon).map((i) => i.id);
-  const sirali = [...s.misafirler].sort((a, b) => a.koltuk - b.koltuk);
-  for (const m of sirali) if (m.durum === "bekliyor") liste.push(`misafir:${m.id}`);
+export function targetList(s: GameState): TargetId[] {
+  const liste: TargetId[] = stationsForDay(s.day, s.extraStations).map((i) => i.id);
+  const sirali = [...s.guests].sort((a, b) => a.seat - b.seat);
+  for (const m of sirali) if (m.state === "bekliyor") liste.push(`misafir:${m.id}`);
   return liste;
 }
 

@@ -11,9 +11,14 @@
     "dev:all": "node server/relay.mjs & vite",
     "ota": "node scripts/ota.mjs",
     "mobil": "npm run build && npx cap sync",
-    "surum": "node scripts/surum.mjs",
+    "surum": "node scripts/version.mjs",
     "android:release": "npm run build && npx cap sync android && cd android && ./gradlew bundleRelease",
-    "ekran": "node scripts/ekran.mjs"
+    "ekran": "node scripts/screenshots.mjs",
+    "android": "npm run build && npx cap sync android && npx cap run android",
+    "android:live": "npx cap run android --livereload --external",
+    "ios": "npm run build && npx cap sync ios && npx cap run ios",
+    "dev:ag": "vite --host",
+    "build:web": "PAGES=1 vite build"
   },
   "devDependencies": {
     "@capacitor/assets": "^3.0.5",

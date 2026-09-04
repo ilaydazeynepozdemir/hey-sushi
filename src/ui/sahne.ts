@@ -3,36 +3,36 @@
  * parçacıklar ve satın alınmış dükkân dekorları.
  * Tamamen dekoratif — oyun mantığına dokunmaz.
  */
-import { DEKOR_MAP, type Mevsim } from "../core/content";
+import { DECOR_MAP, type Season } from "../core/content";
 import { y } from "../core/dil";
-import { sanat } from "./art";
+import { art } from "./art";
 
-const PARCACIK_SAYISI = 16;
+const PARTICLE_COUNT = 16;
 
 export class Sahne {
   private kok: HTMLElement;
-  private gok!: HTMLElement;
+  private sky!: HTMLElement;
   private manzara!: HTMLElement;
   private parcaciklar!: HTMLElement;
-  private dekorKatman!: HTMLElement;
-  private sonMevsim = "";
-  private sonDekor = "";
+  private decorLayer!: HTMLElement;
+  private lastSeason = "";
+  private lastDecor = "";
 
   constructor(ana: HTMLElement) {
     this.kok = document.createElement("div");
     this.kok.className = "sahne";
-    this.gok = div("gok");
+    this.sky = div("gok");
     this.manzara = div("manzara");
     this.parcaciklar = div("parcaciklar");
-    this.dekorKatman = div("dekor-katman");
-    this.kok.append(this.gok, this.manzara, this.parcaciklar, this.dekorKatman);
+    this.decorLayer = div("dekor-katman");
+    this.kok.append(this.sky, this.manzara, this.parcaciklar, this.decorLayer);
     ana.appendChild(this.kok);
   }
 
-  guncelle(mevsim: Mevsim, dekor: string[]) {
-    if (this.sonMevsim !== mevsim.id) {
-      this.sonMevsim = mevsim.id;
-      this.gok.style.background = `linear-gradient(180deg, ${mevsim.gok[0]} 0%, ${mevsim.gok[1]} 46%, ${mevsim.gok[2]} 100%)`;
+  guncelle(mevsim: Season, decor: string[]) {
+    if (this.lastSeason !== mevsim.id) {
+      this.lastSeason = mevsim.id;
+      this.sky.style.background = `linear-gradient(180deg, ${mevsim.sky[0]} 0%, ${mevsim.sky[1]} 46%, ${mevsim.sky[2]} 100%)`;
       this.manzara.innerHTML = manzaraSvg(mevsim);
       this.kurParcaciklar(mevsim);
     }
@@ -47,10 +47,10 @@ export class Sahne {
     this.parcaciklar.innerHTML = "";
     this.parcaciklar.dataset.tip = mevsim.parcacik;
     for (let i = 0; i < PARCACIK_SAYISI; i++) {
-      const p = div(`parcacik ${mevsim.parcacik}`);
+      const p = div(`particle ${mevsim.particle}`);
       const boyut = mevsim.parcacik === "kar" ? 4 + Math.random() * 5 : 6 + Math.random() * 7;
       p.style.width = `${boyut}px`;
-      p.style.height = `${mevsim.parcacik === "yaprak" ? boyut * 0.7 : boyut}px`;
+      p.style.height = `${mevsim.particle === "yaprak" ? boyut * 0.7 : boyut}px`;
       p.style.left = `${Math.random() * 100}%`;
       p.style.background = mevsim.parcacikRenk[i % mevsim.parcacikRenk.length]!;
       p.style.animationDuration = `${9 + Math.random() * 12}s`;
@@ -68,7 +68,7 @@ export class Sahne {
       if (!d) continue;
       const n = sayac[d.yer] ?? 0;
       sayac[d.yer] = n + 1;
-      const e = div(`dekor dekor-${d.yer}`);
+      const e = div(`decor decor-${d.spot}`);
       e.style.setProperty("--sira", String(n));
       e.title = y(d.ad);
       e.innerHTML = sanat(d.ikon, d.yer === "tavan" ? 64 : 74);

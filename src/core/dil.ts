@@ -7,22 +7,22 @@
  * senkron tutma derdi olmaz.
  */
 
-import { depoOku, depoYaz } from "./depo";
-export type DilKodu = "en" | "tr";
+import { storageGet, storageSet } from "./depo";
+export type LangCode = "en" | "tr";
 
-export interface Yerel {
+export interface Localized {
   en: string;
   tr: string;
 }
 
 const DEPO = "tsuki.dil";
-let aktif: DilKodu = "en";
+let aktif: LangCode = "en";
 
 /** Cihaz dilinden başlangıç dilini seçer; kayıtlı tercih varsa o kazanır. */
-export function dilBaslat(): DilKodu {
-  let secim: DilKodu | null = null;
+export function initLang(): LangCode {
+  let secim: LangCode | null = null;
   try {
-    const kayitli = depoOku(DEPO);
+    const kayitli = storageGet(DEPO);
     if (kayitli === "en" || kayitli === "tr") secim = kayitli;
   } catch {
     /* depoya erişilemiyorsa cihaz diline bak */
@@ -36,33 +36,33 @@ export function dilBaslat(): DilKodu {
   return secim;
 }
 
-export function dilAktif(): DilKodu {
+export function activeLang(): LangCode {
   return aktif;
 }
 
-export function dilAyarla(d: DilKodu) {
+export function setLang(d: LangCode) {
   aktif = d;
   document.documentElement.lang = d;
   try {
-    depoYaz(DEPO, d);
+    storageSet(DEPO, d);
   } catch {
     /* yazamazsak da oturum boyunca geçerli */
   }
 }
 
 /** Yerel metni aktif dilde döndürür. */
-export function y(m: Yerel | string): string {
+export function y(m: Localized | string): string {
   return typeof m === "string" ? m : (m[aktif] ?? m.en);
 }
 
 /** Kısa yazım: metin tanımlarken. */
-export function m(en: string, tr: string): Yerel {
+export function m(en: string, tr: string): Localized {
   return { en, tr };
 }
 
 /** `{ad}` gibi yer tutucuları doldurur. */
-export function bicim(metin: Yerel | string, degerler: Record<string, string | number>): string {
-  return y(metin).replace(/\{(\w+)\}/g, (_, anahtar: string) =>
+export function format(text: Localized | string, degerler: Record<string, string | number>): string {
+  return y(text).replace(/\{(\w+)\}/g, (_, anahtar: string) =>
     String(degerler[anahtar] ?? `{${anahtar}}`),
   );
 }

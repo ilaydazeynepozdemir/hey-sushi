@@ -4,28 +4,28 @@
  * durum yayınıyla birlikte diğer oyunculara da otomatik ulaşır.
  */
 
-import { depoOku, depoYaz } from "./depo";
-import { m, type Yerel } from "./dil";
+import { storageGet, storageSet } from "./depo";
+import { m, type Localized } from "./dil";
 
-export type AvatarTip = "kadin" | "erkek";
+export type AvatarKind = "kadin" | "erkek";
 
 export interface Avatar {
   /** Garsonun üstünde görünen ad. */
   ad: string;
-  tip: AvatarTip;
-  ten: number;
+  kind: AvatarKind;
+  skin: number;
   /** Saç modeli ve rengi ayrı seçilir. */
-  sac: number;
-  sacRenk: number;
+  hair: number;
+  hairColor: number;
   /** Kıyafet ve önlük rengi ayrı seçilir. */
-  uniforma: number;
-  onluk: number;
+  outfit: number;
+  apron: number;
   /** Saç aksesuarı ile yüz aksesuarı ayrı slotlar — ikisi birden takılabilir. */
-  sacAksesuar: SacAksesuarId;
-  yuzAksesuar: YuzAksesuarId;
+  hairAccessory: HairAccessoryId;
+  faceAccessory: FaceAccessoryId;
 }
 
-export type SacAksesuarId =
+export type HairAccessoryId =
   | "yok"
   | "chopstick"
   | "cift_chopstick"
@@ -34,13 +34,13 @@ export type SacAksesuarId =
   | "kedi_toka"
   | "kurdele";
 
-export type YuzAksesuarId = "yok" | "gozluk" | "yuvarlak_gozluk" | "cil";
+export type FaceAccessoryId = "yok" | "gozluk" | "yuvarlak_gozluk" | "cil";
 
-export const TENLER = ["#FBE3D0", "#F6D3BC", "#E8B99B", "#D2996F", "#AC7A53"];
+export const SKIN_TONES = ["#FBE3D0", "#F6D3BC", "#E8B99B", "#D2996F", "#AC7A53"];
 
-export const SAC_RENKLERI = ["#3B2F34", "#6B4A3A", "#A9744B", "#E0B25E", "#8B6BA8", "#E08A9B"];
+export const HAIR_COLORS = ["#3B2F34", "#6B4A3A", "#A9744B", "#E0B25E", "#8B6BA8", "#E08A9B"];
 
-export const UNIFORMALAR = [
+export const OUTFIT_COLORS = [
   "#6D97E6",
   "#E8A33D",
   "#59B98A",
@@ -51,16 +51,16 @@ export const UNIFORMALAR = [
   "#5E6B7A",
 ];
 
-export const ONLUKLER = ["#FFFDF7", "#FDF0DC", "#DFF0E4", "#FFE3E8", "#E6E9F2", "#F2E4CE"];
+export const APRON_COLORS = ["#FFFDF7", "#FDF0DC", "#DFF0E4", "#FFE3E8", "#E6E9F2", "#F2E4CE"];
 
-export interface SacStili {
+export interface HairStyle {
   id: string;
-  ad: Yerel;
+  ad: Localized;
   /** Sadece bu tipte öneriliyor; ikisi de seçebilir. */
-  onerilen?: AvatarTip;
+  onerilen?: AvatarKind;
 }
 
-export const SACLAR: SacStili[] = [
+export const HAIR_STYLES: HairStyle[] = [
   { id: "topuz", ad: m("Bun", "Topuz"), onerilen: "kadin" },
   { id: "ikiz_topuz", ad: m("Twin buns", "İkiz topuz"), onerilen: "kadin" },
   { id: "uzun", ad: m("Long", "Uzun"), onerilen: "kadin" },
@@ -69,7 +69,7 @@ export const SACLAR: SacStili[] = [
   { id: "dagitik", ad: m("Messy", "Dağınık"), onerilen: "erkek" },
 ];
 
-export const SAC_AKSESUARLARI: { id: SacAksesuarId; ad: Yerel }[] = [
+export const HAIR_ACCESSORIES: { id: HairAccessoryId; ad: Localized }[] = [
   { id: "yok", ad: m("None", "Yok") },
   { id: "chopstick", ad: m("Hair stick", "Saç çubuğu") },
   { id: "cift_chopstick", ad: m("Double stick", "Çift çubuk") },
@@ -79,7 +79,7 @@ export const SAC_AKSESUARLARI: { id: SacAksesuarId; ad: Yerel }[] = [
   { id: "kurdele", ad: m("Ribbon", "Kurdele") },
 ];
 
-export const YUZ_AKSESUARLARI: { id: YuzAksesuarId; ad: Yerel }[] = [
+export const FACE_ACCESSORIES: { id: FaceAccessoryId; ad: Localized }[] = [
   { id: "yok", ad: m("None", "Yok") },
   { id: "gozluk", ad: m("Glasses", "Gözlük") },
   { id: "yuvarlak_gozluk", ad: m("Round", "Yuvarlak") },
@@ -88,7 +88,7 @@ export const YUZ_AKSESUARLARI: { id: YuzAksesuarId; ad: Yerel }[] = [
 
 const DEPO = "tsuki.avatar";
 
-export function varsayilanAvatar(sira = 0): Avatar {
+export function defaultAvatar(sira = 0): Avatar {
   return {
     ad: sira === 0 ? "Chef" : `Server ${sira + 1}`,
     tip: "kadin",

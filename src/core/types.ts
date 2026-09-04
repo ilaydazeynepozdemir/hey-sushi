@@ -1,5 +1,5 @@
 import type { Avatar } from "./avatar";
-import type { Yerel } from "./dil";
+import type { Localized } from "./dil";
 
 /**
  * Oyunun saf çekirdeği. Burada DOM, tarayıcı ya da render kodu YOK.
@@ -8,7 +8,7 @@ import type { Yerel } from "./dil";
 
 export type PlayerId = 0 | 1 | 2 | 3;
 
-export type MalzemeId =
+export type IngredientId =
   | "pirinc"
   | "nori"
   | "cay"
@@ -41,9 +41,9 @@ export type MalzemeId =
  * Yemek kimliği serbest string: oyuncunun atölyede tasarladığı tarifler de
  * aynı kayda ("YEMEKLER") eklenir ve menüde yerleşiklerle eşit davranır.
  */
-export type YemekId = string;
+export type DishId = string;
 
-export type IstasyonId =
+export type StationId =
   | "pirinc"
   | "nori"
   | "cay"
@@ -66,7 +66,7 @@ export type IstasyonId =
   | "atik";
 
 /** Etkileşim hedefi: bir istasyon ya da bir misafirin tepsisi. */
-export type HedefId = IstasyonId | `misafir:${string}`;
+export type TargetId = StationId | `misafir:${string}`;
 
 export interface Oyuncu {
   id: PlayerId;

@@ -3,7 +3,7 @@
  * co-op kodu yerinde duruyor ama arayüzden gizli. Sunucu (röle) TLS ile
  * yayına alındığında `coopOnline` açılacak.
  */
-export const OZELLIK = {
+export const FEATURES = {
   /** Aynı ekranda iki oyuncu (fare + klavye). */
   coopYerel: false,
   /** Oda koduyla online co-op — yayın için TLS'li röle gerekir. */

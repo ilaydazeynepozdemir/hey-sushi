@@ -3,19 +3,19 @@
  * Senaryolu bir tutorial değil: oyunun anlık durumundan bir sonraki en mantıklı
  * adımı türetir. Bu yüzden hem ilk gün öğretici, hem sonraki günlerde yardımcı olur.
  */
-import { ISTASYON_MAP, KARAKTER_MAP, MAKI_TARIFLERI, MALZEMELER, makiIciMi, yemek } from "./content";
-import { S, bicim, y } from "./dil";
-import { servisHazir, siparisMalzemeleri } from "./game";
-import type { HedefId, IstasyonId, MalzemeId, Misafir, OyunDurumu, PlayerId } from "./types";
+import { STATION_MAP, CHARACTER_MAP, MAKI_RECIPES, INGREDIENTS, isMakiFilling, dish } from "./content";
+import { S, format, y } from "./dil";
+import { readyToServe, orderIngredients } from "./game";
+import type { TargetId, StationId, IngredientId, Guest, GameState, PlayerId } from "./types";
 
-export interface Ipucu {
-  metin: string;
-  hedef: HedefId | null;
+export interface Hint {
+  text: string;
+  target: TargetId | null;
   /** Servis butonunu vurgula. */
-  servis?: boolean;
+  served?: boolean;
 }
 
-const MALZEME_ISTASYON: Partial<Record<MalzemeId, IstasyonId>> = {
+const INGREDIENT_STATION: Partial<Record<IngredientId, StationId>> = {
   pirinc: "pirinc",
   nori: "nori",
   cay: "cay",
@@ -36,14 +36,14 @@ const MALZEME_ISTASYON: Partial<Record<MalzemeId, IstasyonId>> = {
 };
 
 /** maki sonucu → gereken iç malzeme (content'teki tariflerden türetilir). */
-const MAKI_ICI: Partial<Record<MalzemeId, MalzemeId>> = Object.fromEntries(
-  MAKI_TARIFLERI.map((t) => [t.sonuc, t.ic]),
-) as Partial<Record<MalzemeId, MalzemeId>>;
+const MAKI_FILLING_OF: Partial<Record<IngredientId, IngredientId>> = Object.fromEntries(
+  MAKI_RECIPES.map((t) => [t.sonuc, t.filling]),
+) as Partial<Record<IngredientId, IngredientId>>;
 
-function eksikler(m: Misafir): MalzemeId[] {
-  const kalan = m.tepsi.map((t) => t.malzeme);
-  const eksik: MalzemeId[] = [];
-  for (const g of siparisMalzemeleri(m.siparis)) {
+function eksikler(m: Guest): IngredientId[] {
+  const kalan = m.tray.map((t) => t.ingredient);
+  const eksik: IngredientId[] = [];
+  for (const g of orderIngredients(m.order)) {
     const i = kalan.indexOf(g);
     if (i === -1) eksik.push(g);
     else kalan.splice(i, 1);
@@ -51,34 +51,34 @@ function eksikler(m: Misafir): MalzemeId[] {
   return eksik;
 }
 
-function ad(m: Misafir): string {
-  const k = KARAKTER_MAP[m.karakterId];
+function ad(m: Guest): string {
+  const k = CHARACTER_MAP[m.characterId];
   return k ? y(k.ad) : y(S.ipucuKontrol);
 }
 
-export function sonrakiIpucu(s: OyunDurumu, oyuncuId: PlayerId): Ipucu | null {
-  if (s.faz !== "gun") return null;
-  const oyuncu = s.oyuncular.find((o) => o.id === oyuncuId);
+export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
+  if (s.phase !== "gun") return null;
+  const oyuncu = s.players.find((o) => o.id === playerId);
   if (!oyuncu) return null;
 
-  const bekleyen = s.misafirler
-    .filter((m) => m.durum === "bekliyor")
-    .sort((a, b) => b.bekledi / b.sabir - a.bekledi / a.sabir);
+  const bekleyen = s.guests
+    .filter((m) => m.state === "bekliyor")
+    .sort((a, b) => b.waited / b.patience - a.waited / a.patience);
 
   if (bekleyen.length === 0) {
-    return { metin: y(S.ipucuSakin), hedef: null };
+    return { text: y(S.ipucuSakin), target: null };
   }
 
   // 1) Elinde bir şey varsa: nereye ait?
-  if (oyuncu.el) {
-    const el = oyuncu.el;
-    const isim = y(MALZEMELER[el].ad);
+  if (oyuncu.hand) {
+    const hand = oyuncu.hand;
+    const isim = y(INGREDIENTS[hand].ad);
 
-    const isteyen = bekleyen.find((m) => eksikler(m).includes(el));
+    const isteyen = bekleyen.find((m) => eksikler(m).includes(hand));
     if (isteyen) {
       return {
-        metin: bicim(S.ipucuBirak, { malzeme: isim, ad: ad(isteyen) }),
-        hedef: `misafir:${isteyen.id}`,
+        text: format(S.ipucuBirak, { ingredient: isim, ad: ad(isteyen) }),
+        target: `misafir:${isteyen.id}`,
       };
     }
 

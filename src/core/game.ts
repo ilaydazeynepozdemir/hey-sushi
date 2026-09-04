@@ -1,43 +1,43 @@
 import {
-  ISTASYON_MAP,
-  KARAKTERLER,
-  KARAKTER_MAP,
-  MAKI_TARIFLERI,
-  makiIciMi,
-  OYUNCU_ADLARI,
-  DEKOR_MAP,
-  OYUNCU_RENKLERI,
-  YEMEKLER,
-  sicaklikCarpani,
-  yemek,
+  STATION_MAP,
+  CHARACTERS,
+  CHARACTER_MAP,
+  MAKI_RECIPES,
+  isMakiFilling,
+  PLAYER_NAMES,
+  DECOR_MAP,
+  PLAYER_COLORS,
+  DISHES,
+  warmthMultiplier,
+  dish,
 } from "./content";
-import { varsayilanAvatar } from "./avatar";
+import { defaultAvatar } from "./avatar";
 import type { Avatar } from "./avatar";
 import { S, m as m2 } from "./dil";
 import { mulberry32 } from "./rng";
 import type {
-  Aksiyon,
-  IstasyonId,
-  MalzemeId,
-  Misafir,
-  OyunDurumu,
-  OyunOlayi,
-  Oyuncu,
+  Action,
+  StationId,
+  IngredientId,
+  Guest,
+  GameState,
+  GameEvent,
+  Player,
   PlayerId,
-  YemekId,
+  DishId,
 } from "./types";
 
-export const KOLTUK_TABAN = 3;
-const TEPSI_LIMIT = 8;
+export const BASE_SEATS = 3;
+const TRAY_LIMIT = 8;
 /** İkram, misafirin beklemesinin bu oranını siler. */
-const IKRAM_ETKISI = 0.45;
+const TREAT_EFFECT = 0.45;
 /** Servis botu kaç saniyede bir ikram dağıtır. */
-const BOT_ARALIGI = 11;
+const BOT_INTERVAL = 11;
 /** Botun ikramı elle verilenden biraz zayıf. */
-const BOT_ETKISI = 0.3;
+const BOT_EFFECT = 0.3;
 
 let sayac = 0;
-const yeniId = () => `m${++sayac}`;
+const nextId = () => `m${++sayac}`;
 
 export function yeniOyun(
   oyuncuSayisi = 1,
@@ -49,7 +49,7 @@ export function yeniOyun(
     oyuncular.push({
       id: i as PlayerId,
       // Ad avatardan gelir: el kartında ve garsonun altında aynı isim görünsün.
-      ad: (i === 0 && avatar ? avatar.ad : undefined) ?? OYUNCU_ADLARI[i] ?? `Oyuncu ${i + 1}`,
+      ad: (i === 0 && avatar ? avatar.ad : undefined) ?? OYUNCU_ADLARI[i] ?? `Player ${i + 1}`,
       renk: OYUNCU_RENKLERI[i] ?? "#888",
       avatar: i === 0 && avatar ? avatar : varsayilanAvatar(i),
       el: null,
@@ -510,7 +510,7 @@ export function oyuncuEkle(s: OyunDurumu, ad?: string, avatar?: Avatar): PlayerI
   const id = s.oyuncular.length as PlayerId;
   s.oyuncular.push({
     id,
-    ad: avatar?.ad || ad?.slice(0, 12) || OYUNCU_ADLARI[id] || `Oyuncu ${id + 1}`,
+    ad: avatar?.ad || ad?.slice(0, 12) || OYUNCU_ADLARI[id] || `Player ${id + 1}`,
     renk: OYUNCU_RENKLERI[id] ?? "#888",
     avatar: avatar ?? varsayilanAvatar(id),
     el: null,

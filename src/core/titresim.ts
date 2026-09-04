@@ -10,7 +10,7 @@ import { Haptics, ImpactStyle, NotificationType } from "@capacitor/haptics";
 
 let acik = true;
 
-export function titresimAcKapa(): boolean {
+export function toggleHaptics(): boolean {
   acik = !acik;
   return acik;
 }
@@ -20,19 +20,19 @@ function calisirMi() {
 }
 
 /** Malzeme elimize geldiğinde. */
-export function titresimHafif() {
+export function hapticLight() {
   if (!calisirMi()) return;
   void Haptics.impact({ style: ImpactStyle.Light }).catch(() => {});
 }
 
 /** Sürüklerken bir hedefin üstüne gelindiğinde. */
-export function titresimSecim() {
+export function hapticSelect() {
   if (!calisirMi()) return;
   void Haptics.selectionChanged().catch(() => {});
 }
 
 /** Servis başarılı. */
-export function titresimBasari() {
+export function hapticSuccess() {
   if (!calisirMi()) return;
   void Haptics.notification({ type: NotificationType.Success }).catch(() => {});
 }

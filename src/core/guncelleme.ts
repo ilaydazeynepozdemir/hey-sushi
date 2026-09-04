@@ -24,23 +24,23 @@ const MANIFEST_URL = "https://ilaydazeynepozdemir.github.io/hey-sushi-updates/ve
 
 export interface Manifest {
   /** Semver, örn. "0.3.0" */
-  surum: string;
+  version: string;
   /** İndirilecek zip'in tam adresi. */
   url: string;
   /** Kullanıcıya gösterilecek kısa not (isteğe bağlı). */
-  not?: { en: string; tr: string };
+  note?: { en: string; tr: string };
   /** true ise kullanıcıya sormadan bir sonraki açılışta uygulanır. */
-  sessiz?: boolean;
+  silent?: boolean;
 }
 
-export interface GuncellemeKancalari {
+export interface UpdateHooks {
   /** İndirme bitti, uygulanmaya hazır. */
   hazir(manifest: Manifest): void;
 }
 
 let bekleyen: { manifest: Manifest; id: string } | null = null;
 
-function surumBuyukMu(yeni: string, mevcut: string): boolean {
+function isNewerVersion(yeni: string, mevcut: string): boolean {
   const a = yeni.split(".").map((n) => parseInt(n, 10) || 0);
   const b = mevcut.split(".").map((n) => parseInt(n, 10) || 0);
   for (let i = 0; i < Math.max(a.length, b.length); i++) {
@@ -51,12 +51,12 @@ function surumBuyukMu(yeni: string, mevcut: string): boolean {
   return false;
 }
 
-export function mevcutSurum(): string {
+export function currentVersion(): string {
   return typeof __SURUM__ === "string" ? __SURUM__ : "0.0.0";
 }
 
 /** Açılışta çağrılır: paketin sağlam açıldığını bildirir ve güncelleme arar. */
-export async function guncellemeBaslat(kanca: GuncellemeKancalari) {
+export async function startUpdates(kanca: UpdateHooks) {
   if (!Capacitor.isNativePlatform()) return;
 
   // Bunu çağırmazsak capgo paketi bozuk sayıp bir öncekine geri döner.

@@ -1,126 +1,126 @@
 import "./ui/styles.css";
 import {
-  hepsi as tumTarifler,
-  tarifEkle,
-  tarifinAcacagiIstasyonlar,
-  tarifiKaldir,
-  tarifiUygula,
-  tarifleriYukle,
+  allRecipes as tumTarifler,
+  addRecipe,
+  stationsRecipeUnlocks,
+  removeRecipe,
+  applyRecipe,
+  loadRecipes,
 } from "./core/atolye";
-import type { OzelTarif } from "./core/atolye";
-import { avatarAta, istasyonAc, oyuncuCikar, oyuncuEkle, uygula, yeniOyun } from "./core/game";
-import { avatarKaydet as avatarDepola, avatarYukle } from "./core/avatar";
+import type { CustomRecipe } from "./core/atolye";
+import { setAvatar, unlockStations, removePlayer, addPlayer, apply, newGame } from "./core/game";
+import { saveAvatar as avatarDepola, loadAvatar } from "./core/avatar";
 import type { Avatar } from "./core/avatar";
-import { S, bicim, dilBaslat, y } from "./core/dil";
-import { sonrakiIpucu } from "./core/ipucu";
-import { mevsimGun } from "./core/content";
-import { kayitOku, kayitUygula, kayitYaz } from "./core/kayit";
-import type { Aksiyon, OyunDurumu, OyunOlayi, PlayerId } from "./core/types";
+import { S, format, initLang, y } from "./core/dil";
+import { nextHint } from "./core/ipucu";
+import { seasonForDay } from "./core/content";
+import { readSave, applySave, writeSave } from "./core/kayit";
+import type { Action, GameState, GameEvent, PlayerId } from "./core/types";
 import { Capacitor } from "@capacitor/core";
-import { depoGeriYukle, depoYaz } from "./core/depo";
-import { guncellemeBaslat, guncellemeyiErtele, guncellemeyiUygula } from "./core/guncelleme";
-import { nativeBaslat } from "./core/native";
-import { titresimBasari, titresimHafif } from "./core/titresim";
+import { restoreStorage, storageSet } from "./core/depo";
+import { startUpdates, deferUpdate, applyUpdate } from "./core/guncelleme";
+import { initNative } from "./core/native";
+import { hapticSuccess, hapticLight } from "./core/titresim";
 import { Oda } from "./net/oda";
-import { muzikAcKapa, muzikAcikMi, muzikBaslat, muzikDuraklat, muzikMevsim } from "./ui/muzik";
+import { toggleMusic, musicEnabled, startMusic, pauseMusic, setMusicSeason } from "./ui/muzik";
 import {
-  sesAcKapa,
-  sesBeraber,
-  sesBirak,
-  sesGunSonu,
-  sesHata,
-  sesMisafir,
-  sesServis,
-  sesTik,
-  sesUretim,
+  toggleSfx,
+  sfxTogether,
+  sfxDrop,
+  sfxDayEnd,
+  sfxError,
+  sfxGuest,
+  sfxServe,
+  sfxTap,
+  sfxProduce,
 } from "./ui/audio";
-import { Arayuz, hedefListesi } from "./ui/view";
+import { View, targetList } from "./ui/view";
 
 const kok = document.getElementById("app");
 if (!kok) throw new Error("#app yok");
 
-let durum: OyunDurumu = yeniOyun(1, undefined, avatarYukle());
+let state: GameState = newGame(1, undefined, loadAvatar());
 let secim = 0;
-let tikSayaci = 0;
-let sonTikHedef: import("./core/types").HedefId | null = null;
-let sonAksiyonOyuncu: PlayerId = 0;
-let rehberAcik = localStorage.getItem("tsuki.rehber") !== "0";
-let atolyeAcik = false;
-let avatarAcik = false;
-let sesAcik = true;
-let cikisAcik = false;
-let muzikBasladi = false;
-let muzikMevsimi = "";
-let benimAvatar: Avatar = avatarYukle();
-let klavyeAktif = false;
+let tapCount = 0;
+let lastTapTarget: import("./core/types").TargetId | null = null;
+let lastActor: PlayerId = 0;
+let guideOn = localStorage.getItem("tsuki.rehber") !== "0";
+let workshopOpen = false;
+let avatarOpen = false;
+let sfxOn = true;
+let quitOpen = false;
+let musicStarted = false;
+let musicSeason = "";
+let myAvatar: Avatar = loadAvatar();
+let keyboardActive = false;
 
 /** Online oyunda bu istemcinin sürdüğü oyuncu. */
-let benId: PlayerId = 0;
+let myPlayerId: PlayerId = 0;
 /** Host tarafında: röle üye kimliği → oyuncu indeksi. */
-const uyeOyuncu = new Map<number, PlayerId>();
-let sonYayin = 0;
-let netUyari = "";
+const memberToPlayer = new Map<number, PlayerId>();
+let lastBroadcast = 0;
+let netWarning = "";
 
-dilBaslat();
-tarifleriYukle();
+initLang();
+loadRecipes();
 
 /** Kayıtlı ilerleme varsa geri yükle (gün, kalp, jeton, dükkân). */
-const acilisKaydi = kayitOku();
+const bootSave = readSave();
 
-if (acilisKaydi) kayitUygula(durum, acilisKaydi);
+if (bootSave) applySave(state, bootSave);
 
 /** Kaydedip uygulamadan çık (web'de çıkış yok: menüye dön). */
-async function cikisYap() {
+async function quitApp() {
   if (Capacitor.isNativePlatform()) {
     const { App: Uygulama } = await import("@capacitor/app");
     await Uygulama.exitApp();
     return;
   }
-  durum.faz = "menu";
-  arayuz.perdeYenile();
-  ciz();
+  state.phase = "menu";
+  arayuz.invalidateOverlay();
+  render();
 }
 
 // ---------------------------------------------------------------- ağ
 const oda = new Oda({
-  onDurum(veri) {
-    const v = veri as { t?: string; durum?: OyunDurumu; benId?: number; tarifler?: OzelTarif[] };
+  onState(veri) {
+    const v = veri as { t?: string; state?: GameState; myPlayerId?: number; tarifler?: CustomRecipe[] };
     if (v.t === "kimlik") {
-      benId = (v.benId ?? 0) as PlayerId;
-      for (const t of v.tarifler ?? []) tarifiUygula(t);
-      oda.yolla({ t: "avatar", avatar: benimAvatar });
-      arayuz.perdeYenile();
-    } else if (v.t === "durum" && v.durum) {
-      durum = v.durum;
+      myPlayerId = (v.myPlayerId ?? 0) as PlayerId;
+      for (const t of v.tarifler ?? []) applyRecipe(t);
+      oda.send({ t: "avatar", avatar: myAvatar });
+      arayuz.invalidateOverlay();
+    } else if (v.t === "durum" && v.state) {
+      state = v.state;
     }
-    ciz();
+    render();
   },
-  onAksiyon(uyeId, veri) {
+  onAction(uyeId, veri) {
     // Sadece ev sahibi burayı görür: gelen aksiyonu kendi durumuna uygular.
-    const v = veri as { t?: string; aksiyon?: Aksiyon; avatar?: Avatar };
-    const oyuncu = uyeOyuncu.get(uyeId);
+    const v = veri as { t?: string; aksiyon?: Action; avatar?: Avatar };
+    const oyuncu = memberToPlayer.get(uyeId);
     if (oyuncu === undefined) return;
     if (v.t === "avatar" && v.avatar) {
-      avatarAta(durum, oyuncu, v.avatar);
-      yayinla(true);
-      ciz();
+      setAvatar(state, oyuncu, v.avatar);
+      broadcast(true);
+      render();
       return;
     }
     if (v.t !== "aksiyon" || !v.aksiyon) return;
     const a = v.aksiyon;
-    if (a.tip !== "etkilesim" && a.tip !== "servis") return;
-    sonAksiyonOyuncu = oyuncu;
-    olaylariIsle(uygula(durum, { ...a, oyuncu }));
-    yayinla(true);
-    ciz();
+    if (a.kind !== "etkilesim" && a.kind !== "servis") return;
+    lastActor = oyuncu;
+    handleEvents(apply(state, { ...a, oyuncu }));
+    broadcast(true);
+    render();
   },
-  onUyeGirdi(id, ad) {
-    const oyuncu = oyuncuEkle(durum, ad);
+  onMemberJoined(id, ad) {
+    const oyuncu = addPlayer(state, ad);
     if (oyuncu === null) return;
-    uyeOyuncu.set(id, oyuncu);
-    oda.yolla({ t: "kimlik", benId: oyuncu, tarifler: tumTarifler() }, id);
-    yayinla(true);
-    arayuz.uyar(`${durum.oyuncular[oyuncu]?.ad ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
+    memberToPlayer.set(id, oyuncu);
+    oda.send({ t: "kimlik", myPlayerId: oyuncu, tarifler: tumTarifler() }, id);
+    broadcast(true);
+    arayuz.toast(`${state.players[oyuncu]?.ad ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
     arayuz.perdeYenile();
     ciz();
   },
@@ -374,7 +374,7 @@ function olaylariIsle(olaylar: OyunOlayi[]) {
         sesServis(o.guzel);
         titresimBasari();
         if (o.beraber) setTimeout(sesBeraber, 180);
-        arayuz.ucur(o.misafirId, `+${o.kalp}`);
+        arayuz.ucur(o.misafirId, `+${o.hearts}`);
         if (o.beraber) setTimeout(() => arayuz.ucur(o.misafirId, y(S.birlikte), "ui_parilti"), 260);
         break;
       case "eksik":

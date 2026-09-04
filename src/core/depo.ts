@@ -9,13 +9,13 @@
 import { Preferences } from "@capacitor/preferences";
 import { Capacitor } from "@capacitor/core";
 
-const AYNALANAN = ["tsuki.avatar", "tsuki.tarifler", "tsuki.dil", "tsuki.rehber", "tsuki.kayit"];
+const MIRRORED_KEYS = ["tsuki.avatar", "tsuki.tarifler", "tsuki.dil", "tsuki.rehber", "tsuki.kayit"];
 
-function nativeMi() {
+function isNative() {
   return Capacitor.isNativePlatform();
 }
 
-export function depoOku(anahtar: string): string | null {
+export function storageGet(anahtar: string): string | null {
   try {
     return localStorage.getItem(anahtar);
   } catch {
@@ -23,28 +23,28 @@ export function depoOku(anahtar: string): string | null {
   }
 }
 
-export function depoYaz(anahtar: string, deger: string) {
+export function storageSet(anahtar: string, deger: string) {
   try {
     localStorage.setItem(anahtar, deger);
   } catch {
     /* özel sekme / dolu depo */
   }
-  if (nativeMi()) void Preferences.set({ key: anahtar, value: deger }).catch(() => {});
+  if (isNative()) void Preferences.set({ key: anahtar, value: deger }).catch(() => {});
 }
 
-export function depoSil(anahtar: string) {
+export function storageRemove(anahtar: string) {
   try {
     localStorage.removeItem(anahtar);
   } catch {
     /* yok say */
   }
-  if (nativeMi()) void Preferences.remove({ key: anahtar }).catch(() => {});
+  if (isNative()) void Preferences.remove({ key: anahtar }).catch(() => {});
 }
 
 /** Açılışta: localStorage boşsa Preferences'tan geri yükle. */
-export async function depoGeriYukle() {
-  if (!nativeMi()) return;
-  for (const anahtar of AYNALANAN) {
+export async function restoreStorage() {
+  if (!isNative()) return;
+  for (const anahtar of MIRRORED_KEYS) {
     try {
       if (localStorage.getItem(anahtar) !== null) continue;
       const { value } = await Preferences.get({ key: anahtar });

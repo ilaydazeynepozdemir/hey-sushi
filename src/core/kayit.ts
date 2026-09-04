@@ -3,44 +3,44 @@
  * hâli (masadaki misafirler) değil: gün ortasında çıkılırsa o gün baştan başlar.
  * Cozy bir oyunda bu, yarım kalmış bir günü geri yüklemekten daha az sinir bozucu.
  */
-import { depoOku, depoSil, depoYaz } from "./depo";
-import type { OyunDurumu } from "./types";
+import { storageGet, storageRemove, storageSet } from "./depo";
+import type { GameState } from "./types";
 
 const ANAHTAR = "tsuki.kayit";
 
-export interface Kayit {
-  gun: number;
-  kalp: number;
-  jeton: number;
-  dekor: string[];
+export interface SaveData {
+  day: number;
+  hearts: number;
+  coins: number;
+  decor: string[];
   /** Tarif atölyesinde açılan istasyonlar. */
-  ekstraIstasyon: string[];
+  extraStations: string[];
 }
 
-export function kayitYaz(s: OyunDurumu) {
-  const k: Kayit = {
-    gun: s.gun,
-    kalp: s.kalp,
-    jeton: s.jeton,
-    dekor: s.dekor,
-    ekstraIstasyon: s.ekstraIstasyon,
+export function writeSave(s: GameState) {
+  const k: SaveData = {
+    day: s.day,
+    hearts: s.hearts,
+    coins: s.coins,
+    decor: s.decor,
+    extraStations: s.extraStations,
   };
-  depoYaz(ANAHTAR, JSON.stringify(k));
+  storageSet(ANAHTAR, JSON.stringify(k));
 }
 
-export function kayitOku(): Kayit | null {
+export function readSave(): SaveData | null {
   try {
-    const ham = depoOku(ANAHTAR);
+    const ham = storageGet(ANAHTAR);
     if (!ham) return null;
-    const k = JSON.parse(ham) as Partial<Kayit>;
-    if (typeof k.gun !== "number") return null;
+    const k = JSON.parse(ham) as Partial<SaveData>;
+    if (typeof k.day !== "number") return null;
     return {
-      gun: Math.max(1, Math.floor(k.gun)),
-      kalp: Math.max(0, Math.floor(k.kalp ?? 0)),
-      jeton: Math.max(0, Math.floor(k.jeton ?? 0)),
-      dekor: Array.isArray(k.dekor) ? k.dekor.filter((d): d is string => typeof d === "string") : [],
-      ekstraIstasyon: Array.isArray(k.ekstraIstasyon)
-        ? k.ekstraIstasyon.filter((d): d is string => typeof d === "string")
+      day: Math.max(1, Math.floor(k.day)),
+      hearts: Math.max(0, Math.floor(k.hearts ?? 0)),
+      coins: Math.max(0, Math.floor(k.coins ?? 0)),
+      decor: Array.isArray(k.decor) ? k.decor.filter((d): d is string => typeof d === "string") : [],
+      extraStations: Array.isArray(k.extraStations)
+        ? k.extraStations.filter((d): d is string => typeof d === "string")
         : [],
     };
   } catch {
@@ -48,15 +48,15 @@ export function kayitOku(): Kayit | null {
   }
 }
 
-export function kayitSil() {
-  depoSil(ANAHTAR);
+export function clearSave() {
+  storageRemove(ANAHTAR);
 }
 
 /** Kaydı duruma uygular (menüdeyken çağrılmalı). */
-export function kayitUygula(s: OyunDurumu, k: Kayit) {
-  s.gun = k.gun;
-  s.kalp = k.kalp;
-  s.jeton = k.jeton;
-  s.dekor = [...k.dekor];
-  s.ekstraIstasyon = [...k.ekstraIstasyon] as OyunDurumu["ekstraIstasyon"];
+export function applySave(s: GameState, k: SaveData) {
+  s.day = k.day;
+  s.hearts = k.hearts;
+  s.coins = k.coins;
+  s.decor = [...k.decor];
+  s.extraStations = [...k.extraStations] as GameState["ekstraIstasyon"];
 }

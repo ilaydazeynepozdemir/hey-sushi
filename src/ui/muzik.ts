@@ -12,31 +12,31 @@
  *    dinleniyor, böylece rastgelelik "kafa karıştırıcı" değil "sakin" duyuluyor.
  *  - Mevsime göre hafif renk değişimi (kış daha seyrek, yaz daha parlak).
  */
-import { sesBaglami } from "./audio";
+import { audioContext } from "./audio";
 
-type MevsimId = "ilkbahar" | "yaz" | "sonbahar" | "kis";
+type SeasonId = "ilkbahar" | "yaz" | "sonbahar" | "kis";
 
 /** D Yo dizisi, Hz. Kök D3. */
-const DIZI = [146.83, 164.81, 196.0, 220.0, 246.94];
+const SCALE = [146.83, 164.81, 196.0, 220.0, 246.94];
 
 /** Akor yastıkları — her biri dizinin içinden, modal ve gerilimsiz. */
-const AKORLAR = [
+const CHORDS = [
   [146.83, 220.0, 329.63], // D  A  E
   [196.0, 293.66, 493.88], // G  D  B
   [220.0, 329.63, 493.88], // A  E  B
   [146.83, 220.0, 246.94], // D  A  B
 ];
 
-const ILERI_BAK = 0.5; // saniye: bu kadar ilerisi zamanlanır
+const LOOKAHEAD = 0.5; // saniye: bu kadar ilerisi zamanlanır
 const TIK = 0.12; // zamanlayıcı aralığı
 
-interface MevsimRengi {
+interface SeasonMood {
   tempo: number;
   yogunluk: number;
   parlaklik: number;
 }
 
-const MEVSIM_RENGI: Record<MevsimId, MevsimRengi> = {
+const SEASON_MOOD: Record<SeasonId, SeasonMood> = {
   ilkbahar: { tempo: 52, yogunluk: 0.24, parlaklik: 1150 },
   yaz: { tempo: 56, yogunluk: 0.27, parlaklik: 1350 },
   sonbahar: { tempo: 48, yogunluk: 0.21, parlaklik: 980 },
@@ -47,34 +47,34 @@ let ana: GainNode | null = null;
 let zamanlayici: number | null = null;
 let siradakiVurus = 0;
 let vurusNo = 0;
-let renk: MevsimRengi = MEVSIM_RENGI.ilkbahar;
+let color: SeasonMood = SEASON_MOOD.ilkbahar;
 let acik = true;
 let calisiyor = false;
 let odaKaynagi: AudioBufferSourceNode | null = null;
 /** Melodinin son durduğu derece — sıçrama yerine adım adım gezinmesi için. */
 let sonDerece = 0;
 
-export function muzikAcikMi() {
+export function musicEnabled() {
   return acik;
 }
 
-export function muzikMevsim(id: string) {
-  renk = MEVSIM_RENGI[id as MevsimId] ?? MEVSIM_RENGI.ilkbahar;
+export function setMusicSeason(id: string) {
+  color = SEASON_MOOD[id as SeasonId] ?? SEASON_MOOD.ilkbahar;
 }
 
 /** Koto benzeri tıngırtı: sert atak, uzun sönüm, hafif detune. */
-function tingir(c: AudioContext, f: number, t: number, guc: number) {
+function pluck(c: AudioContext, f: number, t: number, guc: number) {
   if (!ana) return;
-  const sure = 3.4 + Math.random() * 2;
+  const elapsed = 3.4 + Math.random() * 2;
   const filtre = c.createBiquadFilter();
   filtre.type = "lowpass";
-  filtre.frequency.setValueAtTime(renk.parlaklik, t);
-  filtre.frequency.exponentialRampToValueAtTime(420, t + sure);
+  filtre.frequency.setValueAtTime(color.parlaklik, t);
+  filtre.frequency.exponentialRampToValueAtTime(420, t + elapsed);
 
   const zarf = c.createGain();
   zarf.gain.setValueAtTime(0, t);
   zarf.gain.linearRampToValueAtTime(guc, t + 0.05);
-  zarf.gain.exponentialRampToValueAtTime(0.0001, t + sure);
+  zarf.gain.exponentialRampToValueAtTime(0.0001, t + elapsed);
 
   for (const kayma of [1, 1.0018]) {
     const o = c.createOscillator();
@@ -82,13 +82,13 @@ function tingir(c: AudioContext, f: number, t: number, guc: number) {
     o.frequency.setValueAtTime(f * kayma, t);
     o.connect(filtre);
     o.start(t);
-    o.stop(t + sure + 0.05);
+    o.stop(t + elapsed + 0.05);
   }
   filtre.connect(zarf).connect(ana);
 }
 
 /** Uzun, yumuşak akor yastığı. */
-function yastik(c: AudioContext, sesler: number[], t: number, sure: number) {
+function pad(c: AudioContext, sesler: number[], t: number, elapsed: number) {
   if (!ana) return;
   const filtre = c.createBiquadFilter();
   filtre.type = "lowpass";
@@ -96,9 +96,9 @@ function yastik(c: AudioContext, sesler: number[], t: number, sure: number) {
 
   const zarf = c.createGain();
   zarf.gain.setValueAtTime(0, t);
-  zarf.gain.linearRampToValueAtTime(0.035, t + sure * 0.45);
-  zarf.gain.setValueAtTime(0.035, t + sure * 0.7);
-  zarf.gain.exponentialRampToValueAtTime(0.0001, t + sure);
+  zarf.gain.linearRampToValueAtTime(0.035, t + elapsed * 0.45);
+  zarf.gain.setValueAtTime(0.035, t + elapsed * 0.7);
+  zarf.gain.exponentialRampToValueAtTime(0.0001, t + elapsed);
 
   for (const f of sesler) {
     for (const kayma of [0.997, 1.003]) {
@@ -107,14 +107,14 @@ function yastik(c: AudioContext, sesler: number[], t: number, sure: number) {
       o.frequency.setValueAtTime(f * kayma, t);
       o.connect(filtre);
       o.start(t);
-      o.stop(t + sure + 0.1);
+      o.stop(t + elapsed + 0.1);
     }
   }
   filtre.connect(zarf).connect(ana);
 }
 
 /** Alçak, yuvarlak bas. */
-function bas(c: AudioContext, f: number, t: number) {
+function bass(c: AudioContext, f: number, t: number) {
   if (!ana) return;
   const zarf = c.createGain();
   zarf.gain.setValueAtTime(0, t);
@@ -129,9 +129,9 @@ function bas(c: AudioContext, f: number, t: number) {
 }
 
 /** Ara sıra duyulan yüksek çan — rüzgâr çanı hissi. */
-function can(c: AudioContext, t: number) {
+function bell(c: AudioContext, t: number) {
   if (!ana) return;
-  const f = DIZI[Math.floor(Math.random() * DIZI.length)]! * 4;
+  const f = SCALE[Math.floor(Math.random() * SCALE.length)]! * 4;
   const zarf = c.createGain();
   zarf.gain.setValueAtTime(0, t);
   zarf.gain.linearRampToValueAtTime(0.012, t + 0.01);
@@ -145,7 +145,7 @@ function can(c: AudioContext, t: number) {
 }
 
 /** Çok kısık oda tonu: filtrelenmiş gürültü, deniz/yağmur hissi. */
-function odaTonu(c: AudioContext) {
+function roomTone(c: AudioContext) {
   const uzunluk = c.sampleRate * 4;
   const tampon = c.createBuffer(1, uzunluk, c.sampleRate);
   const veri = tampon.getChannelData(0);
@@ -183,39 +183,39 @@ function odaTonu(c: AudioContext) {
   return kaynak;
 }
 
-function zamanla() {
-  const c = sesBaglami();
+function schedule() {
+  const c = audioContext();
   if (!c || !ana) return;
-  const vurusSuresi = 60 / renk.tempo;
+  const vurusSuresi = 60 / color.tempo;
 
-  while (siradakiVurus < c.currentTime + ILERI_BAK) {
+  while (siradakiVurus < c.currentTime + LOOKAHEAD) {
     const t = Math.max(siradakiVurus, c.currentTime + 0.02);
     const olcuIci = vurusNo % 8;
-    const akorNo = Math.floor(vurusNo / 8) % AKORLAR.length;
+    const akorNo = Math.floor(vurusNo / 8) % CHORDS.length;
 
     // her 8 vuruşta bir yeni akor + bas
     if (olcuIci === 0) {
-      yastik(c, AKORLAR[akorNo]!, t, vurusSuresi * 8);
-      bas(c, AKORLAR[akorNo]![0]!, t);
+      pad(c, CHORDS[akorNo]!, t, vurusSuresi * 8);
+      bass(c, CHORDS[akorNo]![0]!, t);
     }
-    if (olcuIci === 4 && Math.random() < 0.3) bas(c, AKORLAR[akorNo]![0]!, t);
+    if (olcuIci === 4 && Math.random() < 0.3) bass(c, CHORDS[akorNo]![0]!, t);
 
     // Melodi: rastgele sıçramak gergin duyuluyordu — komşu derecelere adımlıyor
     // ve cümle sonlarında köke dönüp dinleniyor.
-    if (Math.random() < renk.yogunluk) {
+    if (Math.random() < color.yogunluk) {
       const cumleSonu = olcuIci === 7;
       if (cumleSonu) {
         sonDerece = 0;
       } else {
         const adim = Math.random() < 0.72 ? (Math.random() < 0.5 ? -1 : 1) : 0;
-        sonDerece = Math.max(0, Math.min(DIZI.length - 1, sonDerece + adim));
+        sonDerece = Math.max(0, Math.min(SCALE.length - 1, sonDerece + adim));
       }
       const oktav = Math.random() < 0.18 ? 4 : 2; // tiz sıçrama nadir
-      tingir(c, DIZI[sonDerece]! * oktav, t, 0.03 + Math.random() * 0.014);
+      pluck(c, SCALE[sonDerece]! * oktav, t, 0.03 + Math.random() * 0.014);
     }
 
     // çan: çok nadir ve kısık — vurgu değil, ara sıra duyulan bir detay
-    if (Math.random() < 0.02) can(c, t + vurusSuresi * 0.5);
+    if (Math.random() < 0.02) bell(c, t + vurusSuresi * 0.5);
 
     siradakiVurus += vurusSuresi;
     vurusNo++;
@@ -223,9 +223,9 @@ function zamanla() {
 }
 
 /** İlk kullanıcı hareketinden sonra çağrılmalı (tarayıcı otomatik oynatmayı engeller). */
-export function muzikBaslat() {
+export function startMusic() {
   if (calisiyor || !acik) return;
-  const c = sesBaglami();
+  const c = audioContext();
   if (!c) return;
 
   ana = c.createGain();
@@ -233,17 +233,17 @@ export function muzikBaslat() {
   ana.gain.linearRampToValueAtTime(0.5, c.currentTime + 5); // uzun ve yumuşak açılış
   ana.connect(c.destination);
 
-  const oda = odaTonu(c);
+  const oda = roomTone(c);
   oda.start();
 
   siradakiVurus = c.currentTime + 0.3;
   vurusNo = 0;
   calisiyor = true;
-  zamanlayici = window.setInterval(zamanla, TIK * 1000);
+  zamanlayici = window.setInterval(schedule, TIK * 1000);
 }
 
-export function muzikDurdur() {
-  const c = sesBaglami();
+export function stopMusic() {
+  const c = audioContext();
   if (zamanlayici !== null) {
     clearInterval(zamanlayici);
     zamanlayici = null;
@@ -265,16 +265,16 @@ export function muzikDurdur() {
   calisiyor = false;
 }
 
-export function muzikAcKapa(): boolean {
+export function toggleMusic(): boolean {
   acik = !acik;
-  if (acik) muzikBaslat();
-  else muzikDurdur();
+  if (acik) startMusic();
+  else stopMusic();
   return acik;
 }
 
 /** Uygulama arka plana alındığında sussun. */
-export function muzikDuraklat(duraklat: boolean) {
+export function pauseMusic(duraklat: boolean) {
   if (!acik) return;
-  if (duraklat) muzikDurdur();
-  else muzikBaslat();
+  if (duraklat) stopMusic();
+  else startMusic();
 }

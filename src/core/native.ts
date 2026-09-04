@@ -7,22 +7,24 @@ import { Capacitor } from "@capacitor/core";
 import { SplashScreen } from "@capacitor/splash-screen";
 import { StatusBar, Style } from "@capacitor/status-bar";
 
-export function nativeMi(): boolean {
+export function isNative(): boolean {
   return Capacitor.isNativePlatform();
 }
 
-export interface NativeKancalari {
+export interface NativeHooks {
   /** Geri tuşuna basıldı; açık bir panel varsa kapatıp true dönmeli. */
   geriTusu(): boolean;
   /** Uygulama arka plana alındı ya da geri geldi. */
   gorunurluk(aktif: boolean): void;
 }
 
-export async function nativeBaslat(kanca: NativeKancalari) {
-  if (!nativeMi()) return;
+export async function initNative(kanca: NativeHooks) {
+  if (!isNative()) return;
 
   try {
     await StatusBar.setStyle({ style: Style.Light });
+    // Oyun içeriği durum çubuğunun altına girmesin.
+    await StatusBar.setOverlaysWebView({ overlay: false });
     if (Capacitor.getPlatform() === "android") {
       await StatusBar.setBackgroundColor({ color: "#FFF9F2" });
     }

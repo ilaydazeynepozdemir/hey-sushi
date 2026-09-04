@@ -1,15 +1,15 @@
 /** Garson tasarım paneli — her seçenek kendi çizimiyle önizlenir. */
 import {
-  ONLUKLER,
-  SACLAR,
-  SAC_AKSESUARLARI,
-  SAC_RENKLERI,
-  TENLER,
-  UNIFORMALAR,
-  YUZ_AKSESUARLARI,
+  APRON_COLORS,
+  HAIR_STYLES,
+  HAIR_ACCESSORIES,
+  HAIR_COLORS,
+  SKIN_TONES,
+  OUTFIT_COLORS,
+  FACE_ACCESSORIES,
   type Avatar,
 } from "../core/avatar";
-import { garsonKafaSvg, garsonSvg } from "./art";
+import { serverHeadSvg, serverSvg } from "./art";
 import { S, y } from "../core/dil";
 
 export interface AvatarCallbacks {
@@ -17,13 +17,13 @@ export interface AvatarCallbacks {
   kapat(): void;
 }
 
-export function avatarPaneli(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement {
+export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement {
   const a: Avatar = { ...baslangic };
 
-  const perde = el("div", "perde");
-  const pano = el("div", "pano atolye-pano");
+  const perde = hand("div", "perde");
+  const pano = hand("div", "pano atolye-pano");
 
-  const baslik = el("h2");
+  const baslik = hand("h2");
   baslik.innerHTML = `<span>${y(S.avatarBaslik)}</span>`;
   const alt = el("p", "alt");
   alt.textContent = y(S.avatarAlt);
@@ -171,7 +171,7 @@ export function avatarPaneli(baslangic: Avatar, cb: AvatarCallbacks): HTMLElemen
 
   function ciz() {
     onizleme.innerHTML =
-      `<div class="avatar-buyuk">${garsonSvg(a, 132)}</div>` +
+      `<div class="avatar-buyuk">${serverSvg(a, 132)}</div>` +
       `<div class="avatar-ad-etiket">${(a.ad.trim() || "Chef").replace(/[<>&]/g, "")}</div>`;
 
     for (const b of tipKutu.children) {

@@ -1,52 +1,52 @@
 /** Tarif Atölyesi paneli — oyuncunun kendi suşisini tasarladığı ekran. */
-import { MALZEMELER } from "../core/content";
+import { INGREDIENTS } from "../core/content";
 import {
-  GARNITURLER,
-  GARNITUR_LIMIT,
-  IC_LIMIT,
-  TABANLAR,
-  TABAN_MAP,
-  type GarniturId,
-  type OzelTarif,
-  type TabanId,
-  hepsi,
-  icSecenekleri,
-  tarifinAcacagiIstasyonlar,
-  tarifCizim,
-  tarifGerek,
-  tarifKalp,
-  tarifVarMi,
+  GARNISHES,
+  GARNISH_LIMIT,
+  FILLING_LIMIT,
+  BASES,
+  BASE_MAP,
+  type GarnishId,
+  type CustomRecipe,
+  type BaseId,
+  allRecipes,
+  fillingOptions,
+  stationsRecipeUnlocks,
+  recipeArt,
+  recipeNeeds,
+  recipeHearts,
+  recipeNameTaken,
 } from "../core/atolye";
-import type { IstasyonId, MalzemeId } from "../core/types";
-import { sanat } from "./art";
-import { S, bicim, y } from "../core/dil";
+import type { StationId, IngredientId } from "../core/types";
+import { art } from "./art";
+import { S, format, y } from "../core/dil";
 
-export interface AtolyeCallbacks {
-  kaydet(t: Omit<OzelTarif, "id">): void;
+export interface WorkshopCallbacks {
+  kaydet(t: Omit<CustomRecipe, "id">): void;
   sil(id: string): void;
   kapat(): void;
 }
 
-interface Taslak {
-  taban: TabanId;
-  ic: MalzemeId[];
-  garnitur: GarniturId[];
+interface Draft {
+  base: BaseId;
+  filling: IngredientId[];
+  garnish: GarnishId[];
   ad: string;
-  hikaye: string;
+  story: string;
 }
 
-export function atolyePaneli(
-  gun: number,
-  ekstraIstasyon: IstasyonId[],
-  cb: AtolyeCallbacks,
+export function workshopPanel(
+  day: number,
+  extraStations: StationId[],
+  cb: WorkshopCallbacks,
 ): HTMLElement {
-  const taslak: Taslak = { taban: "nigiri", ic: [], garnitur: [], ad: "", hikaye: "" };
+  const taslak: Draft = { base: "nigiri", filling: [], garnish: [], ad: "", story: "" };
 
-  const perde = el("div", "perde");
-  const pano = el("div", "pano atolye-pano");
+  const perde = hand("div", "perde");
+  const pano = hand("div", "pano atolye-pano");
 
-  const baslik = el("h2");
-  baslik.innerHTML = `${sanat("ui_parilti", 24)}<span>${y(S.atolyeBaslik)}</span>`;
+  const baslik = hand("h2");
+  baslik.innerHTML = `${art("ui_parilti", 24)}<span>${y(S.atolyeBaslik)}</span>`;
   const alt = el("p", "alt");
   alt.textContent = y(S.atolyeAlt);
   pano.append(baslik, alt);
@@ -64,7 +64,7 @@ export function atolyePaneli(
   for (const t of TABANLAR) {
     const b = el("button", "secim") as HTMLButtonElement;
     b.dataset.id = t.id;
-    b.innerHTML = `<b>${y(t.ad)}</b><small>${y(t.aciklama)}</small>`;
+    b.innerHTML = `<b>${y(t.ad)}</b><small>${y(t.description)}</small>`;
     b.onclick = () => {
       taslak.taban = t.id;
       taslak.ic = [];
@@ -86,112 +86,112 @@ export function atolyePaneli(
   for (const g of GARNITURLER) {
     const b = el("button", "secim kucuk") as HTMLButtonElement;
     b.dataset.id = g.id;
-    b.innerHTML = `<b>${y(g.ad)}</b>${g.kalp ? `<small>+${g.kalp}</small>` : ""}`;
+    b.innerHTML = `<b>${y(g.ad)}</b>${g.hearts ? `<small>+${g.hearts}</small>` : ""}`;
     b.onclick = () => {
-      const secili = taslak.garnitur.includes(g.id);
-      if (secili) taslak.garnitur = taslak.garnitur.filter((x) => x !== g.id);
-      else if (taslak.garnitur.length < GARNITUR_LIMIT) taslak.garnitur.push(g.id);
-      ciz();
+      const secili = taslak.garnish.includes(g.id);
+      if (secili) taslak.garnish = taslak.garnish.filter((x) => x !== g.id);
+      else if (taslak.garnish.length < GARNISH_LIMIT) taslak.garnish.push(g.id);
+      render();
     };
-    garSira.appendChild(b);
+    garnishRow.appendChild(b);
   }
-  pano.appendChild(garSira);
+  pano.appendChild(garnishRow);
 
   // --- isim & hikâye
-  pano.appendChild(bolumBasligi(y(S.isimVeHikaye)));
-  const adGiris = el("input", "atolye-giris") as HTMLInputElement;
-  adGiris.placeholder = y(S.tarifAdiIpucu);
-  adGiris.maxLength = 28;
-  adGiris.autocomplete = "off";
-  adGiris.oninput = () => {
-    taslak.ad = adGiris.value;
-    ciz();
+  pano.appendChild(sectionTitle(y(S.isimVeHikaye)));
+  const nameInput = hand("input", "atolye-giris") as HTMLInputElement;
+  nameInput.placeholder = y(S.tarifAdiIpucu);
+  nameInput.maxLength = 28;
+  nameInput.autocomplete = "off";
+  nameInput.oninput = () => {
+    taslak.ad = nameInput.value;
+    render();
   };
-  const hikayeGiris = el("input", "atolye-giris") as HTMLInputElement;
-  hikayeGiris.placeholder = y(S.kisaNot);
-  hikayeGiris.maxLength = 80;
-  hikayeGiris.autocomplete = "off";
-  hikayeGiris.oninput = () => {
-    taslak.hikaye = hikayeGiris.value;
+  const storyInput = hand("input", "atolye-giris") as HTMLInputElement;
+  storyInput.placeholder = y(S.kisaNot);
+  storyInput.maxLength = 80;
+  storyInput.autocomplete = "off";
+  storyInput.oninput = () => {
+    taslak.story = storyInput.value;
   };
-  pano.append(adGiris, hikayeGiris);
+  pano.append(nameInput, storyInput);
 
-  const acilacakBilgi = el("div", "acilacak-bilgi");
-  pano.appendChild(acilacakBilgi);
+  const unlockNote = hand("div", "acilacak-bilgi");
+  pano.appendChild(unlockNote);
 
   // --- kayıtlı tarifler
-  const kayitliKap = el("div", "atolye-kayitli");
-  pano.appendChild(kayitliKap);
+  const savedBox = hand("div", "atolye-kayitli");
+  pano.appendChild(savedBox);
 
   // --- butonlar
-  const sira = el("div", "btn-sira");
-  const kaydetBtn = el("button", "btn") as HTMLButtonElement;
-  kaydetBtn.textContent = y(S.menuyeEkle);
-  kaydetBtn.onclick = () => {
-    if (kaydetBtn.disabled) return;
+  const sira = hand("div", "btn-sira");
+  const saveBtn = hand("button", "btn") as HTMLButtonElement;
+  saveBtn.textContent = y(S.menuyeEkle);
+  saveBtn.onclick = () => {
+    if (saveBtn.disabled) return;
     cb.kaydet({
       ad: taslak.ad.trim(),
-      hikaye: taslak.hikaye.trim(),
-      taban: taslak.taban,
-      ic: [...taslak.ic],
-      garnitur: taslak.garnitur,
-      gun,
+      story: taslak.story.trim(),
+      base: taslak.base,
+      filling: [...taslak.filling],
+      garnish: taslak.garnish,
+      day,
     });
   };
-  const kapatBtn = el("button", "btn ikincil") as HTMLButtonElement;
-  kapatBtn.textContent = y(S.kapat);
-  kapatBtn.onclick = () => cb.kapat();
-  sira.append(kapatBtn, kaydetBtn);
+  const closeBtn = hand("button", "btn ikincil") as HTMLButtonElement;
+  closeBtn.textContent = y(S.kapat);
+  closeBtn.onclick = () => cb.kapat();
+  sira.append(closeBtn, saveBtn);
   pano.appendChild(sira);
 
   perde.appendChild(pano);
 
-  function ciz() {
+  function render() {
     // taban seçimi
-    for (const b of tabanSira.children) {
-      b.classList.toggle("aktif", (b as HTMLElement).dataset.id === taslak.taban);
+    for (const b of baseRow.children) {
+      b.classList.toggle("aktif", (b as HTMLElement).dataset.id === taslak.base);
     }
 
     // iç malzemeler tabana göre
-    const secenekler = icSecenekleri(gun, taslak.taban, ekstraIstasyon);
-    icSira.innerHTML = "";
+    const secenekler = fillingOptions(day, taslak.base, extraStations);
+    fillingRow.innerHTML = "";
     if (secenekler.length === 0) {
-      const bos = el("p", "alt kucuk");
+      const bos = hand("p", "alt kucuk");
       bos.textContent = y(S.malzemeYok);
-      icSira.appendChild(bos);
+      fillingRow.appendChild(bos);
     }
-    for (const { malzeme: mid, kilitli } of secenekler) {
-      const secili = taslak.ic.includes(mid);
-      const dolu = !secili && taslak.ic.length >= IC_LIMIT;
-      const b = el("button", `secim kucuk${secili ? " aktif" : ""}${kilitli ? " kilitli" : ""}`) as HTMLButtonElement;
+    for (const { ingredient: mid, kilitli } of secenekler) {
+      const secili = taslak.filling.includes(mid);
+      const dolu = !secili && taslak.filling.length >= FILLING_LIMIT;
+      const b = hand("button", `secim kucuk${secili ? " aktif" : ""}${kilitli ? " kilitli" : ""}`) as HTMLButtonElement;
       b.disabled = dolu;
       if (kilitli) b.title = y(S.kilitliMalzeme);
-      b.innerHTML = `${sanat(MALZEMELER[mid].ikon, 22)}<b>${y(MALZEMELER[mid].ad)}</b>${kilitli ? `<span class="kilit">${sanat("ui_kilit", 12)}</span>` : ""}`;
+      b.innerHTML = `${art(INGREDIENTS[mid].icon, 22)}<b>${y(INGREDIENTS[mid].ad)}</b>${kilitli ? `<span class="kilit">${art("ui_kilit", 12)}</span>` : ""}`;
       b.onclick = () => {
-        if (secili) taslak.ic = taslak.ic.filter((x) => x !== mid);
-        else if (taslak.ic.length < IC_LIMIT) taslak.ic.push(mid);
-        ciz();
+        if (secili) taslak.filling = taslak.filling.filter((x) => x !== mid);
+        else if (taslak.filling.length < FILLING_LIMIT) taslak.filling.push(mid);
+        render();
       };
-      icSira.appendChild(b);
+      fillingRow.appendChild(b);
     }
 
-    for (const b of garSira.children) {
-      const id = (b as HTMLElement).dataset.id as GarniturId;
-      const secili = taslak.garnitur.includes(id);
+    for (const b of garnishRow.children) {
+      const id = (b as HTMLElement).dataset.id as GarnishId;
+      const secili = taslak.garnish.includes(id);
       b.classList.toggle("aktif", secili);
-      (b as HTMLButtonElement).disabled = !secili && taslak.garnitur.length >= GARNITUR_LIMIT;
+      (b as HTMLButtonElement).disabled = !secili && taslak.garnish.length >= GARNISH_LIMIT;
     }
 
     // önizleme
-    const gerek = tarifGerek(taslak);
-    const kalp = tarifKalp(taslak);
-    gorsel.innerHTML = taslak.ic.length
-      ? `<svg class="sv" viewBox="0 0 48 48" width="96" height="96">${tarifCizim(taslak)}</svg>`
+    const needs = recipeNeeds(taslak);
+    const hearts = recipeHearts(taslak);
+    gorsel.innerHTML = taslak.filling.length
+      ? `<svg class="sv" viewBox="0 0 48 48" width="96" height="96">${recipeArt(taslak)}</svg>`
       : `<span class="atolye-bos">?</span>`;
     bilgi.innerHTML =
       `<b>${taslak.ad.trim() || y(S.isimsizTarif)}</b>` +
-      `<div class="atolye-gerek">${gerek.map((g2) => `<span class="cip">${sanat(MALZEMELER[g2].ikon, 18)}<span>${y(MALZEMELER[g2].ad)}</span></span>`).join("")}</div>` +
-      `<div class="atolye-deger">${sanat("ui_kalp", 16)}<span>${bicim(S.kalpBirimi, { n: kalp })}</span> · ${y(TABAN_MAP[taslak.taban].ad)}</div>`;
+      `<div class="atolye-gerek">${needs.map((g2) => `<span class="cip">${art(INGREDIENTS[g2].icon, 18)}<span>${y(INGREDIENTS[g2].ad)}</span></span>`).join("")}</div>` +
+      `<div class="atolye-deger">${art("ui_kalp", 16)}<span>${format(S.kalpBirimi, { n: hearts })}</span> · ${y(BASE_MAP[taslak.base].ad)}</div>`;
 
     // kayıtlı liste
     const liste = hepsi();
@@ -202,7 +202,7 @@ export function atolyePaneli(
       for (const t of liste) {
         const kart = el("div", "kayitli-kart");
         kart.innerHTML =
-          `<svg class="sv" viewBox="0 0 48 48" width="34" height="34">${tarifCizim(t)}</svg>` +
+          `<svg class="sv" viewBox="0 0 48 48" width="34" height="34">${recipeArt(t)}</svg>` +
           `<span>${t.ad}</span>`;
         const sil = el("button", "kayitli-sil") as HTMLButtonElement;
         sil.textContent = "×";
@@ -217,7 +217,7 @@ export function atolyePaneli(
     // kaydet durumu
     const acilacak = tarifinAcacagiIstasyonlar(taslak, gun, ekstraIstasyon);
     acilacakBilgi.innerHTML = acilacak.length
-      ? `${sanat("ui_kilit", 13)}<span>${bicim(S.istasyonAcilacak, { n: acilacak.length })}</span>`
+      ? `${art("ui_kilit", 13)}<span>${format(S.istasyonAcilacak, { n: acilacak.length })}</span>`
       : "";
     acilacakBilgi.style.display = acilacak.length ? "" : "none";
 

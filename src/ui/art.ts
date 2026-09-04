@@ -1,5 +1,5 @@
-import type { Avatar, SacAksesuarId, YuzAksesuarId } from "../core/avatar";
-import { ONLUKLER, SACLAR, SAC_RENKLERI, TENLER, UNIFORMALAR } from "../core/avatar";
+import type { Avatar, HairAccessoryId, FaceAccessoryId } from "../core/avatar";
+import { APRON_COLORS, HAIR_STYLES, HAIR_COLORS, SKIN_TONES, OUTFIT_COLORS } from "../core/avatar";
 
 /**
  * Tsuki Suşi — el çizimi SVG ikon seti.
@@ -14,7 +14,7 @@ const R = {
   somon: "#FFAD93",
   somonKoyu: "#EC8768",
   somonCizgi: "#FFF1EA",
-  ton: "#F896A4",
+  tone: "#F896A4",
   tonKoyu: "#DC7484",
   tonCizgi: "#FFE3E6",
   avokado: "#86C77C",
@@ -29,7 +29,7 @@ const R = {
   ahsap: "#E3C3A5",
   ahsapKoyu: "#C8A78F",
   ahsapAcik: "#F1DCC6",
-  kalp: "#F5849B",
+  hearts: "#F5849B",
   zencefil: "#F7CBC2",
   wasabi: "#C7EA92",
   lavanta: "#CDC0EE",
@@ -59,7 +59,7 @@ const R = {
 } as const;
 
 /** nigiri: pirinç yastığı + üstünde balık */
-const nigiri = (ust: string, ustKoyu: string) => `
+const nigiriArt = (ust: string, ustKoyu: string) => `
   <ellipse cx="24" cy="33" rx="15.5" ry="7.5" fill="${R.pirincGolge}"/>
   <ellipse cx="24" cy="31.5" rx="15.5" ry="7.5" fill="${R.pirinc}"/>
   <path d="M9.5 28.5c0-5.6 6.5-9.8 14.5-9.8s14.5 4.2 14.5 9.8c0 2.1-1.6 3.4-3.9 3.4H13.4c-2.3 0-3.9-1.3-3.9-3.4z" fill="${ustKoyu}"/>
@@ -75,7 +75,7 @@ const maki = (ic: string, icKoyu: string) => `
   <circle cx="24" cy="23.2" r="12.6" fill="${R.pirincGolge}"/>
   <circle cx="24" cy="22.6" r="12.6" fill="${R.pirinc}"/>
   <circle cx="24" cy="23" r="6.2" fill="${icKoyu}"/>
-  <circle cx="24" cy="22.4" r="6.2" fill="${ic}"/>
+  <circle cx="24" cy="22.4" r="6.2" fill="${filling}"/>
   <circle cx="18.5" cy="17.5" r="1.1" fill="${R.pirincGolge}"/>
   <circle cx="30" cy="18.5" r="1" fill="${R.pirincGolge}"/>
   <circle cx="20" cy="29" r="1" fill="${R.pirincGolge}"/>`;
@@ -122,7 +122,7 @@ const CIZIM: Record<string, string> = {
 
   dilim_ton: `
     <path d="M11 31c0-7.4 8-14.4 18-14.4 5.2 0 8 2.2 8 5.4 0 7.4-8 14.4-18 14.4-5.2 0-8-2.2-8-5.4z" fill="${R.tonKoyu}"/>
-    <path d="M11 29.8c0-7.4 8-14.4 18-14.4 5.2 0 8 2.2 8 5.4 0 7.4-8 14.4-18 14.4-5.2 0-8-2.2-8-5.4z" fill="${R.ton}"/>
+    <path d="M11 29.8c0-7.4 8-14.4 18-14.4 5.2 0 8 2.2 8 5.4 0 7.4-8 14.4-18 14.4-5.2 0-8-2.2-8-5.4z" fill="${R.tone}"/>
     <path d="M15 31c3.8-4.4 8.6-8.2 13.8-10.6M17.6 35c3.8-4.4 8.6-8.2 13.8-10.6" stroke="${R.tonCizgi}" stroke-width="1.9" stroke-linecap="round" fill="none"/>`,
 
   dilim_avokado: `
@@ -166,7 +166,7 @@ const CIZIM: Record<string, string> = {
     <path d="M30.5 25.2l7.6-9.8" stroke="#DCE3EA" stroke-width="2.2" stroke-linecap="round"/>`),
 
   ist_kesim_ton: tahta(`
-    <path d="M12 24.4c0-4.6 5.4-9.4 12-9.4 3.4 0 5.4 1.4 5.4 3.6 0 4.6-5.4 9.4-12 9.4-3.4 0-5.4-1.4-5.4-3.6z" fill="${R.ton}"/>
+    <path d="M12 24.4c0-4.6 5.4-9.4 12-9.4 3.4 0 5.4 1.4 5.4 3.6 0 4.6-5.4 9.4-12 9.4-3.4 0-5.4-1.4-5.4-3.6z" fill="${R.tone}"/>
     <path d="M15 24.6c2.6-3 5.8-5.6 9.2-7M17 27.4c2.6-3 5.8-5.6 9.2-7" stroke="${R.tonCizgi}" stroke-width="1.7" stroke-linecap="round" fill="none"/>
     <path d="M30 26l9-11.5" stroke="${R.ahsapKoyu}" stroke-width="3.4" stroke-linecap="round"/>
     <path d="M30.5 25.2l7.6-9.8" stroke="#DCE3EA" stroke-width="2.2" stroke-linecap="round"/>`),
@@ -649,7 +649,7 @@ const CIZIM: Record<string, string> = {
     <path d="M19.8 33.4h3.4l-.7 8.8a2.6 2.6 0 0 1-2.3-2.2z" fill="#8A6A4E"/>`,
 
   // ---------------------------------------------------------- ruh hali
-  ruh_mutlu: `<path d="M24 40S6 29 6 18.4A9.4 9.4 0 0 1 24 14a9.4 9.4 0 0 1 18 4.4C42 29 24 40 24 40z" fill="${R.kalp}"/>`,
+  ruh_mutlu: `<path d="M24 40S6 29 6 18.4A9.4 9.4 0 0 1 24 14a9.4 9.4 0 0 1 18 4.4C42 29 24 40 24 40z" fill="${R.hearts}"/>`,
   ruh_iyi: `<circle cx="24" cy="24" r="18" fill="${R.avokadoOrta}"/><circle cx="18" cy="21" r="2.4" fill="#4E6B47"/><circle cx="30" cy="21" r="2.4" fill="#4E6B47"/><path d="M17 29c3.4 3.4 10.6 3.4 14 0" stroke="#4E6B47" stroke-width="2.6" stroke-linecap="round" fill="none"/>`,
   ruh_notr: `<circle cx="24" cy="24" r="18" fill="${R.tamago}"/><circle cx="18" cy="21" r="2.4" fill="#8A6C36"/><circle cx="30" cy="21" r="2.4" fill="#8A6C36"/><path d="M18 30h12" stroke="#8A6C36" stroke-width="2.6" stroke-linecap="round"/>`,
   ruh_uykulu: `<circle cx="24" cy="24" r="18" fill="${R.lavanta}"/><path d="M14 22c2-2 5-2 7 0M27 22c2-2 5-2 7 0" stroke="#5E5178" stroke-width="2.4" stroke-linecap="round" fill="none"/><path d="M18 32h8l-8 6h8" stroke="#5E5178" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" fill="none"/>`,
@@ -671,7 +671,7 @@ const CIZIM: Record<string, string> = {
     <ellipse cx="29.4" cy="15.4" rx="1.7" ry="1.2" fill="#FFC9D4" opacity=".6"/>
     <path d="M11 22.6h5.4v2H11z" fill="#F6D3BC"/>
     <path d="M31.6 22.6H37v2h-5.4z" fill="#F6D3BC"/>`,
-  ui_kalp: `<path d="M24 40S6 29 6 18.4A9.4 9.4 0 0 1 24 14a9.4 9.4 0 0 1 18 4.4C42 29 24 40 24 40z" fill="${R.kalp}"/>`,
+  ui_kalp: `<path d="M24 40S6 29 6 18.4A9.4 9.4 0 0 1 24 14a9.4 9.4 0 0 1 18 4.4C42 29 24 40 24 40z" fill="${R.hearts}"/>`,
   ui_fener: `
     <path d="M24 4v4.4" stroke="${R.ahsapKoyu}" stroke-width="2" stroke-linecap="round"/>
     <rect x="15" y="7.6" width="18" height="3.6" rx="1.8" fill="${R.ahsapKoyu}"/>
@@ -802,7 +802,7 @@ export const IC_EN_FAZLA = 4;
 /** Özel tarif çizimi: taban + iç renkler + garnitürler.
  *  İç malzemeler yan yana değil, gerçek bir suşi gibi ÜST ÜSTE katmanlanır. */
 export function ozelTarifCizim(
-  taban: "nigiri" | "maki" | "gunkan",
+  taban: "nigiriArt" | "makiArt" | "gunkan",
   renkler: [string, string][],
   garniturler: string[],
 ): string {
@@ -810,7 +810,7 @@ export function ozelTarifCizim(
   let govde: string;
   let garniturY: number;
 
-  if (taban === "nigiri") {
+  if (taban === "nigiriArt") {
     // Pirinç yastığı en altta, malzemeler üstüne tek tek istifleniyor.
     govde = `
       <ellipse cx="24" cy="35" rx="15.5" ry="7" fill="${R.pirincGolge}"/>
@@ -826,17 +826,17 @@ export function ozelTarifCizim(
       const egim = i === 0 ? 0 : i % 2 ? 2.2 : -2.2;
       govde += `<g transform="rotate(${egim} 24 ${y.toFixed(1)})">
         <path d="M${x.toFixed(1)} ${(y + 4.6).toFixed(1)}a${(genislik / 2).toFixed(1)} 5.2 0 0 1 ${genislik.toFixed(1)} 0z" fill="${koyu}"/>
-        <path d="M${x.toFixed(1)} ${(y + 4).toFixed(1)}a${(genislik / 2).toFixed(1)} 5 0 0 1 ${genislik.toFixed(1)} 0z" fill="${renk}"/>
+        <path d="M${x.toFixed(1)} ${(y + 4).toFixed(1)}a${(genislik / 2).toFixed(1)} 5 0 0 1 ${genislik.toFixed(1)} 0z" fill="${color}"/>
         <path d="M${(x + 3).toFixed(1)} ${(y + 1.8).toFixed(1)}q${(genislik / 3).toFixed(1)} -2.4 ${(genislik / 1.9).toFixed(1)} -.6" stroke="#fff" stroke-opacity=".45" stroke-width="1.4" stroke-linecap="round" fill="none"/>
       </g>`;
     });
     garniturY = Math.max(7, 29.5 - (katmanlar.length - 1) * kat - 3.4);
-  } else if (taban === "maki") {
+  } else if (taban === "makiArt") {
     // Kesitte iç içe halkalar: her malzeme bir katman.
     const merkez = katmanlar
       .map(([renk], i) => {
         const r = (6.6 * (katmanlar.length - i)) / katmanlar.length;
-        return `<circle cx="24" cy="22.6" r="${r.toFixed(2)}" fill="${renk}"/>`;
+        return `<circle cx="24" cy="22.6" r="${r.toFixed(2)}" fill="${color}"/>`;
       })
       .join("");
     govde = `
@@ -857,7 +857,7 @@ export function ozelTarifCizim(
       const cy = 18.4 - i * kat;
       const rx = 11.6 - i * 1.3;
       dolgu += `<ellipse cx="24" cy="${(cy + 0.7).toFixed(1)}" rx="${rx.toFixed(1)}" ry="4.2" fill="${koyu}"/>
-        <ellipse cx="24" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}" ry="4.2" fill="${renk}"/>`;
+        <ellipse cx="24" cy="${cy.toFixed(1)}" rx="${rx.toFixed(1)}" ry="4.2" fill="${color}"/>`;
     });
     govde = `
       <ellipse cx="24" cy="36" rx="14" ry="5" fill="${R.pirincGolge}"/>
@@ -874,7 +874,7 @@ export function ozelTarifCizim(
     .map((g, i) => {
       const yer = yerler[i];
       if (!yer) return "";
-      return `<g transform="translate(${yer.x.toFixed(2)} ${yer.y.toFixed(1)}) scale(${yer.olcek})">${GARNITUR_MOTIF[g]}</g>`;
+      return `<g transform="translate(${spot.x.toFixed(2)} ${spot.y.toFixed(1)}) scale(${spot.olcek})">${GARNITUR_MOTIF[g]}</g>`;
     })
     .join("");
 
@@ -1006,11 +1006,11 @@ export function garsonCizim(a: Avatar): string {
 
   const kollar = kadin
     ? `<path d="M14.6 25h3.6v10.6h-3.6zM29.8 25h3.6v10.6h-3.6z" fill="${uni}"/>
-       <circle cx="16.4" cy="36.4" r="2.3" fill="${ten}"/>
-       <circle cx="31.6" cy="36.4" r="2.3" fill="${ten}"/>`
+       <circle cx="16.4" cy="36.4" r="2.3" fill="${skin}"/>
+       <circle cx="31.6" cy="36.4" r="2.3" fill="${skin}"/>`
     : `<path d="M11.8 24.6h4.6v11.4h-4.6zM31.6 24.6h4.6v11.4h-4.6z" fill="${uni}"/>
-       <circle cx="14.1" cy="36.8" r="2.7" fill="${ten}"/>
-       <circle cx="33.9" cy="36.8" r="2.7" fill="${ten}"/>`;
+       <circle cx="14.1" cy="36.8" r="2.7" fill="${skin}"/>
+       <circle cx="33.9" cy="36.8" r="2.7" fill="${skin}"/>`;
 
   const onluk = kadin
     ? `<path d="M20 26.2h8l2.6 14.8H17.4z" fill="${onlukRenk}"/>`
@@ -1018,8 +1018,8 @@ export function garsonCizim(a: Avatar): string {
 
   // Yüz: kadın oval, erkek daha köşeli çene.
   const bas = kadin
-    ? `<circle cx="24" cy="14" r="8.4" fill="${ten}"/>`
-    : `<path d="M15.4 12.2c0-4.9 3.7-8.2 8.6-8.2s8.6 3.3 8.6 8.2v3.2c0 4.6-3.7 7.6-8.6 7.6s-8.6-3-8.6-7.6z" fill="${ten}"/>`;
+    ? `<circle cx="24" cy="14" r="8.4" fill="${skin}"/>`
+    : `<path d="M15.4 12.2c0-4.9 3.7-8.2 8.6-8.2s8.6 3.3 8.6 8.2v3.2c0 4.6-3.7 7.6-8.6 7.6s-8.6-3-8.6-7.6z" fill="${skin}"/>`;
 
   const kaslar = kadin
     ? `<path d="M17.8 12.5q2.3-1.3 4.4-.2" stroke="${sc}" stroke-width="1" stroke-linecap="round" fill="none" opacity=".7"/>
@@ -1046,10 +1046,10 @@ export function garsonCizim(a: Avatar): string {
     ${kollar}
     ${onluk}
     <path d="M20.4 24.4h7.2l-1 2.6h-5.2z" fill="${onlukRenk}"/>
-    <rect x="21.6" y="20.2" width="4.8" height="4.4" rx="1.6" fill="${ten}"/>
+    <rect x="21.6" y="20.2" width="4.8" height="4.4" rx="1.6" fill="${skin}"/>
     ${bas}
-    <ellipse cx="15.7" cy="15" rx="1.5" ry="2" fill="${ten}"/>
-    <ellipse cx="32.3" cy="15" rx="1.5" ry="2" fill="${ten}"/>
+    <ellipse cx="15.7" cy="15" rx="1.5" ry="2" fill="${skin}"/>
+    <ellipse cx="32.3" cy="15" rx="1.5" ry="2" fill="${skin}"/>
     ${SAC_ON[sacId]?.(sc) ?? ""}
     ${kaslar}
     ${gozler}
