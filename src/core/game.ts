@@ -49,7 +49,7 @@ export function newGame(
     players.push({
       id: i as PlayerId,
       // Ad avatardan gelir: el kartında ve garsonun altında aynı isim görünsün.
-      ad: (i === 0 && avatar ? avatar.ad : undefined) ?? PLAYER_NAMES[i] ?? `Player ${i + 1}`,
+      name: (i === 0 && avatar ? avatar.name : undefined) ?? PLAYER_NAMES[i] ?? `Player ${i + 1}`,
       color: PLAYER_COLORS[i] ?? "#888",
       avatar: i === 0 && avatar ? avatar : defaultAvatar(i),
       hand: null,
@@ -119,8 +119,8 @@ export function moodMultiplier(m: Guest): number {
 
 export function moodArt(m: Guest): string {
   const r = m.waited / m.patience;
-  if (m.state === "mutlu") return "ruh_mutlu";
-  if (m.state === "gidiyor") return "ruh_giden";
+  if (m.state === "happy") return "ruh_mutlu";
+  if (m.state === "leaving") return "ruh_giden";
   if (r < 1) return "ruh_iyi";
   if (r < 1.6) return "ruh_notr";
   return "ruh_uykulu";
@@ -168,7 +168,7 @@ function spawnGuest(s: GameState, seat: number): Guest {
     tray: [],
     waited: 0,
     patience: karakter.patience * warmthMultiplier(s.decor),
-    state: "bekliyor",
+    state: "pending",
     line: greeting,
     lineTimer: 3,
   };
@@ -232,12 +232,12 @@ function tick(s: GameState, dt: number): GameEvent[] {
       m.lineTimer -= dt;
       if (m.lineTimer <= 0) m.line = null;
     }
-    if (m.state === "bekliyor") {
+    if (m.state === "pending") {
       m.waited += dt;
       // Yumuşak baskı: ceza yok, sadece çok uzarsa misafir tatlılıkla kalkar.
       if (m.waited > m.patience * 2.4) {
         const k = CHARACTER_MAP[m.characterId];
-        m.state = "gidiyor";
+        m.state = "leaving";
         m.line = k?.farewell ?? m2("Some other time.", "Başka zaman.");
         m.lineTimer = 2.5;
         s.stats.leftEarly += 1;
@@ -252,7 +252,7 @@ function tick(s: GameState, dt: number): GameEvent[] {
   }
 
   // Repliği bitmiş mutlu/giden misafirler koltuğu boşaltır.
-  s.guests = s.guests.filter((m) => m.state === "bekliyor" || m.line !== null);
+  s.guests = s.guests.filter((m) => m.state === "pending" || m.line !== null);
 
   // Servis botu: en sabırsız misafire düzenli aralıklarla ikram götürür.
   if (s.decor.some((d) => DECOR_MAP[d]?.effect === "bot")) {
@@ -260,7 +260,7 @@ function tick(s: GameState, dt: number): GameEvent[] {
     if (s.botTimer <= 0) {
       s.botTimer = BOT_INTERVAL;
       const target = s.guests
-        .filter((m) => m.state === "bekliyor" && m.waited > m.patience * 0.35)
+        .filter((m) => m.state === "pending" && m.waited > m.patience * 0.35)
         .sort((a, b) => b.waited / b.patience - a.waited / a.patience)[0];
       if (target) {
         target.waited = Math.max(0, target.waited - target.patience * BOT_EFFECT);
@@ -391,7 +391,7 @@ function matInteract(s: GameState, oyuncu: Player): GameEvent[] {
 
 function trayInteract(s: GameState, oyuncu: Player, guestId: string): GameEvent[] {
   const m = s.guests.find((x) => x.id === guestId);
-  if (!m || m.state !== "bekliyor") return [];
+  if (!m || m.state !== "pending") return [];
 
   if (oyuncu.hand) {
     // İkram siparişin parçası değil: tepsiye girmez, misafirin keyfini tazeler.
@@ -421,7 +421,7 @@ function trayInteract(s: GameState, oyuncu: Player, guestId: string): GameEvent[
 
 function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] {
   const m = s.guests.find((x) => x.id === guestId);
-  if (!m || m.state !== "bekliyor") return [];
+  if (!m || m.state !== "pending") return [];
 
   const needs = orderIngredients(m.order);
   const tray = m.tray.map((t) => t.ingredient);
@@ -456,7 +456,7 @@ function served(s: GameState, playerId: PlayerId, guestId: string): GameEvent[] 
   const perfect = fazla.length === 0 && ruh >= 1.2;
   if (perfect) s.stats.perfect += 1;
 
-  m.state = "mutlu";
+  m.state = "happy";
   m.tray = [];
   if (karakter) {
     const hikayeSatiri = karakter.story[Math.min(karakter.story.length - 1, s.day - 1)];
@@ -505,12 +505,12 @@ export function unlockStations(s: GameState, istasyonlar: StationId[]) {
 }
 
 /** Online oyunda odaya katılan için yeni oyuncu açar. Dolu ise null. */
-export function addPlayer(s: GameState, ad?: string, avatar?: Avatar): PlayerId | null {
+export function addPlayer(s: GameState, name?: string, avatar?: Avatar): PlayerId | null {
   if (s.players.length >= 4) return null;
   const id = s.players.length as PlayerId;
   s.players.push({
     id,
-    ad: avatar?.ad || ad?.slice(0, 12) || PLAYER_NAMES[id] || `Player ${id + 1}`,
+    name: avatar?.name || name?.slice(0, 12) || PLAYER_NAMES[id] || `Player ${id + 1}`,
     color: PLAYER_COLORS[id] ?? "#888",
     avatar: avatar ?? defaultAvatar(id),
     hand: null,
@@ -524,7 +524,7 @@ export function setAvatar(s: GameState, id: PlayerId, avatar: Avatar) {
   const o = s.players.find((x) => x.id === id);
   if (!o) return;
   o.avatar = avatar;
-  o.ad = avatar.ad;
+  o.name = avatar.name;
 }
 
 /** Ayrılan oyuncuyu çıkarır; elindeki malzeme kaybolur, kalan indeksler korunur. */

@@ -29,7 +29,7 @@ export type GarnishId =
 
 export interface Base {
   id: BaseId;
-  ad: Localized;
+  name: Localized;
   description: Localized;
   hearts: number;
   /** İç malzeme dışındaki sabit gereksinimler. */
@@ -41,7 +41,7 @@ export interface Base {
 export const BASES: Base[] = [
   {
     id: "nigiri",
-    ad: m("Nigiri", "Nigiri"),
+    name: m("Nigiri", "Nigiri"),
     description: m("A rice pillow with a topping.", "Pirinç yastığı, üstünde iç malzeme."),
     hearts: 3,
     basics: ["pirinc"],
@@ -49,7 +49,7 @@ export const BASES: Base[] = [
   },
   {
     id: "maki",
-    ad: m("Maki", "Maki"),
+    name: m("Maki", "Maki"),
     description: m("Rolled on the mat. Needs maki rolled beforehand.", "Sarma matında rulo. Matta sarılmış maki ister."),
     hearts: 6,
     basics: [],
@@ -57,7 +57,7 @@ export const BASES: Base[] = [
   },
   {
     id: "gunkan",
-    ad: m("Gunkan", "Gunkan"),
+    name: m("Gunkan", "Gunkan"),
     description: m("A nori boat, filled up.", "Nori kayığı, içi dolu."),
     hearts: 6,
     basics: ["pirinc", "nori"],
@@ -69,14 +69,14 @@ export const BASE_MAP: Record<BaseId, Base> = Object.fromEntries(
   BASES.map((t) => [t.id, t]),
 ) as Record<BaseId, Base>;
 
-export const GARNISHES: { id: GarnishId; ad: Localized; hearts: number }[] = [
-  { id: "susam", ad: m("Sesame", "Susam"), hearts: 1 },
-  { id: "siyah_susam", ad: m("Black sesame", "Siyah susam"), hearts: 1 },
-  { id: "yesil_sogan", ad: m("Spring onion", "Yeşil soğan"), hearts: 1 },
-  { id: "wasabi", ad: m("Wasabi", "Wasabi"), hearts: 1 },
-  { id: "limon", ad: m("Lemon", "Limon"), hearts: 1 },
-  { id: "nori_serit", ad: m("Nori strip", "Nori şeridi"), hearts: 2 },
-  { id: "ikura", ad: m("Ikura beads", "İkura taneleri"), hearts: 2 },
+export const GARNISHES: { id: GarnishId; name: Localized; hearts: number }[] = [
+  { id: "susam", name: m("Sesame", "Susam"), hearts: 1 },
+  { id: "siyah_susam", name: m("Black sesame", "Siyah susam"), hearts: 1 },
+  { id: "yesil_sogan", name: m("Spring onion", "Yeşil soğan"), hearts: 1 },
+  { id: "wasabi", name: m("Wasabi", "Wasabi"), hearts: 1 },
+  { id: "limon", name: m("Lemon", "Limon"), hearts: 1 },
+  { id: "nori_serit", name: m("Nori strip", "Nori şeridi"), hearts: 2 },
+  { id: "ikura", name: m("Ikura beads", "İkura taneleri"), hearts: 2 },
 ];
 
 /** Görselde dört garnitür yuvası var; seçim onunla sınırlı. */
@@ -86,7 +86,7 @@ export const FILLING_LIMIT = 4;
 
 export interface CustomRecipe {
   id: string;
-  ad: string;
+  name: string;
   story: string;
   base: BaseId;
   filling: IngredientId[];
@@ -120,7 +120,7 @@ export function applyRecipe(t: CustomRecipe) {
   const artId = `ozel_${t.id}`;
   addArt(artId, recipeArt(t));
   registerDish(t.id, {
-    ad: m(t.ad, t.ad),
+    name: m(t.name, t.name),
     icon: artId,
     needs: recipeNeeds(t),
     hearts: recipeHearts(t),
@@ -177,11 +177,11 @@ export function loadRecipes() {
 
 /** Bir malzemenin insan okunur adı (panelde kullanılıyor). */
 export function ingredientName(id: IngredientId): string {
-  return y(INGREDIENTS[id].ad);
+  return y(INGREDIENTS[id].name);
 }
 
-export function recipeNameTaken(ad: string): boolean {
-  return Object.values(DISHES).some((v) => y(v.ad).toLowerCase() === ad.trim().toLowerCase());
+export function recipeNameTaken(name: string): boolean {
+  return Object.values(DISHES).some((v) => y(v.name).toLowerCase() === name.trim().toLowerCase());
 }
 
 

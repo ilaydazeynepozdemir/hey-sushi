@@ -3,12 +3,12 @@
  * yürütür (host-authoritative). Bu yüzden burada oyun mantığı yok — sadece
  * bağlantı, kimlik ve mesaj taşıma.
  */
-export type NetRole = "kapali" | "host" | "misafir";
+export type NetRole = "off" | "host" | "misafir";
 
 export interface RoomCallbacks {
   onState(veri: unknown): void;
   onAction(playerId: number, veri: unknown): void;
-  onMemberJoined(id: number, ad: string): void;
+  onMemberJoined(id: number, name: string): void;
   onMemberLeft(id: number): void;
   onClosed(sebep: string): void;
   onError(onMessage: string): void;
@@ -22,7 +22,7 @@ const VARSAYILAN_URL =
   `${location.protocol === "https:" ? "wss" : "ws"}://${location.hostname}:5181`;
 
 export class Oda {
-  role: NetRole = "kapali";
+  role: NetRole = "off";
   code = "";
   /** Bu istemcinin oyuncu indeksi (host = 0). */
   myPlayerId = 0;
@@ -61,8 +61,8 @@ export class Oda {
       };
       ws.onclose = () => {
         this.ws = null;
-        if (this.role !== "kapali") {
-          this.role = "kapali";
+        if (this.role !== "off") {
+          this.role = "off";
           this.code = "";
           this.members.clear();
           this.events.onClosed("bağlantı koptu");
@@ -93,8 +93,8 @@ export class Oda {
         this.events.onChanged();
         break;
       case "uye_girdi":
-        this.members.set(Number(m.id), String(m.ad));
-        this.events.onMemberJoined(Number(m.id), String(m.ad));
+        this.members.set(Number(m.id), String(m.name));
+        this.events.onMemberJoined(Number(m.id), String(m.name));
         this.events.onChanged();
         break;
       case "uye_cikti":
@@ -110,7 +110,7 @@ export class Oda {
         break;
       }
       case "oda_kapandi":
-        this.role = "kapali";
+        this.role = "off";
         this.code = "";
         this.members.clear();
         this.events.onClosed(String(m.sebep ?? "oda kapandı"));
@@ -132,10 +132,10 @@ export class Oda {
     }
   }
 
-  async join(code: string, ad: string): Promise<void> {
+  async join(code: string, name: string): Promise<void> {
     try {
       const ws = await this.ctxOf();
-      ws.send(JSON.stringify({ t: "katil", code: code.trim().toUpperCase(), ad }));
+      ws.send(JSON.stringify({ t: "katil", code: code.trim().toUpperCase(), name }));
     } catch (e) {
       this.events.onError((e as Error).message);
       this.events.onChanged();
@@ -148,7 +148,7 @@ export class Oda {
   }
 
   leave() {
-    this.role = "kapali";
+    this.role = "off";
     this.code = "";
     this.members.clear();
     this.ws?.close();

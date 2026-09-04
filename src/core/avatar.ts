@@ -11,7 +11,7 @@ export type AvatarKind = "kadin" | "erkek";
 
 export interface Avatar {
   /** Garsonun üstünde görünen ad. */
-  ad: string;
+  name: string;
   kind: AvatarKind;
   skin: number;
   /** Saç modeli ve rengi ayrı seçilir. */
@@ -55,42 +55,42 @@ export const APRON_COLORS = ["#FFFDF7", "#FDF0DC", "#DFF0E4", "#FFE3E8", "#E6E9F
 
 export interface HairStyle {
   id: string;
-  ad: Localized;
+  name: Localized;
   /** Sadece bu tipte öneriliyor; ikisi de seçebilir. */
   onerilen?: AvatarKind;
 }
 
 export const HAIR_STYLES: HairStyle[] = [
-  { id: "topuz", ad: m("Bun", "Topuz"), onerilen: "kadin" },
-  { id: "ikiz_topuz", ad: m("Twin buns", "İkiz topuz"), onerilen: "kadin" },
-  { id: "uzun", ad: m("Long", "Uzun"), onerilen: "kadin" },
-  { id: "at_kuyrugu", ad: m("Ponytail", "At kuyruğu") },
-  { id: "kisa", ad: m("Short", "Kısa"), onerilen: "erkek" },
-  { id: "dagitik", ad: m("Messy", "Dağınık"), onerilen: "erkek" },
+  { id: "topuz", name: m("Bun", "Topuz"), onerilen: "kadin" },
+  { id: "ikiz_topuz", name: m("Twin buns", "İkiz topuz"), onerilen: "kadin" },
+  { id: "uzun", name: m("Long", "Uzun"), onerilen: "kadin" },
+  { id: "at_kuyrugu", name: m("Ponytail", "At kuyruğu") },
+  { id: "kisa", name: m("Short", "Kısa"), onerilen: "erkek" },
+  { id: "dagitik", name: m("Messy", "Dağınık"), onerilen: "erkek" },
 ];
 
-export const HAIR_ACCESSORIES: { id: HairAccessoryId; ad: Localized }[] = [
-  { id: "yok", ad: m("None", "Yok") },
-  { id: "chopstick", ad: m("Hair stick", "Saç çubuğu") },
-  { id: "cift_chopstick", ad: m("Double stick", "Çift çubuk") },
-  { id: "bandana", ad: m("Bandana", "Bandana") },
-  { id: "cicek", ad: m("Flower", "Çiçek") },
-  { id: "kedi_toka", ad: m("Cat clip", "Kedi tokası") },
-  { id: "kurdele", ad: m("Ribbon", "Kurdele") },
+export const HAIR_ACCESSORIES: { id: HairAccessoryId; name: Localized }[] = [
+  { id: "yok", name: m("None", "Yok") },
+  { id: "chopstick", name: m("Hair stick", "Saç çubuğu") },
+  { id: "cift_chopstick", name: m("Double stick", "Çift çubuk") },
+  { id: "bandana", name: m("Bandana", "Bandana") },
+  { id: "cicek", name: m("Flower", "Çiçek") },
+  { id: "kedi_toka", name: m("Cat clip", "Kedi tokası") },
+  { id: "kurdele", name: m("Ribbon", "Kurdele") },
 ];
 
-export const FACE_ACCESSORIES: { id: FaceAccessoryId; ad: Localized }[] = [
-  { id: "yok", ad: m("None", "Yok") },
-  { id: "gozluk", ad: m("Glasses", "Gözlük") },
-  { id: "yuvarlak_gozluk", ad: m("Round", "Yuvarlak") },
-  { id: "cil", ad: m("Freckles", "Çil") },
+export const FACE_ACCESSORIES: { id: FaceAccessoryId; name: Localized }[] = [
+  { id: "yok", name: m("None", "Yok") },
+  { id: "gozluk", name: m("Glasses", "Gözlük") },
+  { id: "yuvarlak_gozluk", name: m("Round", "Yuvarlak") },
+  { id: "cil", name: m("Freckles", "Çil") },
 ];
 
 const DEPO = "tsuki.avatar";
 
 export function defaultAvatar(sira = 0): Avatar {
   return {
-    ad: sira === 0 ? "Chef" : `Server ${sira + 1}`,
+    name: sira === 0 ? "Chef" : `Server ${sira + 1}`,
     kind: "kadin",
     skin: 1,
     hair: 0,
@@ -115,7 +115,7 @@ function normalize(a: Partial<Avatar> & { aksesuar?: string }, sira = 0): Avatar
   const yuzAks = a.faceAccessory ?? eskiYuz ?? (eskiVar ? "yok" : undefined);
 
   return {
-    ad: (typeof a.ad === "string" && a.ad.trim().slice(0, 14)) || v.ad,
+    name: (typeof a.name === "string" && a.name.trim().slice(0, 14)) || v.name,
     kind: a.kind === "erkek" ? "erkek" : "kadin",
     skin: clampIndex(a.skin, SKIN_TONES.length, v.skin),
     hair: clampIndex(a.hair, HAIR_STYLES.length, v.hair),

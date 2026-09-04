@@ -51,9 +51,9 @@ function eksikler(m: Guest): IngredientId[] {
   return eksik;
 }
 
-function ad(m: Guest): string {
+function guestName(m: Guest): string {
   const k = CHARACTER_MAP[m.characterId];
-  return k ? y(k.ad) : y(S.ipucuKontrol);
+  return k ? y(k.name) : y(S.ipucuKontrol);
 }
 
 export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
@@ -62,7 +62,7 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
   if (!oyuncu) return null;
 
   const bekleyen = s.guests
-    .filter((m) => m.state === "bekliyor")
+    .filter((m) => m.state === "pending")
     .sort((a, b) => b.waited / b.patience - a.waited / a.patience);
 
   if (bekleyen.length === 0) {
@@ -72,12 +72,12 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
   // 1) Elinde bir şey varsa: nereye ait?
   if (oyuncu.hand) {
     const hand = oyuncu.hand;
-    const isim = y(INGREDIENTS[hand].ad);
+    const isim = y(INGREDIENTS[hand].name);
 
     const isteyen = bekleyen.find((m) => eksikler(m).includes(hand));
     if (isteyen) {
       return {
-        text: format(S.ipucuBirak, { ingredient: isim, ad: ad(isteyen) }),
+        text: format(S.ipucuBirak, { ingredient: isim, name: guestName(isteyen) }),
         target: `misafir:${isteyen.id}`,
       };
     }
@@ -104,12 +104,12 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
   if (sikilan && STATION_MAP.ikram) {
     if (oyuncu.hand === "ikram") {
       return {
-        text: format(S.ipucuBirak, { ingredient: y(INGREDIENTS.ikram.ad), ad: ad(sikilan) }),
+        text: format(S.ipucuBirak, { ingredient: y(INGREDIENTS.ikram.name), name: guestName(sikilan) }),
         target: `misafir:${sikilan.id}`,
       };
     }
     if (!oyuncu.hand) {
-      return { text: format(S.ipucuIkram, { ad: ad(sikilan) }), target: "ikram" };
+      return { text: format(S.ipucuIkram, { name: guestName(sikilan) }), target: "ikram" };
     }
   }
 
@@ -122,7 +122,7 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
   );
   if (hazir) {
     return {
-      text: format(S.ipucuServis, { ad: ad(hazir) }),
+      text: format(S.ipucuServis, { name: guestName(hazir) }),
       target: `misafir:${hazir.id}`,
       served: true,
     };
@@ -152,12 +152,12 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
       }
       const sirada: IngredientId = !varNori ? "nori" : !varPirinc ? "pirinc" : filling;
       const ist = INGREDIENT_STATION[sirada];
-      const dishName = y(dish(m.order.find((yy) => dish(yy).needs.includes(ilk)) ?? m.order[0]!).ad);
+      const dishName = y(dish(m.order.find((yy) => dish(yy).needs.includes(ilk)) ?? m.order[0]!).name);
       return {
         text: format(S.ipucuUret, {
           dish: dishName,
-          ingredient: y(INGREDIENTS[sirada].ad),
-          istasyon: ist ? y(STATION_MAP[ist].ad) : "",
+          ingredient: y(INGREDIENTS[sirada].name),
+          station: ist ? y(STATION_MAP[ist].name) : "",
         }),
         target: ist ?? null,
       };
@@ -169,9 +169,9 @@ export function nextHint(s: GameState, playerId: PlayerId): Hint | null {
       const kalan = ib.taps - (s.progress[ist] ?? 0);
       return {
         text: format(S.ipucuUretKisi, {
-          ad: ad(m),
-          ingredient: y(INGREDIENTS[ilk].ad),
-          istasyon: y(ib.ad),
+          name: guestName(m),
+          ingredient: y(INGREDIENTS[ilk].name),
+          station: y(ib.name),
           n: kalan,
         }),
         target: ist,

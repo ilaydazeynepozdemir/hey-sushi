@@ -1,17 +1,24 @@
 name: iOS
 
-# macOS koşucusunda derler — yerelde Xcode kurulu olmasına gerek yok.
-# ios/ klasörü depoda yoksa burada üretilir (Capacitor projesi web'den doğar).
+# macOS koşucusunda derler ve doğrudan TestFlight'a yükler.
+# Yerelde Xcode kurulu olmasına gerek yok.
 #
 # Gerekli depo sırları (Settings → Secrets and variables → Actions):
-#   APPLE_TEAM_ID              Apple Developer takım kimliği (10 karakter)
-#   ASC_KEY_ID                 App Store Connect API anahtar kimliği
-#   ASC_ISSUER_ID              App Store Connect issuer kimliği
-#   ASC_PRIVATE_KEY            .p8 anahtarının içeriği (BEGIN/END satırları dahil)
-# Bu sırlar yoksa iş imzasız derleme yapar: kodun bozulmadığını doğrular,
-# TestFlight'a yükleyemez.
+#   APPLE_TEAM_ID    Apple Developer takım kimliği (10 karakter)
+#   ASC_KEY_ID       App Store Connect API anahtar kimliği
+#   ASC_ISSUER_ID    App Store Connect issuer kimliği
+#   ASC_PRIVATE_KEY  .p8 anahtarının içeriği (BEGIN/END satırları dahil)
+#
+# Sırlar yoksa iş imzasız derleme yapar: kodun bozulmadığını doğrular,
+# yükleme yapmaz.
+
 on:
   workflow_dispatch:
+    inputs:
+      testflight:
+        description: "TestFlight'a yükle (kapalıysa yalnız .ipa üretilir)"
+        type: boolean
+        default: true
   push:
     tags: ["v*"]
 
@@ -24,6 +31,9 @@ jobs:
       ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
       ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
       ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+      # App Store Connect her yüklemede FARKLI build numarası ister.
+      # Koşu numarası bunu kendiliğinden garanti eder.
+      BUILD_NO: ${{ github.run_number }}
     steps:
       - uses: actions/checkout@v4
 
@@ -34,6 +44,10 @@ jobs:
 
       - name: Bağımlılıklar
         run: npm ci
+
+      - name: Sürümü oku
+        id: surum
+        run: echo "v=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
 
       - name: Web derlemesi
         run: npm run build
@@ -52,7 +66,7 @@ jobs:
       - name: İmzasız doğrulama derlemesi
         if: env.ASC_KEY_ID == ''
         run: |
-          echo "İmza sırları yok → yalnızca derleme doğrulaması yapılıyor."
+          echo "::warning::İmza sırları yok → yalnızca derleme doğrulaması yapılıyor."
           cd ios/App && xcodebuild \
             -workspace App.xcworkspace -scheme App \
             -configuration Release -sdk iphoneos \
@@ -62,33 +76,61 @@ jobs:
         if: env.ASC_KEY_ID != ''
         run: |
           mkdir -p ~/private_keys
-          echo "$ASC_PRIVATE_KEY" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          printf '%s' "$ASC_PRIVATE_KEY" > ~/private_keys/AuthKey_$ASC_KEY_ID.p8
+          chmod 600 ~/private_keys/AuthKey_$ASC_KEY_ID.p8
 
-      - name: Arşiv ve dışa aktarım
+      - name: Arşivle
         if: env.ASC_KEY_ID != ''
-        env:
-          TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
           cd ios/App
           xcodebuild -workspace App.xcworkspace -scheme App \
-            -configuration Release -sdk iphoneos -archivePath build/App.xcarchive \
-            DEVELOPMENT_TEAM="$TEAM_ID" \
+            -configuration Release -sdk iphoneos \
+            -archivePath build/App.xcarchive \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            MARKETING_VERSION="${{ steps.surum.outputs.v }}" \
+            CURRENT_PROJECT_VERSION="$BUILD_NO" \
             -allowProvisioningUpdates \
             -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             archive
 
+      - name: TestFlight'a yükle
+        if: env.ASC_KEY_ID != '' && (github.event_name == 'push' || inputs.testflight)
+        run: |
+          cd ios/App
+          # destination=upload → xcodebuild doğrudan App Store Connect'e gönderir
           cat > ExportOptions.plist <<PLIST
           <?xml version="1.0" encoding="UTF-8"?>
           <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
           <plist version="1.0"><dict>
             <key>method</key><string>app-store-connect</string>
-            <key>teamID</key><string>$TEAM_ID</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>destination</key><string>upload</string>
+            <key>uploadSymbols</key><true/>
+          </dict></plist>
+          PLIST
+          xcodebuild -exportArchive -archivePath build/App.xcarchive \
+            -exportOptionsPlist ExportOptions.plist -exportPath build/upload \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath ~/private_keys/AuthKey_$ASC_KEY_ID.p8 \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "::notice::Build $BUILD_NO yüklendi. App Store Connect → TestFlight sekmesinde işlenmesini bekleyin (5-15 dk)."
+
+      - name: .ipa üret (yükleme kapalıysa)
+        if: env.ASC_KEY_ID != '' && github.event_name == 'workflow_dispatch' && !inputs.testflight
+        run: |
+          cd ios/App
+          cat > ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0"><dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
             <key>destination</key><string>export</string>
           </dict></plist>
           PLIST
-
           xcodebuild -exportArchive -archivePath build/App.xcarchive \
             -exportOptionsPlist ExportOptions.plist -exportPath build/ipa \
             -allowProvisioningUpdates \
@@ -97,7 +139,7 @@ jobs:
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
 
       - uses: actions/upload-artifact@v4
-        if: env.ASC_KEY_ID != ''
+        if: env.ASC_KEY_ID != '' && github.event_name == 'workflow_dispatch' && !inputs.testflight
         with:
           name: hey-sushi-ipa
           path: ios/App/build/ipa/*.ipa

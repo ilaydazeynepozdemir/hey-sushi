@@ -60,7 +60,7 @@ export function m(en: string, tr: string): Localized {
   return { en, tr };
 }
 
-/** `{ad}` gibi yer tutucuları doldurur. */
+/** `{name}` gibi yer tutucuları doldurur. */
 export function format(text: Localized | string, degerler: Record<string, string | number>): string {
   return y(text).replace(/\{(\w+)\}/g, (_, anahtar: string) =>
     String(degerler[anahtar] ?? `{${anahtar}}`),
@@ -78,7 +78,7 @@ export const S = {
 
   // salon
   bosMasa: m("empty table", "boş masa"),
-  tray: m("tray", "tepsi"),
+  tray: m("tray", "tray"),
   onServe: m("Serve", "Servis Et"),
   siparisEksik: m("The order isn't complete yet — they'll wait.", "Sipariş henüz tamam değil — misafir bekliyor."),
   birlikte: m("together!", "birlikte!"),
@@ -116,7 +116,7 @@ export const S = {
   langSection: m("Language", "Dil"),
 
   // gün sonu
-  gunKapandi: m("Day {gun} is over", "Gün {gun} kapandı"),
+  gunKapandi: m("Day {day} is over", "Gün {day} kapandı"),
   gunSonuAlt: m(
     "You wiped the counter and dimmed the lanterns. Not a bad day.",
     "Tezgâhı sildin, fenerleri söndürdün. Fena bir gün değildi.",
@@ -160,7 +160,7 @@ export const S = {
   ),
   kilitliMalzeme: m("Not unlocked yet — saving this recipe opens its station", "Henüz açılmadı — bu tarifi kaydedince istasyonu açılır"),
   istasyonAcilacak: m("{n} new station will open on your counter", "Tezgâhına {n} yeni istasyon eklenecek"),
-  menuyeEklendi: m('"{ad}" added to the menu', '"{ad}" menüye eklendi'),
+  menuyeEklendi: m('"{name}" added to the menu', '"{name}" menüye eklendi'),
   menudenKaldir: m("Remove from menu", "Menüden kaldır"),
   kapat: m("Close", "Kapat"),
   vazgec: m("Cancel", "Vazgeç"),
@@ -184,29 +184,29 @@ export const S = {
   onlukRengi: m("Apron colour", "Önlük rengi"),
   sacAksesuari: m("Hair accessory", "Saç aksesuarı"),
   yuzAksesuari: m("Face accessory", "Yüz aksesuarı"),
-  merhaba: m("Hi {ad}", "Merhaba {ad}"),
+  merhaba: m("Hi {name}", "Merhaba {name}"),
 
   // rehber cümleleri
   ipucuSakin: m(
     "The counter is quiet. Another guest will come along soon.",
     "Tezgâh sakin. Biraz sonra yeni bir misafir gelecek.",
   ),
-  ipucuBirak: m("{malzeme} is ready — drop it on {ad}'s tray.", "{malzeme} hazır — {ad}'in tepsisine bırak."),
-  ipucuMat: m("Put the {malzeme} on the rolling mat.", "{malzeme}'i sarma matına koy."),
+  ipucuBirak: m("{ingredient} is ready — drop it on {name}'s tray.", "{ingredient} hazır — {name}'in tepsisine bırak."),
+  ipucuMat: m("Put the {ingredient} on the rolling mat.", "{ingredient}'i sarma matına koy."),
   ipucuGereksiz: m(
-    "{malzeme} isn't needed right now — you can compost it.",
-    "{malzeme} şu an gerekmiyor — komposta bırakabilirsin.",
+    "{ingredient} isn't needed right now — you can compost it.",
+    "{ingredient} şu an gerekmiyor — komposta bırakabilirsin.",
   ),
-  ipucuServis: m("{ad}'s order is complete — hit Serve!", "{ad}'in siparişi tamam — Servis Et'e bas!"),
+  ipucuServis: m("{name}'s order is complete — hit Serve!", "{name}'in siparişi tamam — Servis Et'e bas!"),
   ipucuMakiAl: m("Take the rolled maki off the mat.", "Sarılan makiyi mattan al."),
   ipucuMatSar: m("The mat is ready — tap {n} times to roll.", "Mat hazır — sarmak için {n} kez dokun."),
   ipucuUret: m(
-    "{yemek} needs {malzeme} — tap the {istasyon} station.",
-    "{yemek} için {malzeme} lazım — {istasyon} istasyonuna dokun.",
+    "{dish} needs {ingredient} — tap the {station} station.",
+    "{dish} için {ingredient} lazım — {station} istasyonuna dokun.",
   ),
   ipucuUretKisi: m(
-    "{ad} needs {malzeme} — tap the {istasyon} station {n} times.",
-    "{ad} için {malzeme} lazım — {istasyon} istasyonuna {n} kez dokun.",
+    "{name} needs {ingredient} — tap the {station} station {n} times.",
+    "{name} için {ingredient} lazım — {station} istasyonuna {n} kez dokun.",
   ),
   ipucuKontrol: m("Check the orders.", "Siparişleri kontrol et."),
 
@@ -226,7 +226,7 @@ export const S = {
   efektler: m("Sound effects", "Ses efektleri"),
   kaydetCik: m("Save & Quit", "Kaydet ve Çık"),
   keyif: m("Mood", "Keyif"),
-  ipucuIkram: m("{ad} is getting restless — a welcome drink would help.", "{ad} sıkılmaya başladı — bir ikram iyi gelir."),
+  ipucuIkram: m("{name} is getting restless — a welcome drink would help.", "{name} sıkılmaya başladı — bir ikram iyi gelir."),
   cikisBaslik: m("Save & Quit", "Kaydet ve Çık"),
   cikisAlt: m("Your progress is saved. The counter will be waiting.", "İlerlemen kaydedildi. Tezgâh seni bekliyor olacak."),
   toplamKalp: m("Total hearts", "Toplam kalp"),
@@ -235,7 +235,7 @@ export const S = {
   ozelTarifler: m("Your recipes", "Kendi tariflerin"),
   cikisOnay: m("Save & Quit", "Kaydet ve Çık"),
   kaydedildi: m("Saved", "Kaydedildi"),
-  devamEt: m("Continue — Day {gun}", "Devam et — Gün {gun}"),
+  devamEt: m("Continue — Day {day}", "Devam et — Gün {day}"),
   yenidenBasla: m("Start over", "Yeniden başla"),
   guncellemeHazir: m("A new version is ready", "Yeni sürüm hazır"),
   guncelleSimdi: m("Update now", "Şimdi güncelle"),

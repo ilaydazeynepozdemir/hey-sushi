@@ -120,9 +120,9 @@ export class View {
     this.kok.innerHTML = "";
     this.sahne = new Sahne(this.kok);
 
-    const fenerler = hand("div", "fenerler");
+    const fenerler = hand("div", "lanterns");
     ([[8, 12], [72, 6], [30, 68], [88, 52], [52, 26]] as const).forEach(([x, y], i) => {
-      const f = hand("div", "fener");
+      const f = hand("div", "lantern");
       f.style.left = `${x}%`;
       f.style.top = `${y}%`;
       f.style.background = PASTEL_BLOBS[i % PASTEL_BLOBS.length]!;
@@ -131,22 +131,22 @@ export class View {
     });
     this.kok.appendChild(fenerler);
 
-    const ust = hand("div", "ust");
-    const marka = hand("div", "marka");
+    const ust = hand("div", "topbar");
+    const marka = hand("div", "brand");
     marka.innerHTML = `${art("ui_fener", 22)}<span>Hey <b>Sushi</b></span>`;
-    const day = hand("div", "rozet");
+    const day = hand("div", "badge");
     const hearts = hand("div", "rozet kalp");
-    const misafir = hand("div", "rozet misafir-rozet");
-    this.guideBtn = hand("button", "rehber-btn") as HTMLButtonElement;
+    const misafir = hand("div", "badge guest-badge");
+    this.guideBtn = hand("button", "guide-btn") as HTMLButtonElement;
     this.guideBtn.onclick = () => this.cb.onToggleGuide();
     // Sağ üstte dil değiştirici — girişte ve oyun sırasında hep erişilebilir.
-    this.langSwitch = hand("div", "dil-anahtar");
+    this.langSwitch = hand("div", "lang-switch");
     const langOptions: [LangCode, string][] = [
       ["en", "EN"],
       ["tr", "TR"],
     ];
     for (const [code, kisa] of langOptions) {
-      const b = hand("button", "dil-dugme") as HTMLButtonElement;
+      const b = hand("button", "lang-btn") as HTMLButtonElement;
       b.dataset.dil = code;
       b.textContent = kisa;
       b.onclick = () => {
@@ -157,37 +157,37 @@ export class View {
       this.langSwitch.appendChild(b);
     }
 
-    ust.append(marka, hand("div", "bosluk"), this.guideBtn, misafir, day, hearts);
+    ust.append(marka, hand("div", "spacer"), this.guideBtn, misafir, day, hearts);
     this.badges = { day, hearts, misafir };
     this.topBar = ust;
     this.kok.appendChild(ust);
     // Perdenin de üstünde dursun: giriş ekranında da erişilebilir olmalı.
-    this.musicBtn = hand("button", "yuvarlak-dugme") as HTMLButtonElement;
+    this.musicBtn = hand("button", "round-btn") as HTMLButtonElement;
     this.musicBtn.onclick = () => this.cb.onToggleMusic();
-    this.sfxBtn = hand("button", "yuvarlak-dugme") as HTMLButtonElement;
+    this.sfxBtn = hand("button", "round-btn") as HTMLButtonElement;
     this.sfxBtn.onclick = () => this.cb.onToggleSfx();
-    this.quitBtn = hand("button", "yuvarlak-dugme cikis") as HTMLButtonElement;
+    this.quitBtn = hand("button", "round-btn quit") as HTMLButtonElement;
     this.quitBtn.innerHTML = art("ui_cikis", 15);
     this.quitBtn.onclick = () => this.cb.onOpenQuit();
 
-    this.topRight = hand("div", "ust-sag");
+    this.topRight = hand("div", "top-right");
     this.topRight.append(this.quitBtn, this.musicBtn, this.sfxBtn, this.langSwitch);
     this.kok.appendChild(this.topRight);
 
-    this.salon = hand("div", "salon");
+    this.salon = hand("div", "dining");
     this.kok.appendChild(this.salon);
 
-    const sarma = hand("div", "tezgah-sarma");
+    const sarma = hand("div", "counter-wrap");
     this.counterWrap = sarma;
-    this.guideBar = hand("div", "rehber-bar");
-    this.tezgah = hand("div", "tezgah");
-    this.eller = hand("div", "eller");
+    this.guideBar = hand("div", "guide-bar");
+    this.tezgah = hand("div", "counter");
+    this.eller = hand("div", "hands");
     sarma.append(this.guideBar, this.tezgah, this.eller);
     this.kok.appendChild(sarma);
 
-    this.garsonKatman = hand("div", "garson-katman");
-    this.overlayHost = hand("div", "perde-kap");
-    this.dragLayer = hand("div", "surukle-katman");
+    this.garsonKatman = hand("div", "server-layer");
+    this.overlayHost = hand("div", "overlay-host");
+    this.dragLayer = hand("div", "drag-layer");
     this.kok.append(this.garsonKatman, this.overlayHost, this.dragLayer);
 
     // Yakalama aşaması: istasyonun kendi pointerdown'ından ÖNCE çalışmalı ki
@@ -223,7 +223,7 @@ export class View {
 
   startDrag(ingredient: IngredientId, x: number, y: number) {
     if (this.dragGhost) return;
-    const h = hand("div", "suruklenen");
+    const h = hand("div", "dragging");
     h.innerHTML = art(INGREDIENTS[ingredient].icon, 46);
     this.dragLayer.appendChild(h);
     this.dragGhost = h;
@@ -269,7 +269,7 @@ export class View {
   }
 
   render(s: GameState, g: ViewInput) {
-    this.myPlayer = g.net.role === "kapali" ? 0 : g.net.myPlayerId;
+    this.myPlayer = g.net.role === "off" ? 0 : g.net.myPlayerId;
     this.sahne.guncelle(seasonForDay(s.day), s.decor);
     this.badges.day.innerHTML = `${art("ui_takvim", 18)}<span>${y(S.day)}</span><b>${s.day}</b>`;
     this.badges.hearts.innerHTML = `${art("ui_kalp", 18)}<b>${s.hearts}</b>`;
@@ -308,7 +308,7 @@ export class View {
 
     while (this.salon.children.length > koltuklar.length) this.salon.lastElementChild?.remove();
     while (this.salon.children.length < koltuklar.length) {
-      this.salon.appendChild(hand("div", "koltuk bos"));
+      this.salon.appendChild(hand("div", "seat empty"));
     }
 
     koltuklar.forEach((m, i) => {
@@ -319,7 +319,7 @@ export class View {
           this.seatEls.delete(kap.dataset.mid);
           kap.dataset.mid = "";
         }
-        // dataset ile işaretle: "bos" sınıfı ilk oluşturmada zaten var olduğu için
+        // dataset ile işaretle: "empty" sınıfı ilk oluşturmada zaten var olduğu için
         // sınıfa bakmak içeriğin hiç basılmamasına yol açıyordu.
         if (kap.dataset.emptyBuilt !== "1") {
           kap.dataset.emptyBuilt = "1";
@@ -342,26 +342,26 @@ export class View {
   private buildGuestCard(kap: HTMLElement, m: Guest) {
     kap.className = "seat filled";
     const k = CHARACTER_MAP[m.characterId];
-    const balon = hand("div", "balon");
+    const balon = hand("div", "bubble");
     balon.style.display = "none";
-    const face = hand("div", "yuz");
-    const ad = hand("div", "ad");
-    ad.textContent = k ? y(k.ad) : "";
-    const order = hand("div", "siparis");
-    const patience = hand("div", "keyif");
-    const moodLabel = hand("span", "keyif-etiket");
+    const face = hand("div", "face");
+    const name = hand("div", "name");
+    name.textContent = k ? y(k.name) : "";
+    const order = hand("div", "order");
+    const patience = hand("div", "mood");
+    const moodLabel = hand("span", "mood-label");
     moodLabel.textContent = y(S.keyif);
-    const moodTrack = hand("div", "keyif-oluk");
+    const moodTrack = hand("div", "mood-track");
     moodTrack.appendChild(hand("i"));
     patience.append(moodLabel, moodTrack);
-    const tray = hand("div", "tepsi");
-    const btn = hand("button", "servis-btn") as HTMLButtonElement;
+    const tray = hand("div", "tray");
+    const btn = hand("button", "serve-btn") as HTMLButtonElement;
     btn.addEventListener("pointerdown", (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.cb.onServe(m.id);
     });
-    kap.append(balon, face, ad, order, patience, tray, btn);
+    kap.append(balon, face, name, order, patience, tray, btn);
     kap.dataset.drop = `misafir:${m.id}`;
     kap.addEventListener("pointerdown", (e) => {
       e.preventDefault();
@@ -370,8 +370,8 @@ export class View {
   }
 
   private updateGuestCard(kap: HTMLElement, m: Guest, g: ViewInput) {
-    kap.classList.toggle("happy", m.state === "mutlu");
-    kap.classList.toggle("leaving", m.state === "gidiyor");
+    kap.classList.toggle("happy", m.state === "happy");
+    kap.classList.toggle("leaving", m.state === "leaving");
     const secili = g.selectedTarget === `misafir:${m.id}`;
     kap.classList.toggle("selected", secili);
     if (secili) kap.style.setProperty("--secim-renk", g.selectionColor);
@@ -404,7 +404,7 @@ export class View {
         order.innerHTML = m.order
           .map(
             (yid, i) =>
-              `<div class="chip${state[i] ? " tamam" : ""}">${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>${state[i] ? art("ui_onay", 13) : ""}</div>`,
+              `<div class="chip${state[i] ? " tamam" : ""}">${art(dish(yid).icon, 20)}<span>${y(dish(yid).name)}</span>${state[i] ? art("ui_onay", 13) : ""}</div>`,
           )
           .join("");
       }
@@ -427,7 +427,7 @@ export class View {
       m.tray.forEach((p, i) => {
         let d = tray.children[i] as HTMLElement | undefined;
         if (!d) {
-          d = hand("div", "parca");
+          d = hand("div", "piece");
           tray.appendChild(d);
         }
         if (d.dataset.m !== p.ingredient) {
@@ -435,24 +435,24 @@ export class View {
           d.innerHTML = art(INGREDIENTS[p.ingredient].icon, 24);
         }
         const bekliyor = this.pendingPieces.get(m.id)?.has(i) ?? false;
-        d.className = `parca p${p.placedBy + 1}${bekliyor ? " bekliyor" : ""}`;
+        d.className = `parca p${p.placedBy + 1}${bekliyor ? "pending" : ""}`;
       });
       tray.classList.toggle("empty", m.tray.length === 0);
       tray.dataset.etiket = y(S.tray);
     }
 
     if (btn instanceof HTMLButtonElement) {
-      const hazir = m.state === "bekliyor" && readyToServe(m.order, trayItems);
-      btn.disabled = m.state !== "bekliyor" || m.tray.length === 0;
+      const hazir = m.state === "pending" && readyToServe(m.order, trayItems);
+      btn.disabled = m.state !== "pending" || m.tray.length === 0;
       btn.classList.toggle("ready", hazir);
       btn.classList.toggle("guide-target", !!(rehberBurada && g.hint?.served));
-      const imza = m.state === "mutlu" ? "mutlu" : hazir ? "hazir" : "bos";
+      const imza = m.state === "happy" ? "happy" : hazir ? "ready" : "empty";
       if (btn.dataset.imza !== imza + y(S.onServe)) {
         btn.dataset.imza = imza + y(S.onServe);
         btn.innerHTML =
-          imza === "mutlu"
+          imza === "happy"
             ? art("ui_kalp", 18)
-            : imza === "hazir"
+            : imza === "ready"
               ? `<span>${y(S.onServe)}</span>${art("ui_onay", 15)}`
               : `<span>${y(S.onServe)}</span>`;
       }
@@ -468,19 +468,19 @@ export class View {
     this.tezgah.innerHTML = "";
     this.stationEls.clear();
     for (const ist of stationsForDay(day, ekstra)) {
-      const d = hand("div", ist.id === "mat" ? "istasyon mat" : "istasyon");
+      const d = hand("div", ist.id === "mat" ? "istasyon mat" : "station");
       d.dataset.t = ist.id;
-      const icon = hand("div", "ikon");
+      const icon = hand("div", "icon");
       icon.innerHTML = art(ist.icon, ist.id === "mat" ? 34 : 32);
-      const etiket = hand("div", "etiket");
-      etiket.textContent = y(ist.ad);
+      const etiket = hand("div", "label");
+      etiket.textContent = y(ist.name);
       d.append(icon, etiket);
       if (ist.id === "mat") {
-        const slotlar = hand("div", "mat-slotlar");
+        const slotlar = hand("div", "mat-slots");
         for (let i = 0; i < 3; i++) slotlar.appendChild(hand("div", "mat-slot"));
         d.appendChild(slotlar);
       }
-      const progress = hand("div", "ilerleme");
+      const progress = hand("div", "progress");
       progress.style.width = "0%";
       d.appendChild(progress);
       if (ist.id === "mat" || ist.id === "atik") d.dataset.drop = ist.id;
@@ -529,10 +529,10 @@ export class View {
     s.players.forEach((o, i) => {
       let kart = this.eller.children[i] as HTMLElement | undefined;
       if (!kart) {
-        kart = hand("div", "el-kart");
-        const kutu = hand("div", "el-kutu");
-        const bilgi = hand("div", "el-bilgi");
-        bilgi.append(hand("div", "el-ad"), hand("div", "el-icerik"), hand("div", "el-tus"));
+        kart = hand("div", "hand-card");
+        const kutu = hand("div", "hand-slot");
+        const bilgi = hand("div", "hand-info");
+        bilgi.append(hand("div", "hand-name"), hand("div", "hand-content"), hand("div", "hand-keys"));
         kart.append(kutu, bilgi);
         this.eller.appendChild(kart);
       }
@@ -555,8 +555,8 @@ export class View {
         kutu.dataset.m = anahtar;
         kutu.innerHTML = o.hand ? art(INGREDIENTS[o.hand].icon, 28) : `<span class="empty-hand">·</span>`;
       }
-      (bilgi.children[0] as HTMLElement).textContent = o.ad;
-      (bilgi.children[1] as HTMLElement).textContent = o.hand ? y(INGREDIENTS[o.hand].ad) : "";
+      (bilgi.children[0] as HTMLElement).textContent = o.name;
+      (bilgi.children[1] as HTMLElement).textContent = o.hand ? y(INGREDIENTS[o.hand].name) : "";
       (bilgi.children[2] as HTMLElement).textContent =
         s.players.length > 1 && i > 0 ? "← → · space · shift" : "";
     });
@@ -647,51 +647,51 @@ export class View {
   }
 
   private menuPanel(s: GameState, g: ViewInput): HTMLElement {
-    const perde = hand("div", "perde");
+    const perde = hand("div", "overlay");
     const pano = hand("div", "pano dikey");
 
     const h1 = hand("h1");
     h1.innerHTML = s.day === 1 ? "Hey <span>Sushi</span>" : `${y(S.day)} <span>${s.day}</span>`;
-    const alt = hand("p", "alt bitisik");
+    const alt = hand("p", "sub tight");
     alt.textContent = y(s.day === 1 ? S.girisAlt : S.gunAlt);
     pano.append(h1, alt);
 
     if (s.day === 1) {
-      const nasil = hand("div", "nasil");
+      const nasil = hand("div", "howto");
       const adimlar: [string, string, string][] = [
         ["ist_pirinc", y(S.adim1Baslik), y(S.adim1)],
         ["ui_tabak", y(S.adim2Baslik), y(S.adim2)],
         ["ui_kalp", y(S.adim3Baslik), y(S.adim3)],
       ];
       for (const [icon, baslik, text] of adimlar) {
-        const a = hand("div", "nasil-adim");
+        const a = hand("div", "howto-step");
         a.innerHTML = `<div class="howto-icon">${art(icon, 34)}</div><div><b>${baslik}</b><p>${text}</p></div>`;
         nasil.appendChild(a);
       }
       pano.appendChild(nasil);
 
-      const note = hand("p", "alt kucuk");
+      const note = hand("p", "sub small");
       note.innerHTML = y(S.kaybetmekYok);
       pano.appendChild(note);
     }
 
-    const menu = hand("div", "menu-satiri");
+    const menu = hand("div", "menu-row");
     for (const yid of menuForDay(s.day)) {
-      const c = hand("div", "cip");
-      c.innerHTML = `${art(dish(yid).icon, 20)}<span>${y(dish(yid).ad)}</span>`;
+      const c = hand("div", "chip");
+      c.innerHTML = `${art(dish(yid).icon, 20)}<span>${y(dish(yid).name)}</span>`;
       menu.appendChild(c);
     }
     pano.appendChild(menu);
 
     // Çevrimdışı mod seçimi — online odadayken anlamsız, gizleniyor.
-    if (FEATURES.coopYerel && g.net.role === "kapali") {
-      const mod = hand("div", "mod-secim");
+    if (FEATURES.coopYerel && g.net.role === "off") {
+      const mod = hand("div", "mode-select");
       mod.appendChild(sectionLabel("Kaç kişi?"));
       const kutu = hand("div", "segment");
-      const tek = hand("button", `segment-dugme${s.players.length === 1 ? " aktif" : ""}`) as HTMLButtonElement;
+      const tek = hand("button", `segment-dugme${s.players.length === 1 ? "active" : ""}`) as HTMLButtonElement;
       tek.textContent = "Tek kişi";
       tek.onclick = () => this.cb.onSetPlayerCount(1);
-      const cift = hand("button", `segment-dugme${s.players.length === 2 ? " aktif" : ""}`) as HTMLButtonElement;
+      const cift = hand("button", `segment-dugme${s.players.length === 2 ? "active" : ""}`) as HTMLButtonElement;
       cift.textContent = "İki kişi · aynı ekran";
       cift.onclick = () => this.cb.onSetPlayerCount(2);
       kutu.append(tek, cift);
@@ -701,11 +701,11 @@ export class View {
 
     if (FEATURES.coopOnline) pano.appendChild(this.roomSection(g));
 
-    const sideRow = hand("div", "pano-eylemler");
+    const sideRow = hand("div", "panel-actions");
     const serverBtn = hand("button", "btn ikincil") as HTMLButtonElement;
     serverBtn.innerHTML = `${serverSvg(s.players[0]?.avatar ?? defaultAvatar(), 26)}<span>${y(S.garsonun)}</span>`;
     serverBtn.onclick = () => this.cb.onOpenAvatar();
-    const actionRow = hand("div", "pano-eylemler");
+    const actionRow = hand("div", "panel-actions");
     const atolye = hand("button", "btn ikincil") as HTMLButtonElement;
     atolye.innerHTML = `${art("ui_parilti", 16)}<span>${y(S.tarifAtolyesi)}</span>`;
     atolye.onclick = () => this.cb.onOpenWorkshop();
@@ -728,17 +728,17 @@ export class View {
   }
 
   private dayEndPanel(s: GameState): HTMLElement {
-    const perde = hand("div", "perde");
+    const perde = hand("div", "overlay");
     const pano = hand("div", "pano dikey");
 
     const h2 = hand("h2");
     h2.innerHTML = `${art("ui_ay", 26)}<span>${format(S.gunKapandi, { day: s.day })}</span>`;
-    const alt = hand("p", "alt bitisik");
+    const alt = hand("p", "sub tight");
     alt.textContent = y(S.gunSonuAlt);
 
-    const satirlar = hand("div", "satirlar");
+    const satirlar = hand("div", "rows");
     const ekle = (etiket: string, deger: string, vurgu = false) => {
-      const r = hand("div", vurgu ? "satir vurgu" : "satir");
+      const r = hand("div", vurgu ? "row highlight" : "row");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
@@ -749,7 +749,7 @@ export class View {
     ekle(y(S.bugunKalp), `${art("ui_kalp", 16)} ${s.dayHearts}`, true);
     ekle(y(S.toplam), `${art("ui_kalp", 16)} ${s.hearts}`);
 
-    const eylemler = hand("div", "pano-eylemler tek");
+    const eylemler = hand("div", "panel-actions single");
     const btn = hand("button", "btn") as HTMLButtonElement;
     btn.innerHTML = `<span>${y(S.yarinaGec)}</span>${art("ui_ok", 18)}`;
     btn.onclick = () => this.cb.onNextDay();
@@ -762,17 +762,17 @@ export class View {
 
   /** Kaydet ve çık onayı — puanı da gösterir. */
   private quitPanel(s: GameState): HTMLElement {
-    const perde = hand("div", "perde");
+    const perde = hand("div", "overlay");
     const pano = hand("div", "pano dikey");
 
     const h2 = hand("h2");
     h2.innerHTML = `${art("ui_cikis", 24)}<span>${y(S.cikisBaslik)}</span>`;
-    const alt = hand("p", "alt bitisik");
+    const alt = hand("p", "sub tight");
     alt.textContent = y(S.cikisAlt);
 
-    const satirlar = hand("div", "satirlar");
+    const satirlar = hand("div", "rows");
     const ekle = (etiket: string, deger: string, vurgu = false) => {
-      const r = hand("div", vurgu ? "satir vurgu" : "satir");
+      const r = hand("div", vurgu ? "row highlight" : "row");
       r.innerHTML = `<span>${etiket}</span><b>${deger}</b>`;
       satirlar.appendChild(r);
     };
@@ -783,7 +783,7 @@ export class View {
     const customCount = customRecipeCount();
     if (customCount) ekle(y(S.ozelTarifler), String(customCount));
 
-    const eylemler = hand("div", "pano-eylemler");
+    const eylemler = hand("div", "panel-actions");
     const vazgec = hand("button", "btn ikincil") as HTMLButtonElement;
     vazgec.textContent = y(S.vazgec);
     vazgec.onclick = () => this.cb.onCloseQuit();
@@ -799,23 +799,23 @@ export class View {
 
   /** Menüdeki online oda bölümü. */
   private roomSection(g: ViewInput): HTMLElement {
-    const kap = hand("div", "oda-bolum");
+    const kap = hand("div", "room-section");
     const n = g.net;
 
-    if (n.role === "kapali") {
+    if (n.role === "off") {
       kap.appendChild(sectionLabel("Arkadaşınla oyna"));
-      const sira = hand("div", "oda-sira");
+      const sira = hand("div", "room-row");
 
       const create = hand("button", "btn ikincil") as HTMLButtonElement;
       create.textContent = n.connecting ? "Bağlanıyor…" : "Oda Kur";
       create.disabled = n.connecting;
       create.onclick = () => this.cb.onCreateRoom();
 
-      const ayirac = hand("span", "oda-ayirac");
+      const ayirac = hand("span", "room-or");
       ayirac.textContent = "ya da";
 
-      const grup = hand("div", "oda-katil-grup");
-      const giris = hand("input", "oda-kod") as HTMLInputElement;
+      const grup = hand("div", "room-join");
+      const giris = hand("input", "room-code") as HTMLInputElement;
       giris.placeholder = "KOD";
       giris.maxLength = 4;
       giris.oninput = () => {
@@ -835,19 +835,19 @@ export class View {
       kap.appendChild(sira);
 
       if (n.uyari) {
-        const u = hand("p", "alt kucuk oda-uyari");
+        const u = hand("p", "sub small room-warning");
         u.textContent = n.uyari;
         kap.appendChild(u);
       }
       return kap;
     }
 
-    const kutu = hand("div", "oda-kutu");
+    const kutu = hand("div", "room-box");
     const leftSide = hand("div");
     leftSide.innerHTML =
       `<div class="room-label">${n.role === "host" ? "Oda kodun" : "Odadasın"}</div>` +
       `<div class="room-code-big">${n.code}</div>`;
-    const rightSide = hand("div", "oda-sag");
+    const rightSide = hand("div", "room-right");
     const adlar = n.role === "host" ? ["Sen (ev sahibi)", ...n.members] : ["Sen", "ev sahibi"];
     rightSide.innerHTML = `<div class="room-players">${adlar.map((a) => `<span class="room-chip">${a}</span>`).join("")}</div>`;
     const leave = hand("button", "btn ikincil ufak") as HTMLButtonElement;
@@ -856,7 +856,7 @@ export class View {
     rightSide.appendChild(leave);
     kutu.append(leftSide, rightSide);
 
-    const hint = hand("p", "alt kucuk");
+    const hint = hand("p", "sub small");
     hint.textContent =
       n.role === "host"
         ? "Kodu arkadaşına ver. Aynı tepsiye ikiniz de malzeme koyarsanız birlikte bonusu kazanırsınız."
@@ -868,24 +868,24 @@ export class View {
 
   /** Gün sonu dükkânı: jetonla dekor al, misafirler daha sabırlı olsun. */
   private shopSection(s: GameState): HTMLElement {
-    const kap = hand("div", "dukkan");
-    const baslik = hand("div", "dukkan-baslik");
+    const kap = hand("div", "shop");
+    const baslik = hand("div", "shop-title");
     baslik.innerHTML = `<b>${y(S.shopSection)}</b><span class="coin">${art("ui_jeton", 16)}${s.coins}</span>`;
     kap.appendChild(baslik);
 
-    const note = hand("p", "alt kucuk");
+    const note = hand("p", "sub small");
     note.textContent = y(S.dukkanNot);
     kap.appendChild(note);
 
-    const izgara = hand("div", "dukkan-izgara");
+    const izgara = hand("div", "shop-grid");
     for (const d of DECOR_ITEMS) {
       const sahip = s.decor.includes(d.id);
       const alinabilir = !sahip && s.coins >= d.price;
-      const kart = hand("button", `decor-kart${sahip ? " sahip" : alinabilir ? "" : " pahali"}`) as HTMLButtonElement;
+      const kart = hand("button", `decor-kart${sahip ? "owned" : alinabilir ? "" : "unaffordable"}`) as HTMLButtonElement;
       kart.disabled = sahip || !alinabilir;
       kart.innerHTML =
         `<div class="decor-art">${art(d.icon, 40)}</div>` +
-        `<b>${y(d.ad)}</b>` +
+        `<b>${y(d.name)}</b>` +
         `<small>${y(d.description)}</small>` +
         `<span class="price">${sahip ? y(S.alindi) : `${art("ui_jeton", 13)}${d.price}`}</span>`;
       kart.onclick = () => this.cb.onBuyDecor(d.id);
@@ -922,7 +922,7 @@ export class View {
     if (!kap) return;
     const kutu = kap.getBoundingClientRect();
     const kok = this.kok.getBoundingClientRect();
-    const d = hand("div", "ucus");
+    const d = hand("div", "fly");
     d.innerHTML = `<span>${yazi}</span>${art(icon, 22)}`;
     d.style.left = `${kutu.left - kok.left + kutu.width / 2}px`;
     d.style.top = `${kutu.top - kok.top + 10}px`;
@@ -948,7 +948,7 @@ export class View {
     s.players.forEach((o, i) => {
       let e = this.servers.get(o.id);
       if (!e) {
-        e = hand("div", "garson");
+        e = hand("div", "server");
         e.innerHTML =
           `<div class="server-carry"></div>` +
           `<div class="server-body"></div>` +
@@ -965,7 +965,7 @@ export class View {
         const govde = e.querySelector<HTMLElement>(".server-body");
         if (govde) govde.innerHTML = serverSvg(o.avatar, 80);
         const adEl = e.querySelector<HTMLElement>(".server-name");
-        if (adEl) adEl.textContent = o.avatar.ad;
+        if (adEl) adEl.textContent = o.avatar.name;
       }
 
       const evX = kok.width / 2 + (i - (n - 1) / 2) * 96;
@@ -1075,7 +1075,7 @@ export class View {
 
   /** Teslim anında küçük bir ışıltı. */
   private sparkle(x: number, y: number, ingredient: IngredientId) {
-    const d = hand("div", "teslim-parlama");
+    const d = hand("div", "deliver-spark");
     d.innerHTML = art(INGREDIENTS[ingredient].icon, 26);
     d.style.left = `${x}px`;
     d.style.top = `${y}px`;
@@ -1096,7 +1096,7 @@ export class View {
     const bx = this.lastPointer.x || target.left + target.width / 2;
     const by = this.lastPointer.y || target.top;
 
-    const g = hand("div", "malzeme-ucus");
+    const g = hand("div", "ingredient-fly");
     g.innerHTML = art(INGREDIENTS[ingredient].icon, 34);
     g.style.left = `${bx - kok.left}px`;
     g.style.top = `${by - kok.top}px`;
@@ -1129,16 +1129,16 @@ export class View {
   burstAt(target: TargetId) {
     const d = this.stationEls.get(target);
     if (!d) return;
-    const halka = hand("div", "patlama");
+    const halka = hand("div", "burst");
     d.appendChild(halka);
     setTimeout(() => halka.remove(), 520);
   }
 
   /** OTA güncellemesi indirildiğinde alttan çıkan şerit. */
   askForUpdate(note: { en: string; tr: string } | undefined, secim: { simdi(): void; sonra(): void }) {
-    this.kok.querySelector(".guncelleme-serit")?.remove();
-    const d = hand("div", "guncelleme-serit");
-    const text = hand("div", "guncelleme-metin");
+    this.kok.querySelector(".update-bar")?.remove();
+    const d = hand("div", "update-bar");
+    const text = hand("div", "update-text");
     text.innerHTML = `<b>${y(S.guncellemeHazir)}</b>${note ? `<span>${y(note)}</span>` : ""}`;
     const sonra = hand("button", "btn ikincil ufak") as HTMLButtonElement;
     sonra.textContent = y(S.guncelleSonra);
@@ -1158,8 +1158,8 @@ export class View {
   }
 
   toast(onMessage: string | { en: string; tr: string }) {
-    this.kok.querySelector(".uyari")?.remove();
-    const d = hand("div", "uyari");
+    this.kok.querySelector(".toast")?.remove();
+    const d = hand("div", "toast");
     d.textContent = y(onMessage);
     this.kok.appendChild(d);
     setTimeout(() => d.remove(), 1500);
@@ -1179,7 +1179,7 @@ export class View {
 export function targetList(s: GameState): TargetId[] {
   const liste: TargetId[] = stationsForDay(s.day, s.extraStations).map((i) => i.id);
   const sirali = [...s.guests].sort((a, b) => a.seat - b.seat);
-  for (const m of sirali) if (m.state === "bekliyor") liste.push(`misafir:${m.id}`);
+  for (const m of sirali) if (m.state === "pending") liste.push(`misafir:${m.id}`);
   return liste;
 }
 
@@ -1187,10 +1187,10 @@ export function targetName(h: TargetId, s: GameState): string {
   if (h.startsWith("misafir:")) {
     const m = s.guests.find((x) => x.id === h.slice(8));
     const k = m ? CHARACTER_MAP[m.characterId] : undefined;
-    return k ? y(k.ad) : "";
+    return k ? y(k.name) : "";
   }
   const ib = STATION_MAP[h as keyof typeof STATION_MAP];
-  return ib ? y(ib.ad) : h;
+  return ib ? y(ib.name) : h;
 }
 
 /** Menüdeki oyuncu yapımı tarif sayısı. */

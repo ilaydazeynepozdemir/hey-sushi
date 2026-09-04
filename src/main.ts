@@ -114,13 +114,13 @@ const oda = new Oda({
     broadcast(true);
     render();
   },
-  onMemberJoined(id, ad) {
-    const oyuncu = addPlayer(state, ad);
+  onMemberJoined(id, name) {
+    const oyuncu = addPlayer(state, name);
     if (oyuncu === null) return;
     memberToPlayer.set(id, oyuncu);
     oda.send({ t: "kimlik", myPlayerId: oyuncu, tarifler: tumTarifler() }, id);
     broadcast(true);
-    arayuz.toast(`${state.players[oyuncu]?.ad ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
+    arayuz.toast(`${state.players[oyuncu]?.name ?? "?"} ${y({ en: "joined the room", tr: "odaya katıldı" })}`);
     arayuz.invalidateOverlay();
     render();
   },
@@ -239,7 +239,7 @@ const arayuz = new View(kok, {
       setAvatar(state, myId(), a);
       broadcast(true);
     }
-    arayuz.toast(format(S.merhaba, { ad: a.ad }));
+    arayuz.toast(format(S.merhaba, { name: a.name }));
     arayuz.invalidateOverlay();
     render();
   },
@@ -260,7 +260,7 @@ const arayuz = new View(kok, {
     const tam = addRecipe(t);
     workshopOpen = false;
     if (oda.role === "host") oda.send({ t: "kimlik", myPlayerId: -1, tarifler: [tam] });
-    arayuz.toast(format(S.menuyeEklendi, { ad: t.ad }));
+    arayuz.toast(format(S.menuyeEklendi, { name: t.name }));
     arayuz.invalidateOverlay();
     render();
   },
@@ -275,7 +275,7 @@ const arayuz = new View(kok, {
     render();
   },
   onSetPlayerCount(n) {
-    if (oda.role !== "kapali") return;
+    if (oda.role !== "off") return;
     const kaydedilen = { day: state.day, hearts: state.hearts, coins: state.coins, decor: state.decor };
     state = newGame(n, undefined, myAvatar);
     Object.assign(state, kaydedilen);
@@ -291,7 +291,7 @@ const arayuz = new View(kok, {
   },
   onJoinRoom(code: string) {
     netWarning = "";
-    void oda.join(code, myAvatar.ad);
+    void oda.join(code, myAvatar.name);
   },
   onLeaveRoom() {
     oda.leave();
@@ -305,12 +305,12 @@ const arayuz = new View(kok, {
 
 /** Bu istemcinin sürdüğü oyuncu — çevrimdışıyken hep 0 (fare). */
 function myId(): PlayerId {
-  return oda.role === "kapali" ? 0 : myPlayerId;
+  return oda.role === "off" ? 0 : myPlayerId;
 }
 
 /** Klavye: çevrimdışı iki kişilikte 2. oyuncu, diğer hâllerde kendi oyuncun. */
 function keyboardPlayer(): PlayerId {
-  if (oda.role !== "kapali") return myPlayerId;
+  if (oda.role !== "off") return myPlayerId;
   return (state.players.length - 1) as PlayerId;
 }
 
@@ -410,7 +410,7 @@ function render() {
   const liste = targetList(state);
   if (secim >= liste.length) secim = Math.max(0, liste.length - 1);
   const kbPlayer = state.players[keyboardPlayer()];
-  const multiplayer = state.players.length > 1 || oda.role !== "kapali";
+  const multiplayer = state.players.length > 1 || oda.role !== "off";
   arayuz.render(state, {
     selectedTarget: multiplayer || keyboardActive ? (liste[secim] ?? null) : null,
     selectionColor: kbPlayer?.color ?? "#ffb9a3",

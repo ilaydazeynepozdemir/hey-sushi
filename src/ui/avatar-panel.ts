@@ -20,27 +20,27 @@ export interface AvatarCallbacks {
 export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement {
   const a: Avatar = { ...baslangic };
 
-  const perde = hand("div", "perde");
-  const pano = hand("div", "pano atolye-pano");
+  const perde = hand("div", "overlay");
+  const pano = hand("div", "panel workshop-panel");
 
   const baslik = hand("h2");
   baslik.innerHTML = `<span>${y(S.avatarBaslik)}</span>`;
-  const alt = hand("p", "alt");
+  const alt = hand("p", "sub");
   alt.textContent = y(S.avatarAlt);
   pano.append(baslik, alt);
 
-  const onizleme = hand("div", "avatar-onizleme");
+  const onizleme = hand("div", "avatar-preview");
   pano.appendChild(onizleme);
 
   // --- ad
   pano.appendChild(bolum(y(S.kullaniciAdi)));
-  const nameInput = hand("input", "atolye-giris") as HTMLInputElement;
+  const nameInput = hand("input", "workshop-input") as HTMLInputElement;
   nameInput.placeholder = y(S.adIpucu);
   nameInput.maxLength = 14;
   nameInput.autocomplete = "off";
-  nameInput.value = a.ad;
+  nameInput.value = a.name;
   nameInput.oninput = () => {
-    a.ad = nameInput.value;
+    a.name = nameInput.value;
     render();
   };
   pano.appendChild(nameInput);
@@ -52,10 +52,10 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
     ["kadin", y(S.kadin)],
     ["erkek", y(S.erkek)],
   ];
-  for (const [id, ad] of tipler) {
-    const b = hand("button", "segment-dugme") as HTMLButtonElement;
+  for (const [id, name] of tipler) {
+    const b = hand("button", "segment-btn") as HTMLButtonElement;
     b.dataset.kind = id;
-    b.textContent = ad;
+    b.textContent = name;
     b.onclick = () => {
       a.kind = id;
       render();
@@ -74,14 +74,14 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
   // --- saç stili (her biri kendi çizimiyle)
   pano.appendChild(bolum(y(S.sacBolum)));
-  const hairRow = hand("div", "avatar-izgara");
+  const hairRow = hand("div", "avatar-grid");
   HAIR_STYLES.forEach((stil, i) => {
-    const b = hand("button", "avatar-secim") as HTMLButtonElement;
+    const b = hand("button", "avatar-option") as HTMLButtonElement;
     b.dataset.i = String(i);
-    b.title = y(stil.ad);
-    b.appendChild(hand("div", "avatar-mini"));
+    b.title = y(stil.name);
+    b.appendChild(hand("div", "avatar-thumb"));
     const etiket = hand("span");
-    etiket.textContent = y(stil.ad);
+    etiket.textContent = y(stil.name);
     b.appendChild(etiket);
     b.onclick = () => {
       a.hair = i;
@@ -120,14 +120,14 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
   // --- saç aksesuarı (hepsi çizim önizlemeli)
   pano.appendChild(bolum(y(S.sacAksesuari)));
-  const hairAccRow = hand("div", "avatar-izgara");
+  const hairAccRow = hand("div", "avatar-grid");
   for (const aks of HAIR_ACCESSORIES) {
-    const b = hand("button", "avatar-secim") as HTMLButtonElement;
+    const b = hand("button", "avatar-option") as HTMLButtonElement;
     b.dataset.saks = aks.id;
-    b.title = y(aks.ad);
-    b.appendChild(hand("div", "avatar-mini"));
+    b.title = y(aks.name);
+    b.appendChild(hand("div", "avatar-thumb"));
     const etiket = hand("span");
-    etiket.textContent = y(aks.ad);
+    etiket.textContent = y(aks.name);
     b.appendChild(etiket);
     b.onclick = () => {
       a.hairAccessory = aks.id;
@@ -139,14 +139,14 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
   // --- yüz aksesuarı
   pano.appendChild(bolum(y(S.yuzAksesuari)));
-  const faceAccRow = hand("div", "avatar-izgara");
+  const faceAccRow = hand("div", "avatar-grid");
   for (const aks of FACE_ACCESSORIES) {
-    const b = hand("button", "avatar-secim") as HTMLButtonElement;
+    const b = hand("button", "avatar-option") as HTMLButtonElement;
     b.dataset.yaks = aks.id;
-    b.title = y(aks.ad);
-    b.appendChild(hand("div", "avatar-mini"));
+    b.title = y(aks.name);
+    b.appendChild(hand("div", "avatar-thumb"));
     const etiket = hand("span");
-    etiket.textContent = y(aks.ad);
+    etiket.textContent = y(aks.name);
     b.appendChild(etiket);
     b.onclick = () => {
       a.faceAccessory = aks.id;
@@ -157,13 +157,13 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
   pano.appendChild(faceAccRow);
 
   // --- eylemler
-  const sira = hand("div", "btn-sira");
+  const sira = hand("div", "btn-row");
   const kapat = hand("button", "btn ikincil") as HTMLButtonElement;
   kapat.textContent = y(S.vazgec);
   kapat.onclick = () => cb.kapat();
   const kaydet = hand("button", "btn") as HTMLButtonElement;
   kaydet.textContent = y(S.kaydet);
-  kaydet.onclick = () => cb.kaydet({ ...a, ad: a.ad.trim() || "Chef" });
+  kaydet.onclick = () => cb.kaydet({ ...a, name: a.name.trim() || "Chef" });
   sira.append(kapat, kaydet);
   pano.appendChild(sira);
 
@@ -172,7 +172,7 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
   function render() {
     onizleme.innerHTML =
       `<div class="avatar-large">${serverSvg(a, 132)}</div>` +
-      `<div class="avatar-name-tag">${(a.ad.trim() || "Chef").replace(/[<>&]/g, "")}</div>`;
+      `<div class="avatar-name-tag">${(a.name.trim() || "Chef").replace(/[<>&]/g, "")}</div>`;
 
     for (const b of kindBox.children) {
       b.classList.toggle("active", (b as HTMLElement).dataset.kind === a.kind);
@@ -181,19 +181,19 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 
     // saç seçenekleri: her biri güncel avatarla ama kendi saçıyla çizilir
     Array.from(hairRow.children).forEach((b, i) => {
-      const kutu = b.querySelector(".avatar-mini");
+      const kutu = b.querySelector(".avatar-thumb");
       if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, hair: i }, 62);
       b.classList.toggle("active", i === a.hair);
     });
     Array.from(hairAccRow.children).forEach((b) => {
       const id = (b as HTMLElement).dataset.saks as Avatar["hairAccessory"];
-      const kutu = b.querySelector(".avatar-mini");
+      const kutu = b.querySelector(".avatar-thumb");
       if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, hairAccessory: id }, 62);
       b.classList.toggle("active", id === a.hairAccessory);
     });
     Array.from(faceAccRow.children).forEach((b) => {
       const id = (b as HTMLElement).dataset.yaks as Avatar["faceAccessory"];
-      const kutu = b.querySelector(".avatar-mini");
+      const kutu = b.querySelector(".avatar-thumb");
       if (kutu) kutu.innerHTML = serverHeadSvg({ ...a, faceAccessory: id }, 62);
       b.classList.toggle("active", id === a.faceAccessory);
     });
@@ -209,9 +209,9 @@ export function avatarPanel(baslangic: Avatar, cb: AvatarCallbacks): HTMLElement
 }
 
 function colorRow(renkler: string[], secili: () => number, sec: (i: number) => void): HTMLElement {
-  const sira = hand("div", "renk-sira");
+  const sira = hand("div", "color-row");
   renkler.forEach((color, i) => {
-    const b = hand("button", "renk-nokta") as HTMLButtonElement;
+    const b = hand("button", "color-dot") as HTMLButtonElement;
     b.style.background = color;
     b.onclick = () => sec(i);
     sira.appendChild(b);

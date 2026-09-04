@@ -21,10 +21,10 @@ export class Sahne {
   constructor(ana: HTMLElement) {
     this.kok = document.createElement("div");
     this.kok.className = "scene";
-    this.sky = div("gok");
-    this.manzara = div("manzara");
-    this.parcaciklar = div("parcaciklar");
-    this.decorLayer = div("dekor-katman");
+    this.sky = div("sky");
+    this.manzara = div("scenery");
+    this.parcaciklar = div("particles");
+    this.decorLayer = div("decor-layer");
     this.kok.append(this.sky, this.manzara, this.parcaciklar, this.decorLayer);
     ana.appendChild(this.kok);
   }
@@ -70,7 +70,7 @@ export class Sahne {
       sayac[d.spot] = n + 1;
       const e = div(`decor decor-${d.spot}`);
       e.style.setProperty("--sira", String(n));
-      e.title = y(d.ad);
+      e.title = y(d.name);
       e.innerHTML = art(d.icon, d.spot === "tavan" ? 64 : 74);
       this.decorLayer.appendChild(e);
     }

@@ -70,7 +70,7 @@ export type TargetId = StationId | `misafir:${string}`;
 
 export interface Player {
   id: PlayerId;
-  ad: string;
+  name: string;
   color: string;
   /** Kişiselleştirilmiş garson görünümü (online oyunda durumla birlikte yayılır). */
   avatar: Avatar;
@@ -84,7 +84,7 @@ export interface TrayItem {
   placedBy: PlayerId;
 }
 
-export type GuestStatus = "bekliyor" | "mutlu" | "gidiyor";
+export type GuestStatus = "pending" | "happy" | "leaving";
 
 export interface Guest {
   id: string;
